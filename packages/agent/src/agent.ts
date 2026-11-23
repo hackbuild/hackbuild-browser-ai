@@ -75,7 +75,7 @@ export interface AgentOptions<S> {
   idle?: Step[][];
   now?: () => number;
   rng?: Rng;
-  /** Say text as soon as it is readable, ahead of the JSON closing; final true at the end of each say. */
+  /** Say text as soon as it is readable, ahead of the JSON closing. `text` is the new piece only; final true, with empty text, ends each say. */
   onSay?: (text: string, final: boolean) => void;
   onEvent?: (e: AgentEvent) => void;
 }
@@ -238,7 +238,7 @@ export class Agent<S = unknown> {
       }
     }
     this.cost.lastReplyMs = this.now() - t0;
-    const plan = parsePlan(raw, this.tools.names, maxA + 1);
+    const plan = parsePlan(raw, this.tools.names, maxA);
     if (!streamed && plan.say) this.o.onSay?.(plan.say, false);
     if (streamed || plan.say) this.o.onSay?.("", true);
     return { plan, raw };
@@ -259,7 +259,7 @@ export class Agent<S = unknown> {
     let calls = 0;
     let goal: Goal | null = null;
 
-    if (why === "report") return this.finishTurn({ why, ended: "done", said: await this.report(said), results, calls, goal }, heard);
+    if (why === "report") return this.finishTurn({ why, ended: "done", said: await this.report(said), results, calls, goal }, heard, signal);
 
     if (heard && o.goals) {
       const g = o.goals.parse(heard);
@@ -268,7 +268,7 @@ export class Agent<S = unknown> {
         o.onEvent?.({ type: "goal", goal, change: "added" });
       }
     } else if (why === "goal" && o.goals) goal = o.goals.active();
-    if (why === "goal" && !goal) return this.finishTurn({ why, ended: "done", said, results, calls, goal }, heard);
+    if (why === "goal" && !goal) return this.finishTurn({ why, ended: "done", said, results, calls, goal }, heard, signal);
 
     // plan cache: a heard request that worked before runs again with no model call
     if (heard) {
@@ -278,7 +278,7 @@ export class Agent<S = unknown> {
         const r = await this.runSteps(cached, heard, signal, goal, results);
         if (r.ok) {
           this.cost.cacheHits++;
-          return this.finishTurn({ why, ended: "cache", said, results, calls, goal }, heard);
+          return this.finishTurn({ why, ended: "cache", said, results, calls, goal }, heard, signal);
         }
         this.cache.evict(heard);
       }
@@ -301,13 +301,13 @@ export class Agent<S = unknown> {
             const p = o.goals.peek(goal, state);
             if (p && "done" in p) await this.endGoal(goal, "done", p.done);
           }
-          return this.finishTurn({ why, ended: "reflex", said, results, calls, goal }, heard);
+          return this.finishTurn({ why, ended: "reflex", said, results, calls, goal }, heard, signal);
         }
       }
       if (why === "free" && o.idle?.length) {
         const pick = o.idle[Math.min(o.idle.length - 1, Math.floor((o.rng ?? (() => 0))() * o.idle.length))]!;
         await this.runSteps(pick, null, signal, null, results);
-        return this.finishTurn({ why, ended: "reflex", said, results, calls, goal }, heard);
+        return this.finishTurn({ why, ended: "reflex", said, results, calls, goal }, heard, signal);
       }
       if (!o.brain) {
         if (heard) {
@@ -315,7 +315,7 @@ export class Agent<S = unknown> {
           o.onSay?.("i do not know how to do that yet.", false);
           o.onSay?.("", true);
         }
-        return this.finishTurn({ why, ended: "no-brain", said, results, calls, goal }, heard);
+        return this.finishTurn({ why, ended: "no-brain", said, results, calls, goal }, heard, signal);
       }
     }
 
@@ -427,23 +427,23 @@ export class Agent<S = unknown> {
       goal = await o.goals.add("custom", null, heard);
       o.onEvent?.({ type: "goal", goal, change: "added" });
     }
-    return this.finishTurn({ why, ended, said, results, calls, goal }, heard);
+    return this.finishTurn({ why, ended, said, results, calls, goal }, heard, signal);
   }
 
   private async plannerTurn(goal: Goal, p: GoalStep, why: Why, said: string[], results: StepResult[], heard: string | null, signal: AbortSignal): Promise<TurnResult> {
     if ("done" in p) {
       await this.endGoal(goal, "done", p.done);
-      return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard);
+      return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard, signal);
     }
     if ("failed" in p) {
       await this.endGoal(goal, "failed", p.failed);
-      return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard);
+      return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard, signal);
     }
     this.o.onEvent?.({ type: "plan", plan: { think: "", say: "", do: p.steps, done: false, from: "json", unknown: [] }, via: "planner" });
     const r = await this.runSteps(p.steps, heard, signal, goal, results);
     const blocked = await this.o.goals!.tried(goal, r.ok, "reflex");
     if (blocked) this.o.onEvent?.({ type: "goal", goal, change: "blocked" });
-    return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard);
+    return this.finishTurn({ why, ended: "planner", said, results, calls: 0, goal }, heard, signal);
   }
 
   private async endGoal(goal: Goal, status: "done" | "failed" | "blocked", note: string): Promise<void> {
@@ -474,7 +474,7 @@ export class Agent<S = unknown> {
     return said;
   }
 
-  private async finishTurn(r: TurnResult, heard: string | null): Promise<TurnResult> {
+  private async finishTurn(r: TurnResult, heard: string | null, signal: AbortSignal): Promise<TurnResult> {
     const did = r.results.filter((x) => x.ok).map((x) => stepText(x.step));
     const failed = r.results.filter((x) => !x.ok).map((x) => `${stepText(x.step)} (${x.text})`);
     const parts: string[] = [];
@@ -488,7 +488,8 @@ export class Agent<S = unknown> {
       if (this.recent.length > 12) this.recent.shift();
       await this.o.memory?.write("episode", line);
     }
-    if (this.busy && !this.busy.signal.aborted) this.busy = null;
+    // only this turn's own controller is cleared; a newer turn keeps cancel()
+    if (this.busy?.signal === signal) this.busy = null;
     this.o.onEvent?.({ type: "end", result: r });
     return r;
   }

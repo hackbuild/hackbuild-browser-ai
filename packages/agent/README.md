@@ -28,11 +28,16 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
     const goals = new Goals({ sink: storageSink(localStorage) }).planner("tidy", (goal, state) => nextTidyStep(goal, state));
     await goals.load();
 
+    let sayText = ""; // onSay sends new pieces; voice.feed takes the text so far
     const agent = createAgent({
       tools, brain: chatEngine /* or null for reflex only */, mode: "model", soul,
       reflex, goals, memory: { recall: (q) => recallLines(q), write: (kind, text) => mem.add(text, { kind }) },
       perceive: () => ({ sections: [{ name: "options", priority: 9, text: "YOU CAN DO NOW\n..." }], state }),
-      onSay: (text, final) => voice.feed(text, final),
+      onSay: (piece, final) => {
+        sayText += piece;
+        voice.feed(sayText, final);
+        if (final) sayText = "";
+      },
     });
     const turn = await agent.handle("put the mug on the shelf", "heard");
     turn.ended;   // done, empty, failures, repeat, steps, guard, aborted, reflex, cache, planner, no-brain

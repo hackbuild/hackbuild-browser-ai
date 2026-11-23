@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { scripted } from "@hackbuild/chat";
 import {
   createAgent,
@@ -310,3 +310,39 @@ describe("goals and cache", () => {
     expect(c.get("Do 69?")).not.toBeNull();
   });
 });
+
+describe("overlapping turns", () => {
+  test("cancel reaches the newer turn after the older one finishes", async () => {
+    const gates: (() => void)[] = [];
+    const seen: AbortSignal[] = [];
+    const tools: Tool[] = [
+      {
+        name: "wait",
+        description: "wait",
+        run: (_a, ctx) => {
+          seen.push(ctx.signal);
+          return new Promise<void>((r) => gates.push(r));
+        },
+      },
+    ];
+    const brain = scripted({ replies: ['{"say":"","do":[["wait"]],"done":true}', '{"say":"","do":[["wait"]],"done":true}'] });
+    const a = createAgent({ tools, brain, soul: "s" });
+    const tA = a.handle("first");
+    await vi.waitFor(() => expect(gates.length).toBe(1));
+    const tB = a.handle("second");
+    await vi.waitFor(() => expect(gates.length).toBe(2));
+    gates[0]!();
+    await tA;
+    a.cancel();
+    expect(seen[1]!.aborted).toBe(true);
+    gates[1]!();
+    await tB;
+  });
+  test("a plan holds at most maxActions steps", async () => {
+    const w = world();
+    const brain = scripted({ replies: ['{"say":"","do":[["wave"],["wave"],["wave"],["wave"],["wave"]],"done":true}'] });
+    await createAgent({ tools: w.tools, brain, soul: "s", maxActions: 3 }).handle("wave a lot");
+    expect(w.log.filter((x) => x === "wave").length).toBe(3);
+  });
+});
+
