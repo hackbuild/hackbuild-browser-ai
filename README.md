@@ -23,6 +23,9 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/biosignal](packages/biosignal) | rust wasm core (simd128): eeg filters, shrunk covariances, riemannian tangent space classifier, cross validation folded by trial, model json | 3 vitest, 4 cargo |
 | [@hackbuild/media](packages/media) | decode audio to a target rate, keyframes by scene change, canvas and stream recording | 3 vitest |
 
+Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
+components).
+
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
 DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes;
