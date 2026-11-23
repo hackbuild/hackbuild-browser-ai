@@ -260,3 +260,28 @@ describe("call", () => {
     expect(s2).toEqual([null, null, "repeat"]);
   });
 });
+
+describe("loose json on long replies", () => {
+  it("stays linear on a code reply and on brace runs", () => {
+    const code = "function f(a) { if (a) { return {x: 1}; } }\n".repeat(200);
+    let t0 = performance.now();
+    expect(parseLooseJSON("here is code:\n" + code)).toBeNull();
+    expect(performance.now() - t0).toBeLessThan(150);
+    t0 = performance.now();
+    expect(parseLooseJSON("{a}".repeat(1500))).toBeNull();
+    expect(performance.now() - t0).toBeLessThan(150);
+  });
+  it("still finds the last object after prose and a brace inside a string", () => {
+    expect(parseLooseJSON('first {nope} then {"a": "x}y", "b": {"c": 1}} done')).toEqual({ a: "x}y", b: { c: 1 } });
+  });
+});
+
+describe("tag offsets after parse", () => {
+  it("point into the trimmed, collapsed text", () => {
+    const p = createTagParser({ keys: { mood: ["happy"] } });
+    const r = p.parse("   hi   [mood: happy] there");
+    expect(r.text).toBe("hi there");
+    // the tag sat in a space run that collapsed to one space; either side of it is the same place
+    expect([2, 3]).toContain(r.tags[0]!.at);
+  });
+});

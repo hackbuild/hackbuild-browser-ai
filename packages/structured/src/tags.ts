@@ -224,11 +224,26 @@ export function createTagParser(g: TagGrammar): TagParser {
       visibleLen += rest.length;
       return { text: r.text + rest, tags: r.tags };
     },
-    parse(text) {
+    parse(input) {
       const p = createTagParser(g);
-      const a = p.feed(text);
+      const a = p.feed(input);
       const b = p.end();
-      return { text: (a.text + b.text).replace(/[ \t]{2,}/g, " ").trim(), tags: [...a.tags, ...b.tags] };
+      // collapse space runs and trim, carrying each tag's offset into the new text
+      const raw = a.text + b.text;
+      const runs = [...raw.matchAll(/[ \t]{2,}/g)];
+      const collapse = (pos: number): number => {
+        let shift = 0;
+        for (const m of runs) {
+          if (m.index >= pos) break;
+          shift += Math.min(pos, m.index + m[0].length) - m.index - 1;
+        }
+        return pos - shift;
+      };
+      const collapsed = raw.replace(/[ \t]{2,}/g, " ");
+      const lead = collapsed.length - collapsed.trimStart().length;
+      const text = collapsed.trim();
+      const tags = [...a.tags, ...b.tags].map((t) => ({ ...t, at: Math.max(0, Math.min(text.length, collapse(t.at) - lead)) }));
+      return { text, tags };
     },
     strip(text) {
       return parser.parse(text).text;

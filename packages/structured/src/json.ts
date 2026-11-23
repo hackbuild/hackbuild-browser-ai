@@ -54,7 +54,34 @@ export function repairJSON(raw: string): string {
   return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
-/** Parse after repair; then the largest object found by scanning `}` from the end. null when nothing parses. */
+/**
+ * Balanced `{...}` spans in one pass, skipping braces inside double quoted
+ * strings. Each span is [start, end] inclusive.
+ */
+function braceSpans(text: string): [number, number][] {
+  const spans: [number, number][] = [];
+  const open: number[] = [];
+  let inStr = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inStr) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"' && open.length) inStr = true;
+    else if (ch === "{") open.push(i);
+    else if (ch === "}" && open.length) spans.push([open.pop()!, i]);
+  }
+  return spans;
+}
+
+/** Span parse attempts per call, so a long code reply stays fast. */
+const MAX_ATTEMPTS = 64;
+
+/**
+ * Parse after repair; then the balanced `{...}` spans, the one that ends
+ * last and starts first tried first, at most 64 of them. null when nothing
+ * parses.
+ */
 export function parseLooseJSON(raw: string): unknown {
   const text = stripFences(stripThink(raw));
   try {
@@ -67,13 +94,12 @@ export function parseLooseJSON(raw: string): unknown {
   } catch {
     /* scan next */
   }
-  for (let end = text.lastIndexOf("}"); end >= 0; end = text.lastIndexOf("}", end - 1)) {
-    for (let st = text.indexOf("{"); st >= 0 && st < end; st = text.indexOf("{", st + 1)) {
-      try {
-        return JSON.parse(text.slice(st, end + 1));
-      } catch {
-        /* keep scanning */
-      }
+  const spans = braceSpans(text).sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  for (const [st, end] of spans.slice(0, MAX_ATTEMPTS)) {
+    try {
+      return JSON.parse(text.slice(st, end + 1));
+    } catch {
+      /* next span */
     }
   }
   return null;
