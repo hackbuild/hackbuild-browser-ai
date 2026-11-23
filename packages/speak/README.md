@@ -87,12 +87,11 @@ encodes it as voice "custom"; nothing is stored or bundled.
 owner's articulatory voice for the bellowsjs engine (MIT): a physical
 model of a vocal tract, so it has no weights and no weight licence; its
 code is MIT and is loaded by the caller, never bundled. `runtime` returns
-`bellows-voice/engine` from 0.8.0 (git ac30dc2, not on npm on
-2026-11-23), which imports bellowsjs 0.5.x, or
-`renderSpeechFrom({ bellows, voice, engine })` over bellowsjs 0.5.0,
-bellows-voice 0.7.3 and its `/engine`, the versions on npm: the same
-call built from their public API as bellows' own `speak()` lays a line
-out. Each segment goes through its
+`bellows-voice/engine` from bellows-voice 0.8.0 on npm (the optional
+peer), which imports bellowsjs 0.5.x. `renderSpeechFrom({ bellows,
+voice, engine })` is legacy glue for bellows-voice 0.7.3, which has no
+`renderSpeech`: the same call built from its public API as bellows' own
+`speak()` lays a line out. Each segment goes through its
 offline `renderSpeech`, and the chunk carries the exact phoneme spans the
 engine sang (no word times; the speaker estimates those).
 
@@ -125,6 +124,9 @@ engine sang (no word times; the speaker estimates those).
   0.7.3 path through `renderSpeechFrom` gave the same 2.30 s line in 916
   ms cold and 489 ms warm, byte identical for one seed (measured), and a
   unit test checks the score it posts.
+- 2026-11-23, later: a test renders "hello there." through the npm
+  bellows-voice 0.8.0 `/engine` (a dev dependency at the root): byte
+  identical for one rng seed, different for another.
 
 ### Not verified by anything
 

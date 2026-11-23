@@ -50,7 +50,7 @@ export const SPEAK_RECORDS: ModelRecord[] = [
     licence: "none, no weights (code MIT)",
     commercial: true,
     place: "cpu-worker",
-    runtime: "bellows-voice@0.8.0 (git ac30dc2) on bellowsjs@0.5.0",
+    runtime: "bellows-voice@0.8.0 on bellowsjs@0.5.0",
     notes: ["a physical model of the vocal tract, no download beyond its code (about 65 KB gzipped, vendor)", "deterministic per seed; the seed is drawn once from the injected rng", "exact phoneme times; no word times"],
   },
   {

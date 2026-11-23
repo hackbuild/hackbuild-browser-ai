@@ -1,18 +1,11 @@
 import { runtimeLoader } from "@hackbuild/devices";
-import { bellowsEngine, createSpeaker, kokoroEngine, renderSpeechFrom, webSpeechEngine, type BellowsParts, type Engine, type Speaker } from "@hackbuild/speak";
+import { bellowsEngine, createSpeaker, kokoroEngine, webSpeechEngine, type BellowsVoiceModule, type Engine, type Speaker } from "@hackbuild/speak";
 import { $, auto, check, finish, readout, result, sleep, status } from "../shared/ui.js";
 
 const r = result("speak");
 const KOKORO = runtimeLoader<never>(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]);
-// bellowsjs 0.5.0 and bellows-voice 0.7.3 (MIT, no weights) from the npm CDN; 0.8.0 with renderSpeech is not on npm yet
-const BELLOWS = async () => {
-  const [bellows, voice, engine] = await Promise.all([
-    runtimeLoader<BellowsParts["bellows"]>(["https://cdn.jsdelivr.net/npm/bellowsjs@0.5.0/+esm"])(),
-    runtimeLoader<BellowsParts["voice"]>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.7.3/+esm"])(),
-    runtimeLoader<BellowsParts["engine"]>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.7.3/dist/engine.js/+esm"])(),
-  ]);
-  return renderSpeechFrom({ bellows, voice, engine });
-};
+// bellows-voice 0.8.0 /engine on bellowsjs 0.5.x (MIT, no weights) from the npm CDN
+const BELLOWS = runtimeLoader<BellowsVoiceModule>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"]);
 // the page's seeded rng (mulberry32), drawn once by the engine for its seed
 let seedState = 20261123;
 const rng = () => {
@@ -148,7 +141,7 @@ if (auto) {
     n["bellows warm say to done ms (measured)"] = Math.round(warm.total);
     n["bellows phoneme events (measured)"] = warm.boundaries;
     const ok = cold.engine === "bellows" && cold.ttfa > 0 && warm.boundaries > 0;
-    check(r, "#57 speak: bellows voice through the speaker, time to first audio and phoneme times", ok ? "pass" : "fail", ok ? "bellows-voice 0.7.3 on bellowsjs 0.5.0 rendered on the main thread; not listened to by a person" : `engine ${cold.engine}, first audio ${cold.ttfa}, ${warm.boundaries} timed events`);
+    check(r, "#57 speak: bellows voice through the speaker, time to first audio and phoneme times", ok ? "pass" : "fail", ok ? "bellows-voice 0.8.0 on bellowsjs 0.5.x rendered on the main thread; not listened to by a person" : `engine ${cold.engine}, first audio ${cold.ttfa}, ${warm.boundaries} timed events`);
   } catch (e) {
     check(r, "#57 speak: bellows voice through the speaker, time to first audio and phoneme times", "fail", (e as Error).message.slice(0, 200));
   }

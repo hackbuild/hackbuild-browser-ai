@@ -131,3 +131,23 @@ describe("renderSpeechFrom, bellows-voice 0.7.3 glue", () => {
     expect(() => m.renderSpeech("x", { seed: "1", voice: "nobody" })).toThrow(/no starter voice/);
   });
 });
+
+describe("bellows engine on the real bellows-voice 0.8.0", () => {
+  const run = async (seed: number) => {
+    const e = bellowsEngine({ runtime: async () => (await import("bellows-voice/engine")) as unknown as BellowsVoiceModule, rng: mulberry(seed), sampleRate: 24000 });
+    await e.load({ signal: new AbortController().signal });
+    const chunks = (await collect(e.synth("hello there.", {}, new AbortController().signal))) as { samples: Float32Array; phonemes?: unknown[] }[];
+    const samples = chunks.flatMap((c) => [...c.samples]);
+    return { samples, phonemes: chunks.flatMap((c) => c.phonemes ?? []) };
+  };
+  it("renders the same samples for the same seed and other samples for another", async () => {
+    const a = await run(11);
+    const b = await run(11);
+    const c = await run(12);
+    expect(a.samples.length).toBeGreaterThan(24000 * 0.3);
+    expect(a.samples.some((v) => Math.abs(v) > 1e-3)).toBe(true);
+    expect(a.phonemes.length).toBeGreaterThan(3);
+    expect(b.samples).toEqual(a.samples);
+    expect(c.samples).not.toEqual(a.samples);
+  });
+});

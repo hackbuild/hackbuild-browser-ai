@@ -3,7 +3,7 @@
  * model of a vocal tract for the bellowsjs engine, MIT) as a PcmEngine. It
  * has no weights, so there is no weight licence to state; the code it runs
  * is MIT. Each segment is rendered offline with `renderSpeech` from
- * `bellows-voice/engine` (0.8.0, git ac30dc2, not on npm on 2026-11-23),
+ * `bellows-voice/engine` (bellows-voice 0.8.0 on npm),
  * which returns the samples and the exact phoneme spans the engine sang.
  *
  * Randomness: the engine draws its jitter and noise from a string seed.
@@ -70,7 +70,7 @@ export interface BellowsParts {
 }
 
 /**
- * A renderSpeech for bellows-voice 0.7.3, which has none, built from its
+ * Legacy: a renderSpeech for bellows-voice 0.7.3, which has none, built from its
  * public API as its own Singer.speak lays a line out: phrases at their
  * marks, speechPlan timing, planSung spans, sungEvents for the kernel and
  * renderOffline on this thread. Spoken consonants at full length, as in
