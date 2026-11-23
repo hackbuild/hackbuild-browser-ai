@@ -1,0 +1,8 @@
+# The wasm cores are committed as bytes (packages/*/wasm and src/inline.ts),
+# so the compiler is pinned: the same source gives the same wasm only on
+# the same rustc. CI builds them with this toolchain and compares bytes.
+[toolchain]
+channel = "1.95.0"
+targets = ["wasm32-unknown-unknown"]
+components = ["rustfmt", "clippy"]
+profile = "minimal"

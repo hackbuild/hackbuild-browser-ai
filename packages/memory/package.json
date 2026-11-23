@@ -28,6 +28,6 @@
   "files": ["dist", "wasm/memory.wasm", "README.md"],
   "scripts": {
     "build": "tsc -b",
-    "build:wasm": "node scripts/build-wasm.mjs"
+    "build:wasm": "node ../../tools/build-wasm.mjs memory memory MEMORY_WASM_BASE64"
   }
 }

@@ -13,3 +13,19 @@
 
 Before you open a PR, run `npm test` and, when `crates/` changed,
 `cargo test --workspace`. A harness that did not run is reported as not run.
+
+## Toolchains
+
+| tool | version | notes |
+|---|---|---|
+| Node | 22.18.0 (`.nvmrc`) | npm 11.21.0: `npx -y npm@11.21.0 ci` |
+| Rust | 1.95.0 through rustup (`rust-toolchain.toml`) | with the `wasm32-unknown-unknown` target; `rustup toolchain install 1.95.0 --target wasm32-unknown-unknown --component rustfmt clippy` |
+
+The five wasm cores are committed as bytes (`packages/*/wasm/*.wasm`
+and `packages/*/src/inline.ts`). After a change under `crates/`, run
+`node tools/build-wasm.mjs --all` and commit what it writes. It finds
+rustc 1.95.0 with `rustup which`, so a Homebrew rustc on PATH, which has
+no wasm32 standard library, is not used. CI runs the same build and fails
+when the bytes differ from the committed ones. Clippy for wasm32 runs
+with the toolchain's bin directory first on PATH:
+`PATH=$(dirname $(rustup which rustc --toolchain 1.95.0)):$PATH cargo clippy --workspace --target wasm32-unknown-unknown -- -D warnings`.

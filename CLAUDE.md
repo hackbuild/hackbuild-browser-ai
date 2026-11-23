@@ -15,7 +15,8 @@ How an agent works in hackbuild-browser-ai. RULES.md is absolute and wins over t
 ## Toolchain on the owner's Mac
 
 - `source ~/.nvm/nvm.sh && nvm use 22.18.0` before npm; the shell default is 22.12.
-- Rust 1.95 (Homebrew) with the wasm32 target and wasm-pack. Playwright refuses macOS 12;
+- Rust 1.95 (Homebrew) for native checks; wasm builds use the rustup 1.95.0 toolchain pinned
+  in rust-toolchain.toml (`node tools/build-wasm.mjs --all`). Playwright refuses macOS 12;
   browser tests use puppeteer-core with the system Chrome.
 - Run test suites per package and long jobs in the background with a log; a tool call
   that runs about 10 minutes with no output gets killed.

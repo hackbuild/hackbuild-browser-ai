@@ -67,7 +67,10 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 
 - 2026-11-22: `cargo test -p hackbuild-audio-dsp` passes 11 tests (10
   unit, 1 parity fixture) under rustc 1.95; `cargo clippy -D warnings`
-  passes natively and for wasm32, `cargo fmt --check` passes.
+  passes natively; `cargo fmt --check` passes. Clippy for wasm32 first
+  ran on 2026-11-23 under the rustup 1.95.0 toolchain and passes; the
+  wasm32 claim made on 2026-11-22 could not have run, since the Homebrew
+  rustc has no wasm32 standard library.
 - 2026-11-22: `npx vitest run packages/audio-dsp` passes 16 tests under
   Node 22.18.0, including native and wasm parity: the wasm build (simd128
   on) gives the same bits as the native build for 14 kernel outputs over
