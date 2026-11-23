@@ -27,6 +27,8 @@ export interface FactoryContext {
   env: Env | undefined;
   signal: AbortSignal | undefined;
   hub: Hub;
+  /** True on the ladder's last rung: a failure here exhausts it, so a factory frees what it cached for the record. */
+  last: boolean;
 }
 
 /** Builds a runtime object for one rung. Throw to move to the next rung. */
@@ -286,7 +288,7 @@ export function createHub(opts: HubOptions = {}): Hub {
           const { rungs } = ladderFor(record, opts.env);
           const res = await walkLadder(record.id, rungs, (rung) => {
             if (o.signal?.aborted) throw new DOMException("aborted", "AbortError");
-            const go = () => factory({ record, rung, env: opts.env, signal: o.signal, hub });
+            const go = () => factory({ record, rung, env: opts.env, signal: o.signal, hub, last: rung === rungs[rungs.length - 1] });
             const eo: ExclusiveOptions = { priority: o.priority ?? 0 };
             if (o.signal) eo.signal = o.signal;
             return rung.device === "webgpu" ? hub.exclusive("gpu", go, eo) : go();

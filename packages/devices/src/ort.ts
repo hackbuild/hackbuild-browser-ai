@@ -111,13 +111,14 @@ export function ortProvider(opts: OrtProviderOptions): OrtProvider {
     forget(rec) {
       release(graphFiles(rec));
     },
-    factory: async ({ record, rung, env, signal }) => {
+    factory: async ({ record, rung, env, signal, last }) => {
       const ort = await opts.runtime();
       if (!configured.has(ort)) {
         configureOrt(ort, env, opts.wasmPaths);
         configured.add(ort);
       }
       const files = graphFiles(record);
+      const sessions: Record<string, OrtSession> = {};
       try {
         const bytes = await Promise.all(
           files.map((f) =>
@@ -128,7 +129,6 @@ export function ortProvider(opts: OrtProviderOptions): OrtProvider {
           ),
         );
         const external = files.flatMap((f, i) => (f.external ? [{ path: f.path, data: bytes[i]! }] : []));
-        const sessions: Record<string, OrtSession> = {};
         for (let i = 0; i < files.length; i++) {
           const f = files[i]!;
           if (f.external) continue;
@@ -147,8 +147,10 @@ export function ortProvider(opts: OrtProviderOptions): OrtProvider {
           },
         };
       } catch (e) {
+        // sessions built before a later graph failed would otherwise leak
+        for (const s of Object.values(sessions)) await Promise.resolve(s.release?.()).catch(() => undefined);
         const k = classifyError(e);
-        if (k === "network" || k === "abort") release(files);
+        if (k === "network" || k === "abort" || last) release(files);
         throw e;
       }
     },

@@ -209,3 +209,52 @@ describe("runtime loader", () => {
     expect(a).toBe(b);
   });
 });
+
+describe("ort provider cleanup", () => {
+  it("releases sessions built before a later graph fails, and frees bytes when the ladder is exhausted", async () => {
+    let created = 0;
+    let released = 0;
+    const ort = {
+      InferenceSession: {
+        create: async () => {
+          created++;
+          if (created % 2 === 0) throw new Error("unsupported op foo");
+          return { inputNames: [], outputNames: [], run: async () => ({}), release: async () => void released++ };
+        },
+      },
+      Tensor: class {},
+    };
+    let fetches = 0;
+    const fetch2 = (async () => {
+      fetches++;
+      return new Response(new Uint8Array([1, 2, 3]));
+    }) as unknown as typeof fetch;
+    const store = await openWeightStore({ backends: ["memory"], fetch: fetch2, onNotice: () => {} });
+    const freed: string[] = [];
+    const rel = store.release.bind(store);
+    store.release = (k) => {
+      freed.push(k);
+      rel(k);
+    };
+    const p = ortProvider({ runtime: async () => ort as never, store });
+    const rec: ModelRecord = {
+      id: "two",
+      provides: ["x"],
+      provider: "ort",
+      source: { url: "https://h.test/", files: [{ path: "a.onnx" }, { path: "b.onnx" }] },
+      sizeMB: 1,
+      sizeSource: "inferred",
+      ladder: [{ device: "wasm" }, { device: "wasm" }],
+      licence: "MIT",
+      commercial: true,
+    };
+    const hub = createHub({ registry: createRegistry([rec]) });
+    hub.provide("ort", p.factory);
+    await expect(hub.use({ id: "two" })).rejects.toThrow();
+    expect(created).toBe(4);
+    expect(released).toBe(2);
+    // the once() bytes are freed after the last rung fails
+    expect(freed).toEqual(["https://h.test/a.onnx", "https://h.test/b.onnx"]);
+    expect(fetches).toBe(2);
+  });
+});
