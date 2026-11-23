@@ -26,5 +26,5 @@ export {
   type OrtProviderOptions,
   type GraphFile,
 } from "./ort.js";
-export { PINS, transformersUrls, ortUrls, ortWasmPaths, runtimeLoader, loadTransformers, loadOrt } from "./runtime.js";
+export { PINS, RUNTIME_SHA256, transformersUrls, ortUrls, ortWasmPaths, runtimeLoader, loadTransformers, loadOrt } from "./runtime.js";
 export { classifyError, ortLadder, walkLadder, type ErrorKind } from "@hackbuild/models";

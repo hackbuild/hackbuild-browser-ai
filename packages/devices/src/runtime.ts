@@ -12,6 +12,21 @@ import type { TjsModule } from "./tjs.js";
 
 export const PINS = { transformers: "4.3.2", ort: "1.27.0" } as const;
 
+/**
+ * SHA-256 of the pinned jsDelivr files, measured 2026-11-23 (two fetches
+ * each, byte identical). Opt in: pass `{ integrity: RUNTIME_SHA256 }`, and
+ * the text is fetched, checked, and imported from a Blob URL, which moves
+ * import.meta.url; set ort's wasmPaths (ortWasmPaths) when you do. The
+ * esm.sh fallbacks are rebuilt by that service and carry no hash, so with
+ * integrity on they run only if their text matches, which it will not.
+ */
+export const RUNTIME_SHA256: Readonly<Record<string, string>> = {
+  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.2": "8b5a3171f8876bab2b1820a7d65eb87628e3d30bb5ea85b9dd398e76eb34decb",
+  "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/ort.webgpu.min.mjs": "46988a5a025f49449850f39f95eb0d21e40e67b3beb13a0b54efd3ab5d83f60e",
+  "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0/dist/ort.min.mjs": "a4c72a154c44d09c71996c7c5a3c4bd6fe3dfe27095dc766cdb6726775161931",
+  "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/index.js": "e5506753e41a59c11f61f2c52422045be9fc76e32a7e47f037aaad5df4ec723e",
+};
+
 export function transformersUrls(version: string = PINS.transformers): string[] {
   return [`https://cdn.jsdelivr.net/npm/@huggingface/transformers@${version}`, `https://esm.sh/@huggingface/transformers@${version}`];
 }
