@@ -172,10 +172,12 @@ export function classifyError(e: unknown): ErrorKind {
   if (/AbortError|aborted/i.test(s)) return "abort";
   if (/LinkError|TVMFFI|instantiate|version mismatch/i.test(s)) return "runtime-mismatch";
   if (/out of memory|OOM|memory access out of bounds|Array buffer allocation failed|RangeError: .*memory|could not allocate/i.test(s)) return "out-of-memory";
-  if (/shader-f16|f16|float16/i.test(s)) return "f16";
+  // a lost device often names the f16 shader it was running, so it is tested first
   if (/device (was )?lost|GPUDevice.*lost|DXGI_ERROR/i.test(s)) return "device-lost";
+  if (/shader-f16|f16|float16/i.test(s)) return "f16";
   if (/not implemented|unsupported (op|operator)|transformer_memcpy|could not find an implementation/i.test(s)) return "unsupported-op";
-  if (/fetch|network|http \d{3}|Failed to load/i.test(s)) return "network";
+  // "Failed to load model" from a session is a graph problem, not the network; only fetch failures stop the ladder
+  if (/Failed to fetch|fetch failed|NetworkError|network error|http \d{3}/i.test(s)) return "network";
   return "unknown";
 }
 

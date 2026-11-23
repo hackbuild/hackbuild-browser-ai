@@ -64,8 +64,8 @@ export const CATALOG: readonly ModelRecord[] = [
     provides: ["chat"],
     provider: "webllm",
     source: { modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC" },
-    sizeMB: 400,
-    sizeSource: "inferred",
+    sizeMB: 290,
+    sizeSource: "vendor",
     ctx: 4096,
     ladder: [
       { device: "webgpu", dtype: "q4f16_1", options: { modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC" } },
@@ -92,15 +92,18 @@ export const CATALOG: readonly ModelRecord[] = [
     licence: "Llama 3.2 Community License",
     commercial: true,
     runtime: "@mlc-ai/web-llm@0.2.84",
-    notes: ["the f16 aware default of the model picker build."],
+    notes: [
+      "the f16 aware default of the model picker build.",
+      "commercial use under the Llama 3.2 Community License needs a separate licence above 700 million monthly active users, a \"Built with Llama\" attribution, and the Llama acceptable use policy; read it before shipping.",
+    ],
   },
   {
     id: "qwen2.5-0.5b-instruct-gguf",
     provides: ["chat"],
     provider: "wllama",
     source: { repo: "Qwen/Qwen2.5-0.5B-Instruct-GGUF", file: "qwen2.5-0.5b-instruct-q4_k_m.gguf" },
-    sizeMB: 400,
-    sizeSource: "inferred",
+    sizeMB: 491,
+    sizeSource: "vendor",
     ctx: 6144,
     ladder: [
       { device: "webgpu", dtype: "q4_k_m" },

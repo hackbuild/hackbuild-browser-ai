@@ -156,3 +156,12 @@ describe("loose schema fallback", () => {
     expect(ok.schemaIndex).toBe(0);
   });
 });
+
+describe("split control markers", () => {
+  it("holds a gemma turn marker split across chunks", () => {
+    const sp = new ThinkSplitter();
+    const out = sp.push("hello <end_of").text + sp.push("_turn> bye").text + sp.end().text;
+    expect(out).toBe("hello  bye");
+  });
+});
+

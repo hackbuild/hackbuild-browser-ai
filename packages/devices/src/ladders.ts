@@ -55,7 +55,7 @@ export const LADDERS = {
   depth: (): Rung[] => tjsLadder({ webgpu: ["fp16", "fp32"], wasm: ["q8", "fp32"] }),
   /** earlier builds: perception models on cpu by default. */
   perceptionCpu: (): Rung[] => tjsLadder({ webgpu: ["fp32"], wasm: ["q8", "fp32"], wasmFirst: true }),
-  /** the earlier transcription tool whisper-large-v3-turbo. */
+  /** whisper-large-v3-turbo (weights MIT), as the earlier transcription tool ran it. */
   whisperTurbo: (): Rung[] =>
     tjsLadder({
       webgpu: [
@@ -64,13 +64,13 @@ export const LADDERS = {
       ],
       wasm: [{ encoder_model: "q8", decoder_model_merged: "q8" }],
     }),
-  /** the earlier transcription tool whisper-base and the Xenova .en exports. */
+  /** whisper-base and the Xenova .en exports (weights MIT; the ONNX cards say apache-2.0). */
   whisperSmall: (q4Decoder = true): Rung[] =>
     tjsLadder({
       webgpu: [{ encoder_model: "fp32", decoder_model_merged: q4Decoder ? "q4" : "fp32" }],
       wasm: [{ encoder_model: "q8", decoder_model_merged: "q8" }],
     }),
-  /** earlier builds: fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm. */
+  /** SmolVLM (weights Apache-2.0): fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm, as earlier builds ran it. */
   smolvlm: (): Rung[] =>
     tjsLadder({
       // fp32 encoder first: with the fp16 embed and vision encoder, Chrome 150 on an Apple M1 gave

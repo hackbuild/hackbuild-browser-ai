@@ -129,6 +129,11 @@ export interface HubOptions {
   stub?: boolean;
   now?: () => number;
   timers?: HubTimers;
+  /**
+   * Called once per record, before its first load, with the weight licence
+   * line. Default console.info. Every model reference states its licence.
+   */
+  onLicence?: (line: string, record: ModelRecord) => void;
 }
 
 function defaultTimers(): HubTimers {
@@ -186,6 +191,7 @@ export function createHub(opts: HubOptions = {}): Hub {
   const registry = opts.registry ?? createRegistry();
   const now = opts.now ?? (() => Date.now());
   const budget = opts.budgetMB ?? Infinity;
+  const told = new Set<string>();
   const factories = new Map<Provider, Factory>();
   const entries = new Map<string, Entry>();
   const loading = new Map<string, Promise<Loaded>>();
@@ -281,6 +287,11 @@ export function createHub(opts: HubOptions = {}): Hub {
       }
       let p = loading.get(record.id);
       if (!p) {
+        if (!told.has(record.id)) {
+          told.add(record.id);
+          const rev = record.source.revision ? ` at ${record.source.revision.slice(0, 7)}` : "";
+          (opts.onLicence ?? ((l: string) => console.info(l)))(`model ${record.id}${rev}: weight licence ${record.licence}. the weights are not part of this library.`, record);
+        }
         const factory = factories.get(record.provider);
         if (!factory) throw new HubError("no-provider", `no factory for provider ${record.provider}; call hub.provide("${record.provider}", ...)`);
         p = (async () => {

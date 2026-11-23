@@ -42,7 +42,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     source: { modelId: "Xenova/whisper-small.en" },
     sizeMB: 250,
     ladder: LADDERS.whisperSmall(false),
-    licence: "MIT",
+    licence: "MIT (the OpenAI Whisper release; the Xenova ONNX card says apache-2.0)",
     notes: ["english only"],
   }),
   asr({
@@ -51,7 +51,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     source: { modelId: "Xenova/whisper-base.en" },
     sizeMB: 90,
     ladder: LADDERS.whisperSmall(false),
-    licence: "MIT",
+    licence: "MIT (the OpenAI Whisper release; the Xenova ONNX card says apache-2.0)",
     notes: ["english only; the earlier transcription tool's no gpu default"],
   }),
   asr({
@@ -60,7 +60,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     source: { modelId: "Xenova/whisper-tiny.en" },
     sizeMB: 40,
     ladder: LADDERS.whisperSmall(false),
-    licence: "MIT",
+    licence: "MIT (the OpenAI Whisper release; the Xenova ONNX card says apache-2.0)",
     notes: ["english only"],
   }),
   asr({

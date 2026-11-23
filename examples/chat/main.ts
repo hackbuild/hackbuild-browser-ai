@@ -1,6 +1,6 @@
 import { importEsm, probe } from "@hackbuild/ai-env";
 import { maskKey, type ChatEngine, type ChatMessage } from "@hackbuild/chat";
-import { getLanguageModel, promptApi } from "@hackbuild/chat/prompt-api";
+import { getLanguageModel, promptApi, promptLanguages } from "@hackbuild/chat/prompt-api";
 import { anthropicMessages, openaiCompatible } from "@hackbuild/chat/remote";
 import { loadTransformers as loadTjsChat } from "@hackbuild/chat/transformers";
 import { loadWebLLM, type WebLLMModule } from "@hackbuild/chat/webllm";
@@ -13,9 +13,9 @@ const r = result("chat");
 const webllmUrl = (v: string) => [`https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@${v}/+esm`, `https://esm.run/@mlc-ai/web-llm@${v}`];
 const QWEN_GGUF = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
 const ENGINES: Record<string, string> = {
-  webllm: "webllm 0.2.84, qwen2.5 0.5b instruct q4f16, weights Apache-2.0, about 280 MB (inferred)",
+  webllm: "webllm 0.2.84, qwen2.5 0.5b instruct q4f16, weights Apache-2.0, 290 MB (vendor, repo file sizes)",
   tjs: "transformers.js 4.3.2, smollm2 360m instruct q4f16, weights Apache-2.0, about 260 MB (inferred)",
-  wllama: "wllama 4.0.0, qwen2.5 0.5b instruct q4_k_m gguf, weights Apache-2.0, 398 MB (vendor)",
+  wllama: "wllama 4.0.0, qwen2.5 0.5b instruct q4_k_m gguf, weights Apache-2.0, 491 MB (vendor)",
   prompt: "chrome prompt api, built in model under the chrome built in ai terms",
   openai: "openai compatible server at a url you give (ollama, llama.cpp)",
   anthropic: "anthropic messages api with your key",
@@ -23,7 +23,7 @@ const ENGINES: Record<string, string> = {
 $("#controls").innerHTML = `
 <label>engine <select id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
 <input id="url" type="url" placeholder="server url, for openai compatible" value="http://localhost:11434/v1" aria-label="server url">
-<input id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name" style="flex:0 1 12em">
+<input id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms" style="flex:0 1 12em">
 <input id="key" type="password" placeholder="api key: stays in this tab, never stored" aria-label="api key" autocomplete="off">
 <span id="keyv"></span>
 <button id="load">load</button>
@@ -44,7 +44,7 @@ if (!env.webgpu) for (const k of ["webllm", "tjs"]) {
   o.textContent += ". no webgpu adapter.";
 }
 const lm = getLanguageModel();
-const promptState = lm ? await lm.availability().catch(() => "unavailable" as const) : "unavailable";
+const promptState = lm ? await lm.availability(promptLanguages()).catch(() => "unavailable" as const) : "unavailable";
 if (promptState !== "available") {
   const o = $("#engine option[value='prompt']") as HTMLOptionElement;
   o.disabled = true;
@@ -183,7 +183,7 @@ if (auto) {
   } catch (e) {
     check(r, "#13 chat: transformers.js smollm2 360m streaming and interrupt", "fail", (e as Error).message.slice(0, 300));
   }
-  check(r, "#12 chat: wllama 4.0.0 and 3.8.1 with a gguf from the store", "not run", "the q4_k_m gguf is 398 MB (vendor), over this pass's download limit; the page loads it on request");
+  check(r, "#12 chat: wllama 4.0.0 and 3.8.1 with a gguf from the store", "not run", "the q4_k_m gguf is 491 MB (vendor), over this pass's download limit; the page loads it on request");
   check(r, "#14 chat: prompt api in chrome with responseConstraint", "not run", `LanguageModel is ${lm ? `present, availability ${promptState}` : "absent"}; the built in model download was not started`);
   check(r, "#15 chat: openai compatible stream from a local server", "not run", "needs a local ollama or llama.cpp server");
   check(r, "#16 chat: anthropic messages api from a page", "not run", "needs an api key");

@@ -80,7 +80,8 @@ export function splitThink(s: string): { text: string; think: string } {
 /** Longest suffix of `s` that is a prefix of some tag we might still be reading. */
 function partialTagTail(s: string, closing: string | null): number {
   const cands = closing ? [`</${closing}>`] : TAG_NAMES.map((n) => `<${n}>`);
-  cands.push("<|", "</s");
+  // Gemma's turn markers have no pipe, so a split one would otherwise leak
+  cands.push("<|", "</s", "<end_of_turn>", "<start_of_turn>");
   const lt = s.lastIndexOf("<");
   if (lt < 0) return 0;
   const tail = s.slice(lt).toLowerCase();

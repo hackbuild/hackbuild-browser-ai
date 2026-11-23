@@ -116,7 +116,8 @@ describe("records and ladders", () => {
 
   it("routes by capability, env, size and budget", () => {
     const reg = createRegistry(CATALOG);
-    expect(reg.route({ provides: "chat", env: env(), size: "tiny" })!.id).toBe("gemma-3-270m-it");
+    // the largest tiny chat model: qwen2.5 0.5b mlc at 290 MB (vendor) over gemma 3 270m at 280 MB (inferred)
+    expect(reg.route({ provides: "chat", env: env(), size: "tiny" })!.id).toBe("qwen2.5-0.5b-instruct-mlc");
     expect(reg.route({ provides: "chat", env: env(), maxMB: 1000 })!.provider).not.toBe("prompt-api");
     expect(reg.route({ provides: "chat", env: env({ webgpu: false, f16: false }) })!.provider).toMatch(/tjs|wllama/);
     expect(reg.route({ provides: "stems", env: env() })!.id).toBe("htdemucs-fast");
@@ -201,6 +202,25 @@ describe("hub", () => {
     await Promise.all(all);
     expect(order).toEqual(["first", "speech", "speech2", "deliberation", "glance", "murmur"]);
     expect(maxRunning).toBe(1);
+  });
+
+  it("states a record's weight licence once, before its first load", async () => {
+    const lines: string[] = [];
+    const rec = { ...CATALOG[0]!, id: "s", provider: "stub", ladder: [{ device: "cpu" as const }] };
+    const hub = createHub({ registry: createRegistry([rec]), onLicence: (l) => lines.push(l) });
+    hub.provide("stub", stubFactory({ chat: () => ({}) }));
+    const a = await hub.use({ id: "s" });
+    hub.release(a);
+    await hub.use({ id: "s" });
+    expect(lines.length).toBe(1);
+    expect(lines[0]).toMatch(/weight licence Apache-2.0/);
+  });
+
+  it("classifies a lost device before f16, and a failed graph load as no network failure", () => {
+    expect(classifyError(new Error("GPUDevice was lost while running a shader-f16 kernel"))).toBe("device-lost");
+    expect(classifyError(new Error("Failed to load model because protobuf parsing failed"))).toBe("unknown");
+    expect(classifyError(new TypeError("Failed to fetch"))).toBe("network");
+    expect(classifyError(new Error("http 404 for https://h.test/x"))).toBe("network");
   });
 
   it("keeps the queue moving after a job throws synchronously", async () => {

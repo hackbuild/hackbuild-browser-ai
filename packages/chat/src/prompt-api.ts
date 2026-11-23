@@ -40,6 +40,14 @@ async function* chunksOf(s: AsyncIterable<string> | ReadableStream<string>): Asy
 export interface PromptApiOptions {
   LanguageModel?: LanguageModelStatic;
   onDownload?: (fraction: number) => void;
+  /** Languages of the text in and out. Default ["en"]; Chrome warns when none is given. */
+  languages?: string[];
+}
+
+/** The expected input and output languages, as availability() and create() take them. */
+export function promptLanguages(languages: readonly string[] = ["en"]): Record<string, unknown> {
+  const io = [{ type: "text", languages: [...languages] }];
+  return { expectedInputs: io, expectedOutputs: io };
 }
 
 export function promptApiDriver(o: PromptApiOptions = {}): Driver {
@@ -50,7 +58,8 @@ export function promptApiDriver(o: PromptApiOptions = {}): Driver {
     caps: { schema: true, tools: false, systemRole: true, stop: false },
     async *stream(req: DriverRequest): AsyncGenerator<DriverEvent> {
       if (!lm) throw new ChatError("unavailable", "no LanguageModel in this browser. the built in model needs chrome 148 or later.");
-      const state = await lm.availability();
+      const langs = promptLanguages(o.languages);
+      const state = await lm.availability(langs);
       if (state === "unavailable") throw new ChatError("unavailable", "the built in model is unavailable on this device.");
       const msgs = req.messages.map((m) => ({ role: m.role === "tool" ? "user" : m.role, content: m.content }));
       let lastUser = -1;
@@ -60,7 +69,7 @@ export function promptApiDriver(o: PromptApiOptions = {}): Driver {
       }
       const input = lastUser >= 0 ? msgs[lastUser]!.content : "";
       const initialPrompts = msgs.filter((_, i) => i !== lastUser);
-      const copts: Record<string, unknown> = { initialPrompts };
+      const copts: Record<string, unknown> = { initialPrompts, ...langs };
       if (req.signal) copts.signal = req.signal;
       if (o.onDownload) {
         const cb = o.onDownload;
