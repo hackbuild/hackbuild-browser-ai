@@ -22,7 +22,8 @@ const DUR = { kick: 0.18, snare: 0.14, hat: 0.06, tom: 0.2 } as const;
 
 export function drumNotes(dsp: Dsp, mono: Float32Array, sampleRate: number, o: { toms?: boolean } = {}): Note[] {
   const sr = 22050;
-  const x = dsp.resample(mono, sampleRate, sr, "linear");
+  // windowed sinc, so content above 11 kHz does not alias into the 7 kHz hat band
+  const x = dsp.resample(mono, sampleRate, sr, "sinc");
   const hop = 128;
   const fps = sr / hop;
   const bands = new Map<string, { env: Float32Array; peak: number; hits: { frame: number }[] }>();

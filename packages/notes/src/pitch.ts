@@ -19,6 +19,24 @@ export const BP_HOP = BP_WINDOW - BP_OVERLAP;
 export const BP_TRIM = 15;
 export const BP_ROWS = 172;
 export const BP_BINS = 88;
+/** Frames kept per window after the trim. */
+export const BP_KEPT = BP_ROWS - 2 * BP_TRIM;
+
+/**
+ * Time in seconds of stitched frame i. Inside a window frames step by the
+ * 256 sample FFT hop; windows step by BP_HOP (36164 samples) for 142 kept
+ * frames, so the mean rate is 86.58 fps (computed), not 86.
+ */
+export function bpFrameTime(i: number): number {
+  const w = Math.floor(i / BP_KEPT);
+  return (w * BP_HOP + (i - w * BP_KEPT) * BP_FFT_HOP) / BP_RATE;
+}
+
+/** Frames whose time falls inside `samples` at 22.05 kHz. */
+export function bpFrameCount(samples: number): number {
+  const w = Math.floor(samples / BP_HOP);
+  return w * BP_KEPT + Math.min(BP_KEPT, Math.ceil((samples - w * BP_HOP) / BP_FFT_HOP));
+}
 
 /** Runs B windows (B * BP_WINDOW samples) and returns frames and onsets, B * BP_ROWS * BP_BINS each. */
 export interface PitchModel {
@@ -95,7 +113,7 @@ export async function runPitch(
 ): Promise<{ frames: Float32Array[]; onsets: Float32Array[] }> {
   const B = Math.max(1, m.batch);
   const nWindows = Math.max(1, Math.ceil((BP_OVERLAP_HALF + mono.length) / BP_HOP));
-  const wanted = Math.floor(mono.length * (BP_FPS / BP_RATE));
+  const wanted = bpFrameCount(mono.length);
   const frames: Float32Array[] = [];
   const onsets: Float32Array[] = [];
   const buf = new Float32Array(B * BP_WINDOW);
@@ -171,7 +189,7 @@ export function decodeNotes(frames: Float32Array[], onsets: Float32Array[], o: {
         j++;
       }
       const end = j - gap;
-      if (end - i >= minF) notes.push({ t: i / BP_FPS, dur: Math.max(0.03, (end - i) / BP_FPS), m: p + 21, v: Math.max(0.15, Math.min(1, cnt ? sum / cnt : 0)) });
+      if (end - i >= minF) notes.push({ t: bpFrameTime(i), dur: Math.max(0.03, bpFrameTime(end) - bpFrameTime(i)), m: p + 21, v: Math.max(0.15, Math.min(1, cnt ? sum / cnt : 0)) });
       i = Math.max(i + 1, end);
     }
   }

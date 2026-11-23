@@ -20,6 +20,8 @@ import {
   tfjsPitchProvider,
   type PitchModel,
   type Tfjs,
+  bpFrameCount,
+  bpFrameTime,
 } from "@hackbuild/notes";
 
 const dsp = await loadDsp({ base64: AUDIO_DSP_WASM_BASE64 });
@@ -41,7 +43,8 @@ describe("basic pitch runner", () => {
     };
     const mono = Float32Array.from({ length: 22050 * 3 }, (_, i) => i);
     const out = await runPitch(m, mono);
-    expect(out.frames.length).toBe(Math.floor(22050 * 3 * (86 / 22050)));
+    // 3 s: one full window of 142 kept frames plus 118 frames of the next (computed)
+    expect(out.frames.length).toBe(260);
     expect(seen[0]).toBe(2);
     expect(seen[1]).toBe(0);
     expect(seen[2]).toBe(36164);
@@ -92,6 +95,22 @@ describe("notes", () => {
       [69, 25, 10],
       [81, 26, 9],
     ]);
+  });
+
+  it("times frames by window, so a late onset lands where the audio has it", () => {
+    // window starts sit at multiples of 36164 samples; inside a window frames step 256 samples
+    expect(bpFrameTime(142)).toBeCloseTo(36164 / 22050, 9);
+    expect(bpFrameTime(300)).toBeCloseTo((2 * 36164 + 16 * 256) / 22050, 9);
+    const frames: Float32Array[] = [];
+    const onsets: Float32Array[] = [];
+    for (let i = 0; i < 400; i++) {
+      frames.push(row(i >= 300 && i < 330 ? [48] : []));
+      onsets.push(row(i === 300 ? [48] : []));
+    }
+    const [n] = decodeNotes(frames, onsets);
+    // 3.4659 s (computed); i / 86 gave 3.4884 s, 22 ms late, growing 0.4 s per minute
+    expect(n!.t).toBeCloseTo(3.4659, 3);
+    expect(bpFrameCount(22050 * 60)).toBeGreaterThan(5194);
   });
 
   it("merges splits, drops harmonic ghosts and keeps one line", () => {
