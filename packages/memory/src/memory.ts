@@ -146,6 +146,8 @@ export class Memory {
     this.scopeCodes = new Map(Object.entries((await this.sink.getKv<Record<string, number>>("scopes")) ?? {}));
     this.core.lines = (await this.sink.getKv<string[]>("core")) ?? [];
     const items = await this.sink.loadItems();
+    // ids are never reused, also after the highest ids were removed
+    this.nextId = Math.max(this.nextId, (await this.sink.getKv<number>("nextId")) ?? 1);
     for (const it of items) {
       this.items.set(it.id, it);
       this.nextId = Math.max(this.nextId, it.id + 1);
@@ -274,6 +276,7 @@ export class Memory {
     this.items.set(item.id, item);
     this.index.upsert(this.coreItem(item, vec));
     await this.sink.putItems([item]);
+    await this.sink.putKv("nextId", this.nextId);
     if (vec && this.embedder) await this.sink.putVectors(this.embedder.id, new Map([[item.id, vec]]));
     return { id: item.id, merged: false };
   }
@@ -450,9 +453,11 @@ export class Memory {
       await this.remove([...this.items.keys()]);
       this.core.lines = [];
     }
+    for (const it of data.items) if (!KINDS.includes(it.kind)) throw new Error(`memory: unknown kind ${JSON.stringify(it.kind)} in import`);
     const incoming = data.items.map((it) => ({ ...it, id: this.nextId++ }));
     for (const it of incoming) this.items.set(it.id, it);
     await this.sink.putItems(incoming);
+    await this.sink.putKv("nextId", this.nextId);
     const vecs = await this.vectorsFor(incoming);
     for (const it of incoming) this.index.upsert(this.coreItem(it, vecs.get(it.id)));
     for (const l of data.core) this.core.append(l);

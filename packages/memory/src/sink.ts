@@ -28,6 +28,7 @@ export interface MemorySink {
   readonly kind: "indexeddb" | "memory";
   loadItems(): Promise<StoredItem[]>;
   putItems(items: StoredItem[]): Promise<void>;
+  /** Deletes the items and every embedder's vector for them. */
   deleteItems(ids: number[]): Promise<void>;
   /** Vectors are kept per embedder id, so a model change re-embeds. */
   getVectors(embedderId: string, ids: number[]): Promise<Map<number, Float32Array>>;
@@ -51,7 +52,9 @@ export function memorySink(): MemorySink {
       for (const x of xs) items.set(x.id, clone(x));
     },
     deleteItems: async (ids) => {
+      const gone = new Set(ids.map(String));
       for (const id of ids) items.delete(id);
+      for (const k of [...vecs.keys()]) if (gone.has(k.slice(k.lastIndexOf("|") + 1))) vecs.delete(k);
     },
     getVectors: async (e, ids) => {
       const out = new Map<number, Float32Array>();
@@ -119,9 +122,20 @@ export async function indexedDbSink(id: string, opts: { indexedDB?: IDBFactory }
       await done(t);
     },
     async deleteItems(ids) {
-      const t = tx(["items"], "readwrite");
+      if (!ids.length) return;
+      const gone = new Set(ids.map(String));
+      const t = tx(["items", "vectors"], "readwrite");
       const s = t.objectStore("items");
       for (const i of ids) s.delete(i);
+      // vector keys are `<embedder id>|<item id>`; drop every embedder's copy
+      const cur = t.objectStore("vectors").openKeyCursor();
+      cur.onsuccess = () => {
+        const c = cur.result;
+        if (!c) return;
+        const k = String(c.key);
+        if (gone.has(k.slice(k.lastIndexOf("|") + 1))) t.objectStore("vectors").delete(c.key);
+        c.continue();
+      };
       await done(t);
     },
     async getVectors(e, ids) {
