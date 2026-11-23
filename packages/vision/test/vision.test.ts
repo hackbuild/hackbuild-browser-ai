@@ -249,7 +249,7 @@ describe("vlm and sam loaders", () => {
       },
       AutoModelForVision2Seq: {
         from_pretrained: async (_id: string, o: Record<string, unknown>) => {
-          expect(o.dtype).toEqual({ embed_tokens: "fp16", vision_encoder: "fp16", decoder_model_merged: "q4" });
+          expect(o.dtype).toEqual({ embed_tokens: "fp32", vision_encoder: "fp32", decoder_model_merged: "q4" });
           return {
             generate: async (o2: Record<string, unknown>) => {
               order.push(String(o2.text));

@@ -73,9 +73,11 @@ export const LADDERS = {
   /** GIMBAL and ARBOR SmolVLM: fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm. */
   smolvlm: (): Rung[] =>
     tjsLadder({
+      // fp32 encoder first: with the fp16 embed and vision encoder, Chrome 150 on an Apple M1 gave
+      // captions unrelated to the image (measured 2026-11-23); fp16 stays as the smaller fallback
       webgpu: [
-        { embed_tokens: "fp16", vision_encoder: "fp16", decoder_model_merged: "q4" },
         { embed_tokens: "fp32", vision_encoder: "fp32", decoder_model_merged: "q4" },
+        { embed_tokens: "fp16", vision_encoder: "fp16", decoder_model_merged: "q4" },
       ],
       wasm: [{ embed_tokens: "fp32", vision_encoder: "q8", decoder_model_merged: "q4" }],
       freshHeapRetry: true,

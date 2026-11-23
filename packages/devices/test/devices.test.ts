@@ -54,6 +54,7 @@ describe("ladders", () => {
     expect(LADDERS.perceptionCpu()[0]!.device).toBe("wasm");
     const s = LADDERS.smolvlm();
     expect(s[s.length - 1]).toMatchObject({ device: "wasm", freshHeap: true });
+    expect(s[0]).toMatchObject({ device: "webgpu", dtype: { embed_tokens: "fp32", vision_encoder: "fp32" } });
     expect(tjsLadder({ webgpu: ["q4"], options: { task: "x" } })[0]!.options).toEqual({ task: "x" });
   });
   it("keeps per sub graph dtypes for whisper", () => {
