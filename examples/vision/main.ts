@@ -1,7 +1,7 @@
 import { probe, type Env } from "@hackbuild/ai-env";
-import { loadTransformers, tjsProvider } from "@hackbuild/devices";
+import { loadTransformers, tjsProvider, transformersUrls } from "@hackbuild/devices";
 import { createHub, createRegistry, type Hub, type RunOptions } from "@hackbuild/models";
-import { attachVision, caption, depth, depthToRgba, detect, fitSize, loadTasksVision, mediapipeProvider, segment } from "@hackbuild/vision";
+import { attachVision, caption, depth, depthToRgba, depthWorker, detect, fitSize, loadTasksVision, mediapipeProvider, segment, type DepthWorker } from "@hackbuild/vision";
 import * as THREE from "three";
 import { stage } from "../shared/three.js";
 import { $, FrameTimer, auto, check, finish, quantile, readout, result, sleep, status } from "../shared/ui.js";
@@ -12,6 +12,7 @@ $("#controls").innerHTML = `
 <label>device <select id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
 <button id="loop">depth every frame it can</button>
 <button id="loopb">depth with a 20 ms frame budget</button>
+<button id="loopw">depth in a worker</button>
 <button id="stop">stop the loop</button>
 <button id="detect">detect objects</button>
 <button id="sam">mask at the centre</button>
@@ -115,6 +116,53 @@ async function runDepth(h: Hub, label: string, n = 5): Promise<{ loadMs: number;
 }
 
 let looping = false;
+
+// main thread tasks over 50 ms, counted while a loop runs (PerformanceObserver longtask)
+const longTasks: number[] = [];
+try {
+  new PerformanceObserver((l) => {
+    for (const e of l.getEntries()) longTasks.push(e.duration);
+  }).observe({ type: "longtask", buffered: false });
+} catch {
+  /* no longtask entries in this browser */
+}
+
+// the frame as RGBA pixels at most 512 px a side, for the worker
+function pixels(): ImageData {
+  const src = renderer.domElement;
+  const f = fitSize(src.width, src.height, 512);
+  const c = new OffscreenCanvas(f.width, f.height);
+  const g = c.getContext("2d", { willReadFrequently: true })!;
+  g.drawImage(src, 0, 0, f.width, f.height);
+  return g.getImageData(0, 0, f.width, f.height);
+}
+
+const workers = new Map<string, DepthWorker>();
+async function worker(device: "webgpu" | "wasm"): Promise<DepthWorker> {
+  let w = workers.get(device);
+  if (!w) {
+    status(`depth anything v2 small, weights Apache-2.0, in a worker on ${device}. downloading on first use.`);
+    w = await depthWorker({ urls: transformersUrls(), device });
+    workers.set(device, w);
+  }
+  return w;
+}
+
+async function workerLoop(device: "webgpu" | "wasm", ms: number, gapMs = 0): Promise<{ runs: number; p50: number }> {
+  const w = await worker(device);
+  looping = true;
+  const times: number[] = [];
+  const end = performance.now() + ms;
+  while (looping && performance.now() < end) {
+    const t = performance.now();
+    paint(await w.estimate(pixels()));
+    times.push(performance.now() - t);
+    if (gapMs) await sleep(gapMs);
+    else await new Promise((r) => requestAnimationFrame(() => r(null)));
+  }
+  looping = false;
+  return { runs: times.length, p50: quantile(times, 0.5) };
+}
 async function depthLoop(schedule: RunOptions | undefined, ms: number): Promise<{ runs: number; skipped: number }> {
   looping = true;
   let runs = 0;
@@ -141,6 +189,7 @@ async function depthLoop(schedule: RunOptions | undefined, ms: number): Promise<
 $("#depth").addEventListener("click", () => void runDepth(hub(), ($("#dev") as HTMLSelectElement).value === "cpu" ? "wasm" : "webgpu", 1).catch((e) => status(`depth failed: ${(e as Error).message}`, "bad")));
 $("#loop").addEventListener("click", () => void depthLoop(undefined, 600_000));
 $("#loopb").addEventListener("click", () => void depthLoop({ frameBudgetMs: 20, minIntervalMs: 200, when: "skip" }, 600_000));
+$("#loopw").addEventListener("click", () => void workerLoop(env.webgpu ? "webgpu" : "wasm", 600_000).catch((e) => status(`depth worker failed: ${(e as Error).message}`, "bad")));
 $("#stop").addEventListener("click", () => (looping = false));
 $("#detect").addEventListener("click", () => void runDetect());
 $("#sam").addEventListener("click", () => void runSam());
@@ -233,23 +282,50 @@ if (auto) {
   }, ({ g, c }) => [g.rung.startsWith("webgpu") && c.rung.startsWith("wasm"), `rungs ${g.rung} and ${c.rung}; the bail comparison not run (no bail output here)`]);
 
   await tryit("#35 models, vision: depth beside a three.js scene with and without frame budget", async () => {
+    const long = (from: number) => {
+      const l = longTasks.slice(from);
+      return `${l.length}, longest ${l.length ? Math.round(Math.max(...l)) : 0} ms`;
+    };
     timer.reset();
     await sleep(3000);
     const idle = timer.stats();
     timer.reset();
+    let lt = longTasks.length;
     const a = await depthLoop(undefined, 6000);
     const free = timer.stats();
+    n["depth unscheduled long tasks over 50 ms (measured)"] = long(lt);
     timer.reset();
+    lt = longTasks.length;
     const b = await depthLoop({ frameBudgetMs: 20, minIntervalMs: 200, when: "skip" }, 6000);
     const budget = timer.stats();
+    n["depth budgeted long tasks over 50 ms (measured)"] = long(lt);
     n["scene alone frame ms p50 / p95 (measured)"] = `${idle.frameMsP50.toFixed(1)} / ${idle.frameMsP95.toFixed(1)}`;
     n["depth unscheduled frame ms p50 / p95 (measured)"] = `${free.frameMsP50.toFixed(1)} / ${free.frameMsP95.toFixed(1)}`;
     n["depth unscheduled runs in 6 s (measured)"] = a.runs;
     n["depth 20 ms budget 200 ms gap frame ms p50 / p95 (measured)"] = `${budget.frameMsP50.toFixed(1)} / ${budget.frameMsP95.toFixed(1)}`;
     n["depth budgeted runs and skips in 6 s (measured)"] = `${b.runs} runs, ${b.skipped} skips`;
     n["scene alone fps p50 (measured)"] = Math.round(idle.fpsP50 * 10) / 10;
-    return { free, budget };
-  }, () => [true, "frame times measured; stutter not looked at by a person"]);
+    const out: Record<string, { frameMsP95: number }> = { free, budget };
+    for (const [device, gap] of [["webgpu", 0], ["webgpu", 200], ["wasm", 0]] as const) {
+      if (device === "webgpu" && !env.webgpu) continue;
+      await worker(device);
+      await workerLoop(device, 1500, gap);
+      timer.reset();
+      lt = longTasks.length;
+      const w = await workerLoop(device, 6000, gap);
+      const st = timer.stats();
+      const key = `worker ${device}${gap ? ` ${gap} ms gap` : ""}`;
+      n[`depth ${key} frame ms p50 / p95 (measured)`] = `${st.frameMsP50.toFixed(1)} / ${st.frameMsP95.toFixed(1)}`;
+      n[`depth ${key} runs in 6 s, ms p50 (measured)`] = `${w.runs}, ${Math.round(w.p50)}`;
+      n[`depth ${key} long tasks over 50 ms (measured)`] = long(lt);
+      out[key] = st;
+    }
+    return out;
+  }, (o) => {
+    const gpuGap = o["worker webgpu 200 ms gap"]?.frameMsP95;
+    const held = Object.entries(o).filter(([k, v]) => k.startsWith("worker") && v.frameMsP95 <= 20.5).map(([k]) => k);
+    return [true, `frame times measured; the worker modes that hold frame p95 at 20.5 ms or under: ${held.join(", ") || "none"}${gpuGap !== undefined ? `; webgpu worker with a 200 ms gap at ${gpuGap.toFixed(1)} ms p95` : ""}; stutter not looked at by a person`];
+  });
 
   await tryit("vision: efficientdet lite0 detector on a still frame (mediapipe)", runDetect, (x) => {
     n["detect ms (measured)"] = Math.round(x.ms * 10) / 10;

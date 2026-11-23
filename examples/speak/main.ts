@@ -1,12 +1,30 @@
 import { runtimeLoader } from "@hackbuild/devices";
-import { createSpeaker, kokoroEngine, webSpeechEngine, type Engine, type Speaker } from "@hackbuild/speak";
+import { bellowsEngine, createSpeaker, kokoroEngine, renderSpeechFrom, webSpeechEngine, type BellowsParts, type Engine, type Speaker } from "@hackbuild/speak";
 import { $, auto, check, finish, readout, result, sleep, status } from "../shared/ui.js";
 
 const r = result("speak");
 const KOKORO = runtimeLoader<never>(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]);
+// bellowsjs 0.5.0 and bellows-voice 0.7.3 (MIT, no weights) from the npm CDN; 0.8.0 with renderSpeech is not on npm yet
+const BELLOWS = async () => {
+  const [bellows, voice, engine] = await Promise.all([
+    runtimeLoader<BellowsParts["bellows"]>(["https://cdn.jsdelivr.net/npm/bellowsjs@0.5.0/+esm"])(),
+    runtimeLoader<BellowsParts["voice"]>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.7.3/+esm"])(),
+    runtimeLoader<BellowsParts["engine"]>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.7.3/dist/engine.js/+esm"])(),
+  ]);
+  return renderSpeechFrom({ bellows, voice, engine });
+};
+// the page's seeded rng (mulberry32), drawn once by the engine for its seed
+let seedState = 20261123;
+const rng = () => {
+  seedState = (seedState + 0x6d2b79f5) | 0;
+  let t = Math.imul(seedState ^ (seedState >>> 15), 1 | seedState);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 const ENGINES: Record<string, { label: string; make: () => Engine }> = {
   "kokoro-wasm": { label: "kokoro 82m on wasm q8, weights Apache-2.0, about 92 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "wasm" }) },
   "kokoro-webgpu": { label: "kokoro 82m on webgpu fp32, weights Apache-2.0, about 326 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "webgpu" }) },
+  bellows: { label: "bellows voice, a physical model of the vocal tract, no weights, code MIT, renders on this thread", make: () => bellowsEngine({ runtime: BELLOWS, rng }) },
   system: { label: "the system voice (web speech)", make: () => webSpeechEngine() },
 };
 $("#controls").innerHTML = `
@@ -60,7 +78,7 @@ async function say(key: string, text: string): Promise<{ ttfa: number; total: nu
   await s.say(text);
   const total = performance.now() - t0;
   const out = { ttfa: firstAudio, total, boundaries, segments, engine: s.engine ?? "none" };
-  show({ engine: out.engine, "time to first audio ms (measured)": Math.round(out.ttfa), "say to done ms (measured)": Math.round(total), "word boundaries (measured)": boundaries });
+  show({ engine: out.engine, "time to first audio ms": out.ttfa ? `${Math.round(out.ttfa)} (measured)` : "unknown, the engine reported no audio start", "say to done ms (measured)": Math.round(total), "word boundaries (measured)": boundaries });
   status(`${out.engine} finished.`, "ok");
   return out;
 }
@@ -105,10 +123,23 @@ if (auto) {
     const x = await say("system", lines[1]!);
     n["web speech voices (measured)"] = voices;
     n["web speech word boundaries (measured)"] = x.boundaries;
-    n["web speech time to first audio ms (measured)"] = Math.round(x.ttfa);
+    n["web speech time to first audio ms"] = x.ttfa ? `${Math.round(x.ttfa)} (measured)` : "unknown, no onstart or boundary before the end";
     check(r, "#44 speak: web speech boundaries and the chain falling to it", x.boundaries > 0 ? "pass" : "fail", `chrome only, ${x.boundaries} boundaries; safari and firefox not run; the fall through is covered by unit tests only`);
   } catch (e) {
     check(r, "#44 speak: web speech boundaries and the chain falling to it", "fail", (e as Error).message);
+  }
+  try {
+    const cold = await say("bellows", lines[0]!);
+    const warm = await say("bellows", lines[1]!);
+    n["bellows engine"] = cold.engine;
+    n["bellows cold time to first audio ms (measured)"] = Math.round(cold.ttfa);
+    n["bellows warm time to first audio ms (measured)"] = Math.round(warm.ttfa);
+    n["bellows warm say to done ms (measured)"] = Math.round(warm.total);
+    n["bellows phoneme events (measured)"] = warm.boundaries;
+    const ok = cold.engine === "bellows" && cold.ttfa > 0 && warm.boundaries > 0;
+    check(r, "#57 speak: bellows voice through the speaker, time to first audio and phoneme times", ok ? "pass" : "fail", ok ? "bellows-voice 0.7.3 on bellowsjs 0.5.0 rendered on the main thread; not listened to by a person" : `engine ${cold.engine}, first audio ${cold.ttfa}, ${warm.boundaries} timed events`);
+  } catch (e) {
+    check(r, "#57 speak: bellows voice through the speaker, time to first audio and phoneme times", "fail", (e as Error).message.slice(0, 200));
   }
   check(r, "#43 speak: pocket tts worker patches", "not run", "needs the community browser build's base url; no reference voice is used");
   const failed = Object.values(r.checks).some((c) => c.status === "fail");

@@ -11,8 +11,11 @@ common-3, with shader-f16). The pages are the ones in `examples/`, run by
 Downloads over about 300 MB were not run. Who looked: the automated pass
 measured everything below; the owner has not looked at any page yet.
 
-Counted over the 56 rows: 16 pass, 1 fail, 39 not run (a row counts as
+Counted over the 57 rows: 18 pass, 0 fail, 39 not run (a row counts as
 pass when the part that ran passed; the cell says what did not run).
+Rerun on 2026-11-23 after the fixes below, same machine and browser:
+the speak, audio-dsp and vision pages (rows 26, 29, 31, 35, 42, 44 and
+the new 57); the other rows are from the first pass.
 
 | # | package | check | needs | status |
 |---|---|---|---|---|
@@ -46,11 +49,11 @@ pass when the part that ran passed; the cell says what did not run).
 | 28 | transcribe | the live segmenter on a microphone and the Web Speech adapter in Chrome | Chrome, microphone | not run: needs a microphone |
 | 29 | vision | depth-anything-v2-small (Apache-2.0) on webgpu fp16 and wasm q8, against BAIL's output for the same photo | WebGPU machine, network | pass: webgpu fp16 and wasm q8 rungs ran; the BAIL comparison not run |
 | 30 | vision | tasks-vision 1.2.3 detector, segmenter and face, hand and pose landmarkers (Apache-2.0) on a webcam, GPU and CPU delegates | Chrome, Safari, webcam | not run: needs a webcam; the detector ran on a still frame (below) |
-| 31 | vision | SmolVLM 256M (Apache-2.0) and LFM2-VL 450M (LFM Open License) captions; SlimSAM (Apache-2.0) point masks | WebGPU machine, network | fail: LFM2-VL 450M throws "undefined is not iterable" in the loader; SmolVLM 256M and SlimSAM pass after the ladder fix |
+| 31 | vision | SmolVLM 256M (Apache-2.0) and LFM2-VL 450M (LFM Open License) captions; SlimSAM (Apache-2.0) point masks | WebGPU machine, network | pass on the rerun: LFM2-VL 450M captions after the images first processor fix (it threw "undefined is not iterable" on the first pass); SmolVLM 256M and SlimSAM pass; captions read by the harness only |
 | 32 | vision | an external YOLOv8n export (AGPL-3.0, owner supplied) through the ort provider | browser, the onnx file | not run: needs the owner supplied ONNX file |
 | 33 | depth-mesh | a BAIL style relief from a Depth Anything map (Apache-2.0), sliced in Flash Studio and printed | browser, slicer, printer | not run: needs a slicer and a printer; the relief from a synthetic depth map is a closed solid |
 | 34 | depth-mesh | a CALIPER turntable carve from a webcam and an ICP scan, at real frame rate, looked at by a person | Chrome, webcam, turntable | not run: needs a webcam and a turntable |
-| 35 | models, vision | a webgpu depth or VLM model beside a three.js scene with and without `frameBudgetMs` and `minIntervalMs`: frame times measured, stutter looked at by a person | WebGPU machine, a scene | pass as a measurement (below); stutter not looked at by a person |
+| 35 | models, vision | a webgpu depth or VLM model beside a three.js scene with and without `frameBudgetMs` and `minIntervalMs`: frame times measured, stutter looked at by a person | WebGPU machine, a scene | pass as a measurement (below): the schedule alone left frame p95 at 49.8 ms; `depthWorker` holds it at 18.3 ms on webgpu; stutter not looked at by a person |
 | 36 | stems | htdemucs fast and slow (MIT) on webgpu and wasm over a 3 minute song: realtime factor measured, stems listened to | WebGPU machine, network, a CC0 song | not run: no page for it in this pass |
 | 37 | notes | Basic Pitch (Apache-2.0) on tfjs 3.21.0 webgl and cpu over a separated bass stem; notes compared with the basic-pitch library's decoder | browser, network | not run: no page for it in this pass |
 | 38 | biosignal | training and cross validation on a real headset recording or a public motor imagery set, in the tab | browser, EEG data | not run |
@@ -59,7 +62,7 @@ pass when the part that ran passed; the cell says what did not run).
 | 41 | embed | all-MiniLM-L6-v2 (Apache-2.0) and bge-small-en-v1.5 (MIT) through transformers.js 4.3.2 on wasm q8 and webgpu fp32, with speed measured | browser, network | pass on wasm q8 and webgpu fp32 for both models |
 | 42 | speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 on webgpu fp32 and wasm q8: time to first audio measured, joins listened to | browser, network | pass, times below; joins not listened to by a person |
 | 43 | speak | Pocket TTS (weights CC-BY-4.0) worker patches against the current upstream source, from file:// and https, with a clone from an owner supplied reference kept out of git | Chrome, network | not run: needs the community build's base URL |
-| 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | pass in Chrome: 48 voices, 17 word boundaries (measured); Safari and Firefox not run; the fall through is covered by unit tests only |
+| 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | pass in Chrome: 48 voices, 17 word boundaries, time to first audio 76 ms from the onstart event (measured; it read 0 on the first pass); Safari and Firefox not run; the fall through is covered by unit tests only |
 | 45 | listen | Silero VAD v5 (MIT) on onnxruntime-web 1.27.0: tensor names, probabilities on a recorded voice, single thread from file:// | Chrome, network | not run: needs a microphone |
 | 46 | listen | barge in through laptop speakers with echo cancellation on, while speak plays Kokoro or the system voice: false triggers counted | Chrome, microphone, speakers | not run: needs a microphone and speakers |
 | 47 | listen | capture worklet from a Blob and a data: URL, end of speech to text latency with whisper-base.en (MIT) measured | Chrome, Safari, microphone | not run: needs a microphone |
@@ -72,6 +75,7 @@ pass when the part that ran passed; the cell says what did not run).
 | 54 | imagegen | SD-Turbo (Stability AI Community License) from schmuell/sd-turbo-ort-web on onnxruntime-web 1.27.0 webgpu: graph names, one and four step images looked at by a person, time per step measured | WebGPU machine, network | not run: the three graphs are 2,513 MB (vendor, repo listing 2026-11-23); the listing has the three graph paths the record names |
 | 55 | ai-elements | a person looks at each element (model picker, download bar, status pills, chat panel, memory inspector) in Chrome and Safari, light and dark, and tabs through them with a screen reader on | Chrome, Safari | not run: needs a person, Safari and a screen reader; screenshots in `.local/shots` |
 | 56 | ai-elements | the chat panel streaming a real engine (Qwen2.5 0.5B, Apache-2.0) for 500 tokens: repaint cost per token measured | browser, model | pass: 500 tokens, frame ms p95 17.4 while streaming and 17.4 idle (measured) |
+| 57 | speak | the bellows voice (bellows-voice 0.7.3 on bellowsjs 0.5.0, MIT, no weights) through the speaker: time to first audio, phoneme times, listened to by a person | browser, network | pass: first audio 798 ms cold and 263 ms warm, 67 phoneme events (measured); rendered on the main thread; not listened to by a person |
 
 ## Measured on the first pass
 
@@ -84,14 +88,18 @@ otherwise. Load times include the download from a fresh browser profile.
 | chat | webllm 0.2.89, same model from cache | load 2,978 ms, first token 1,805 ms, 30 tokens per s |
 | chat | transformers.js 4.3.2, SmolLM2 360M Instruct q4f16 on webgpu (Apache-2.0) | load 9,349 ms, first token 1,163 ms, 37 tokens per s |
 | transcribe | whisper-base.en (MIT) on a sentence spoken by Kokoro | wasm q8: load 4,159 ms, 5,988 ms, word error rate 0.053; webgpu fp32: load 8,815 ms, 3,517 ms, word error rate 0.053 (computed) |
-| speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 | wasm q8: first audio 7,925 ms cold, 7,431 ms warm; webgpu fp32: 13,753 ms cold, 1,147 ms warm |
+| speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 | wasm q8: first audio 7,925 ms cold, 7,431 ms warm; webgpu fp32: 13,753 ms cold, 1,147 ms warm. Rerun: wasm q8 12,132 cold, 7,388 warm; webgpu fp32 11,436 cold, 1,123 warm |
+| speak, rerun | the system voice and the bellows voice | system voice first audio 76 ms; bellows 798 ms cold, 263 ms warm, say to done 5,413 ms warm |
 | vision | Depth Anything v2 small (Apache-2.0), 512 px frame | webgpu fp16 204.7 ms p50, wasm q8 3,025 ms p50 |
 | vision | the three.js scene beside depth (#35) | alone 16.7 / 17.4 ms frame p50 / p95; depth unscheduled 16.7 / 49.9 ms (26 runs in 6 s); with `frameBudgetMs` 20 and `minIntervalMs` 200, 16.7 / 49.3 ms (20 runs, 26 skips) |
+| vision, rerun | the same scene, depth on the main thread and in `depthWorker` | alone 16.7 / 18.3; main thread unscheduled 16.7 / 49.9 and budgeted 16.7 / 49.8, no main thread task over 50 ms; worker webgpu 16.7 / 18.3 (22 runs in 6 s, 280 ms p50), worker webgpu with a 200 ms gap 16.7 / 18.3 (14 runs), worker wasm 16.7 / 18.2 (2 runs, 4,664 ms p50) |
+| vision, rerun | LFM2-VL 450M (LFM Open License v1.0) on webgpu | load 8,743 ms, caption 4,671 ms |
 | vision | EfficientDet Lite0 (Apache-2.0) on MediaPipe, webgl delegate | 2,016 ms for the first call, one detection on the shapes |
 | vision | SlimSAM 77 (Apache-2.0), SmolVLM 256M (Apache-2.0) | SlimSAM load 2,250 ms, first mask 5,260 ms; SmolVLM load 15,263 ms, caption 16,950 ms, caption names the shapes |
 | depth-mesh | relief from a 256 px synthetic depth map, carve of 24 silhouettes at 64 cubed | relief 17.5 ms, 74,604 triangles, 0 open edges; carve 43.7 ms, hull to box volume 1.122 (computed); 59.9 fps p50 |
 | embed | potion-base-8M (MIT), MiniLM L6 v2 (Apache-2.0), bge-small-en v1.5 (MIT), 20 sentences | potion 1.8 ms; MiniLM wasm q8 251 ms, webgpu fp32 256 ms; bge wasm q8 418 ms, webgpu fp32 50 ms |
 | audio-dsp | 10 minutes of 16 kHz audio | dc block 56 ms, biquad 60 ms, spectral subtraction 1,414 ms, limiter 253 ms, stft 1,197 ms; sinc resample 16 to 48 kHz 94,421 ms |
+| audio-dsp, rerun | the same, after the polyphase sinc | sinc resample 16 to 48 kHz 3,267 ms (28.9 times faster, computed); dc block 71, biquad 75, spectral subtraction 1,740, limiter 289, stft 1,188, all kernels 8,677 ms |
 | devices | runtime imports, resume, sha-256 | transformers.js import 45 ms, onnxruntime-web 171 ms (cached by the earlier pages); resume of a 23 MB file 745 ms after a stop at 5.0 MB; sha-256 88 MB/s |
 | ai-elements | chat panel with Qwen2.5 0.5B on webllm | 500 tokens in 18,051 ms, frame ms p50 / p95 16.7 / 17.4 |
 
@@ -101,8 +109,12 @@ wound inward (depth-mesh), `task` sent to english only Whisper models
 added), SmolVLM fp16 encoder rung giving captions unrelated to the image
 (devices ladder).
 
-Found and not fixed: the LFM2-VL loader error (#31); the windowed sinc
-resampler takes 94 s for 10 minutes of audio, since it evaluates sin and
-cos per tap; the depth frame budget did not remove the 50 ms frame
-spikes on this machine (#35); the system voice reports no audio start to
-the speaker, so its time to first audio reads 0.
+Found on the first pass and fixed on 2026-11-23, each its own commit and
+rerun above: the LFM2-VL loader error (#31, transformers.js 4.3.2 wants
+images before text for that processor); the windowed sinc resampler took
+94 s for 10 minutes of audio since it evaluated sin and cos per tap (a
+polyphase table now, 3.3 s); the depth frame budget did not remove the
+50 ms frame spikes (#35, no main thread long task was found, and depth
+in a worker holds frame p95 at 18.3 ms); the system voice reported no
+audio start, so its time to first audio read 0 (it now starts at the
+onstart event or the first boundary, and reads unknown without either).
