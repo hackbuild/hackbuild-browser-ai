@@ -21,6 +21,9 @@
     },
     {
       "path": "packages/devices"
+    },
+    {
+      "path": "packages/audio-dsp"
     }
   ]
 }

@@ -33,3 +33,4 @@ README).
 | 23 | all | every `dist/single/*.js` file loaded from a file:// page | Chrome, Safari | not run |
 | 24 | devices | `loadTransformers()` and `loadOrt()` import transformers.js 4.3.2 and onnxruntime-web 1.27.0 from the pinned URLs over https and from file:// | Chrome, Safari, network | not run |
 | 25 | devices | the ort ladder from webgpu basic to wasm on a graph that fails to partition (htdemucs, MIT) with one download | WebGPU machine, network | not run |
+| 26 | audio-dsp | the inlined wasm core from a file:// page, and kernel speed on 10 minutes of 16 kHz audio (measured) | Chrome, Safari, file:// page | not run |

@@ -1,0 +1,11 @@
+[package]
+name = "hackbuild-audio-dsp"
+version = "0.1.0"
+description = "Speech and music DSP for native and wasm32: biquads, dc block, frame levels, noise floor, spectral subtraction, limiter, resampling, STFT, onsets, tempo and grid fit."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]

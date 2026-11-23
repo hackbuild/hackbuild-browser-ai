@@ -14,9 +14,11 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 30 vitest |
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
 | [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 10 vitest |
+| [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 16 vitest, 11 cargo |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
-with reciprocal rank fusion, built natively and for wasm32 with SIMD128).
+with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
+DSP kernels), each built natively and for wasm32 with SIMD128.
 Every package entry also builds to one self contained ESM file with
 `npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
 file://.

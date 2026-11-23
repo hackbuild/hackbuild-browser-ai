@@ -12,4 +12,5 @@ Versions follow semver per package. Nothing is published to npm yet.
 - chat: one streaming engine over webllm, wllama, transformers.js, the prompt api and remote endpoints; role normalization, think stripping, schema fallback.
 - structured: constrained, prompt, native, tags and lines modes with schema sanitizer, loose fallback, json repair, guards and a streaming tag parser.
 - devices: rung builders and one hub factory each for onnxruntime-web and transformers.js, pinned runtime loading, progress merging.
+- audio-dsp: rust wasm dsp core with native and wasm parity, the scribe gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers that reproduce scribe exports byte for byte.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.

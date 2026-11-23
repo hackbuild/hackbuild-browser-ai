@@ -14,6 +14,7 @@ const expected = {
   structured: ["call", "createTagParser"],
   memory: ["open", "loadCore"],
   devices: ["tjsProvider", "ortProvider", "LADDERS"],
+  "audio-dsp": ["loadDsp", "gate", "toSrt", "writeMidi"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {
