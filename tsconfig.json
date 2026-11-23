@@ -12,6 +12,9 @@
     },
     {
       "path": "packages/memory"
+    },
+    {
+      "path": "packages/chat"
     }
   ]
 }

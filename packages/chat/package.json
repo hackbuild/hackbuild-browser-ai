@@ -1,0 +1,66 @@
+{
+  "name": "@hackbuild/chat",
+  "version": "0.1.0",
+  "description": "One streaming chat interface over WebLLM, wllama, transformers.js, the Chrome Prompt API and remote OpenAI compatible and Anthropic endpoints, with role normalization, think stripping and schema fallback.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/chat"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./webllm": {
+      "types": "./dist/webllm.d.ts",
+      "import": "./dist/webllm.js"
+    },
+    "./wllama": {
+      "types": "./dist/wllama.d.ts",
+      "import": "./dist/wllama.js"
+    },
+    "./transformers": {
+      "types": "./dist/transformers.d.ts",
+      "import": "./dist/transformers.js"
+    },
+    "./prompt-api": {
+      "types": "./dist/prompt-api.d.ts",
+      "import": "./dist/prompt-api.js"
+    },
+    "./remote": {
+      "types": "./dist/remote.d.ts",
+      "import": "./dist/remote.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "peerDependencies": {
+    "@mlc-ai/web-llm": "0.2.84",
+    "@wllama/wllama": "^3.8.1 || ^4.0.0",
+    "@huggingface/transformers": "^4.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@mlc-ai/web-llm": {
+      "optional": true
+    },
+    "@wllama/wllama": {
+      "optional": true
+    },
+    "@huggingface/transformers": {
+      "optional": true
+    }
+  }
+}

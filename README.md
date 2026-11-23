@@ -11,6 +11,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/weights](packages/weights) | weight store over opfs, cache storage, indexeddb parts; resumable range downloads, sha-256, multi file repos | 20 vitest |
 | [@hackbuild/models](packages/models) | registry records with device and dtype ladders, quirks and licences; hub with budget, gpu queue and stubs | 17 vitest |
 | [@hackbuild/memory](packages/memory) | bm25 plus flat cosine with rrf in a rust wasm core (simd128), linear and organic scorers, decay, merge, indexeddb, budgeted context | 44 vitest, 15 cargo |
+| [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 29 vitest |
 
 ## Develop
 
