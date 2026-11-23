@@ -186,6 +186,19 @@ describe("download", () => {
     expect(seenB.at(-1)).toBe(40_000);
   });
 
+  it("a get right after an abort resumes once the aborted download has kept its parts", async () => {
+    const data = file(40_000);
+    const s = server(data, { chunk: 500, etag: '"r"' });
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 4096, fetch: s.fetch, ...quiet });
+    const ref = { url: "https://h.test/again", licence: "MIT" };
+    const ac = new AbortController();
+    const a = store.get(ref, { signal: ac.signal, onProgress: (p) => p.loaded >= 9_000 && ac.abort() }).catch((e: WeightError) => e.code);
+    expect(await a).toBe("abort");
+    const blob = await store.get(ref);
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(data);
+    expect(s.calls[1]!.range).toMatch(/^bytes=\d+-$/);
+  });
+
   it("starts over when the server ignores the Range", async () => {
     const data = file(9_000);
     const s = server(data, { breakAt: 5_000, ranges: false });

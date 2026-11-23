@@ -338,13 +338,21 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
       // one fetch per key; it runs on its own controller, aborts only when
       // every waiter has aborted, and sends progress to every waiter
       let f = inflight.get(key);
-      if (!f) {
+      // a flight whose waiters all aborted is winding down; a new caller
+      // starts a fresh download once it has settled and kept its parts
+      if (!f || f.ac.signal.aborted) {
+        const before = f ? f.p.then(() => undefined, () => undefined) : Promise.resolve();
         const ac = new AbortController();
         const progress = new Set<(p: Progress) => void>();
         const dl: GetOptions = { signal: ac.signal, onProgress: (x) => progress.forEach((cb) => cb(x)) };
         if (o.resume !== undefined) dl.resume = o.resume;
-        const p = download(ref, key, dl).finally(() => inflight.delete(key));
-        f = { p, ac, waiters: 0, progress };
+        const flight: Flight = { p: null as unknown as Promise<Blob>, ac, waiters: 0, progress };
+        flight.p = before
+          .then(() => download(ref, key, dl))
+          .finally(() => {
+            if (inflight.get(key) === flight) inflight.delete(key);
+          });
+        f = flight;
         inflight.set(key, f);
       }
       const fl = f;
