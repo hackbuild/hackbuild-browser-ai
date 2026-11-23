@@ -23,9 +23,9 @@ export const IMAGEGEN_RECORDS: ModelRecord[] = [
     place: "gpu",
     runtime: "onnxruntime-web@1.27.0",
     notes: [
-      "webgpu only in the source build, no wasm floor",
+      "webgpu only in an earlier build, no wasm floor",
       "tokenizer: Xenova/clip-vit-base-patch16 through transformers.js (CLIP weights MIT)",
-      "graph file paths inferred from the source build, not checked against the repo",
+      "graph file paths inferred from an earlier build, not checked against the repo",
     ],
   },
 ];

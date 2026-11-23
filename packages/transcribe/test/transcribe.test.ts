@@ -242,10 +242,10 @@ describe("web speech", () => {
   });
 });
 
-const dir = process.env.SCRIBE_FIXTURES ?? join(root, ".local", "scribe");
+const dir = process.env.TRANSCRIPT_FIXTURES ?? join(root, ".local", "transcripts");
 const have = existsSync(join(dir, "manifest.json"));
-describe.skipIf(!have)("SCRIBE phantom filter parity (local fixtures)", () => {
-  test("re-running the filter over kept plus dropped lines gives SCRIBE's split", () => {
+describe.skipIf(!have)("the earlier transcription tool phantom filter parity (local fixtures)", () => {
+  test("re-running the filter over kept plus dropped lines gives the earlier transcription tool's split", () => {
     let checked = 0;
     for (const f of readdirSync(dir).filter((n) => n.endsWith(".json") && n !== "manifest.json")) {
       const j = JSON.parse(readFileSync(join(dir, f), "utf8")) as {

@@ -1,4 +1,4 @@
-//! Relief heightfields (BAIL): depth or brightness to heights in mm with a
+//! Relief heightfields (as earlier builds did): depth or brightness to heights in mm with a
 //! base, a top height, a background cut and a gamma; the 2D pinch heal;
 //! and the closed heightfield solid (top follows the field, flat bottom,
 //! walls on the outline, each top quad split on its shorter diagonal).

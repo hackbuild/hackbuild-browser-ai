@@ -9,7 +9,7 @@
  * `patch-missed` and, by default, fails the load so the chain moves to the
  * next engine instead of hanging.
  *
- * Worker protocol (as observed in the source builds): in `load`,
+ * Worker protocol (as observed in earlier builds): in `load`,
  * `set_voice {voiceName}`, `generate {text, voice}`, `encode_voice {audio}`,
  * `stop`; out `model_status`, `status`, `voices_loaded`, `bundle_loaded
  * {sampleRate}`, `loaded`, `generation_started`, `audio_chunk {data}`,
@@ -57,7 +57,7 @@ export interface PocketOptions {
   /** Fail the load when a rewrite matched nothing. Default true. */
   strictPatches?: boolean;
   chunkGapSec?: number;
-  /** How long to wait for `loaded`. Default 420 s (the source builds' figure). */
+  /** How long to wait for `loaded`. Default 420 s (earlier builds' figure). */
   loadTimeoutMs?: number;
   voice?: string;
   /**

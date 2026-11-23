@@ -142,7 +142,7 @@ if (auto) {
   Object.assign(r.numbers, timer.numbers());
   const ok = first.open === 0 && c.open === 0 && c.ratio > 0.9 && c.ratio < 1.5;
   check(r, "depth-mesh: closed relief and turntable carve in the browser", ok ? "pass" : "fail", ok ? "synthetic depth and silhouettes" : `relief open ${first.open}, carve open ${c.open}, volume ratio ${c.ratio.toFixed(3)}`);
-  check(r, "#33 depth-mesh: bail style relief sliced and printed", "not run", "needs a depth anything map of a photo, a slicer and a printer; the stl downloads from this page");
-  check(r, "#34 depth-mesh: caliper turntable carve from a webcam", "not run", "needs a webcam, a turntable and a person looking");
+  check(r, "#33 depth-mesh: a relief from a depth map, sliced and printed", "not run", "needs a depth anything map of a photo, a slicer and a printer; the stl downloads from this page");
+  check(r, "#34 depth-mesh: a turntable carve from a webcam", "not run", "needs a webcam, a turntable and a person looking");
   finish(r, ok ? "pass" : "fail");
 }

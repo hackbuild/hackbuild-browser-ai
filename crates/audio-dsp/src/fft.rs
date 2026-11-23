@@ -1,5 +1,5 @@
 //! Radix 2 complex FFT over f32 buffers with f64 arithmetic, the layout of
-//! SCRIBE's makeFFT: bit reversal, then butterflies with a cos and sin
+//! the earlier transcription tool's makeFFT: bit reversal, then butterflies with a cos and sin
 //! table. The inverse divides by n.
 
 use crate::math::sin_cos;
@@ -86,7 +86,7 @@ impl Fft {
 }
 
 /// sqrt of a periodic Hann window, the analysis and synthesis window of the
-/// SCRIBE spectral gate (perfect reconstruction at 50 percent overlap).
+/// the earlier transcription tool spectral gate (perfect reconstruction at 50 percent overlap).
 pub fn sqrt_hann(n: usize) -> Vec<f32> {
     (0..n)
         .map(|i| {

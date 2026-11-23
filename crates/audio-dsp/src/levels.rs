@@ -1,5 +1,5 @@
 //! Frame levels, percentiles, the minimum statistics noise floor and
-//! envelopes (SCRIBE July and August).
+//! envelopes (as earlier builds did).
 
 use crate::math::{log10, sum_sq};
 
@@ -24,7 +24,7 @@ fn sorted(x: &[f32]) -> Vec<f32> {
     s
 }
 
-/// The q quantile by rounded index; -90 for an empty input (SCRIBE pct).
+/// The q quantile by rounded index; -90 for an empty input (as earlier builds did).
 pub fn percentile(x: &[f32], q: f64) -> f32 {
     if x.is_empty() {
         return -90.0;

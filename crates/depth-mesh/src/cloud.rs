@@ -1,4 +1,4 @@
-//! Depth to a camera space point cloud with normals (CALIPER
+//! Depth to a camera space point cloud with normals (an earlier scan bench
 //! buildCurrentCloud). Depth is 0 to 1 with larger nearer, as Depth
 //! Anything gives it; Z = near + (1 - d) (far - near), the camera looks
 //! down -Z, y up. Normals come from the four grid neighbours and face the

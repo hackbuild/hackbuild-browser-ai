@@ -37,7 +37,7 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
   arousal, valence, novelty, uses, weight, an optional place and an
   optional vector. Kinds: episode, gist, lesson, fact, rule, lore, doc,
   note.
-- BM25 with k1 1.4 and b 0.75 (the defaults of the source builds),
+- BM25 with k1 1.4 and b 0.75 (the defaults of earlier builds),
   statistics over the admitted scope and kinds only. The tokenizer
   lowercases, splits on anything not a letter or digit, drops stop words
   and strips ing, ed, es and s.
@@ -84,7 +84,7 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
   in front (`previous`).
 - `assemble` puts core facts at priority 10, caller sections, a summary at
   6, recalled lines at 5 and recent turns at 3 into a token budget, with
-  tokens estimated as characters / 3.6 (inferred from the source builds,
+  tokens estimated as characters / 3.6 (inferred from earlier builds,
   not measured on a tokenizer). `select` caps recalled lines at k 3, 1800
   characters, 2 per section, and drops a line within Jaccard 0.55 of one
   already picked.

@@ -3,7 +3,7 @@
  *
  * importEsm: plain import() first when nothing needs patching and the page
  * is served over http(s); else fetch the text, patch it, import it from a
- * Blob URL, then from a base64 data: URL (FERRULE importWllama). Each URL in
+ * Blob URL, then from a base64 data: URL (as earlier builds did). Each URL in
  * `urls` is tried in order, so a CDN fallback list is one call.
  *
  * spawnWorker: the worker ladder, written once. Rungs are module-blob,

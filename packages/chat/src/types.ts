@@ -40,7 +40,7 @@ export interface StreamOptions {
   stop?: string[];
   /** Ask for JSON matching this schema. Falls back to free text with the schema in the prompt when the runtime refuses it. */
   schema?: JsonSchema;
-  /** Looser schemas tried in order when the runtime refuses `schema` (satchel loose agent schema), before free text. */
+  /** Looser schemas tried in order when the runtime refuses `schema` (as earlier builds did), before free text. */
   fallbackSchemas?: JsonSchema[];
   /** Native tools; only engines with caps.tools use them. */
   tools?: ToolSpec[];

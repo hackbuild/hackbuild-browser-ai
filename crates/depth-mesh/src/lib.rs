@@ -1,6 +1,6 @@
 //! hackbuild-depth-mesh: depth to point cloud with normals, relief
 //! heightfields and their closed meshes, surface nets, point to plane ICP
-//! against a voxel model, and silhouette space carving (CALIPER and BAIL).
+//! against a voxel model, and silhouette space carving (as earlier builds did).
 //! Builds natively and for wasm32-unknown-unknown with simd128; the two
 //! give the same bits for the same input (tests/parity.rs and the TS
 //! parity test).

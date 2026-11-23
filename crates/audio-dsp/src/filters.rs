@@ -1,5 +1,5 @@
-//! Biquads (RBJ cookbook, as SCRIBE and its August build wrote them), the
-//! SCRIBE dc blocker and the lookahead limiter. Filter state is kept in f64
+//! Biquads (RBJ cookbook, as the earlier transcription tool and its August build wrote them), the
+//! the earlier transcription tool dc blocker and the lookahead limiter. Filter state is kept in f64
 //! and each output sample is stored as f32, as the JS builds did.
 
 use crate::math::{PI, exp, sin_cos};
@@ -42,7 +42,7 @@ pub fn biquad(x: &[f32], c: &Coef, out: &mut [f32]) {
     }
 }
 
-/// One pole dc blocker, pole at 0.9975 (SCRIBE).
+/// One pole dc blocker, pole at 0.9975 (as earlier builds did).
 pub fn dc_block(x: &[f32], out: &mut [f32]) {
     let (mut px, mut py) = (0f64, 0f64);
     for (i, &v) in x.iter().enumerate() {
@@ -54,7 +54,7 @@ pub fn dc_block(x: &[f32], out: &mut [f32]) {
 }
 
 /// Lookahead peak limiter: 4 ms blocks, two blocks of lookahead, 120 ms
-/// release, hard clip at the ceiling (SCRIBE, ceiling 0.891). In place.
+/// release, hard clip at the ceiling (the earlier transcription tool, ceiling 0.891). In place.
 pub fn limit(x: &mut [f32], ceil: f64, sr: f64) {
     let b = ((0.004 * sr + 0.5).floor() as usize).max(1);
     let rel = exp(-1.0 / (0.12 * sr));

@@ -12,8 +12,8 @@ Versions follow semver per package. Nothing is published to npm yet.
 - chat: one streaming engine over webllm, wllama, transformers.js, the prompt api and remote endpoints; role normalization, think stripping, schema fallback.
 - structured: constrained, prompt, native, tags and lines modes with schema sanitizer, loose fallback, json repair, guards and a streaming tag parser.
 - devices: rung builders and one hub factory each for onnxruntime-web and transformers.js, pinned runtime loading, progress merging.
-- audio-dsp: rust wasm dsp core with native and wasm parity, the scribe gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers that reproduce scribe exports byte for byte.
-- transcribe: scribe front end, reels and source map, whisper and moonshine records, phantom filter matching scribe's drops, kerf live segmenter, web speech adapter.
+- audio-dsp: rust wasm dsp core with native and wasm parity, the earlier transcription tool gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers that reproduce the earlier transcription tool exports byte for byte.
+- transcribe: the quiet speech front end, reels and source map, whisper and moonshine records, phantom filter matching the earlier tool's drops, live segmenter, web speech adapter.
 - vision: depth, detection, segmentation, landmarks with a fallback chain, captions and questions through the hub; mediapipe and face-api providers, an external yolo decoder, a perception loop and result cache.
 - depth-mesh: rust wasm core for point clouds, relief solids, surface nets, icp and silhouette carving with native and wasm parity; stl, obj and ply export.
 - models: run scheduling (minimum interval, idle only, frame time budget, wait or skip) and a busy state, for models that share the gpu with a scene; vision and transcribe pass it through, vision adds a rate capped readback loop.

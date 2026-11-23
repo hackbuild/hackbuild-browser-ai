@@ -1,5 +1,5 @@
 /**
- * Media helpers (SCRIBE, JIG): decode a file's audio track at a target
+ * Media helpers (as earlier builds did): decode a file's audio track at a target
  * rate through an OfflineAudioContext, pick keyframes by scene change from
  * small luminance histograms, and record a canvas or stream with the first
  * MIME type the browser supports. Browser objects are injected so tests
@@ -29,7 +29,7 @@ export interface OfflineCtxLike {
 
 export type OfflineCtor = new (channels: number, length: number, sampleRate: number) => OfflineCtxLike;
 
-/** Decode and resample with the browser's decoder (SCRIBE decode). Names the failure when the browser refuses the container. */
+/** Decode and resample with the browser's decoder (as earlier builds did). Names the failure when the browser refuses the container. */
 export async function decodeAudio(data: ArrayBuffer | Blob, sampleRate = 16000, Ctx?: OfflineCtor): Promise<DecodedAudio> {
   const C = Ctx ?? ((globalThis as { OfflineAudioContext?: OfflineCtor }).OfflineAudioContext as OfflineCtor | undefined);
   if (!C) throw new Error("no OfflineAudioContext here. decode on the page, not in a worker.");

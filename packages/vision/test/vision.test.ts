@@ -85,7 +85,7 @@ describe("depth", () => {
     expect(Array.from(r.data)).toEqual([0, 1]);
   });
 
-  it("loads through the transformers.js provider with the BAIL fp32 retry", async () => {
+  it("loads through the transformers.js provider with the earlier relief bench fp32 retry", async () => {
     const dtypes: unknown[] = [];
     const mod: TjsModule = {
       env: {},

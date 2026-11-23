@@ -1,6 +1,6 @@
 //! Naive surface nets over a scalar field (inside where the value is above
 //! zero), watertight by construction, and the separable 3 tap box blur
-//! CALIPER ran before meshing (CALIPER surfaceNets and blurPass).
+//! an earlier scan bench ran before meshing (as earlier builds did).
 
 /// In place blur along x, then y, then z; edges average the taps they have.
 pub fn blur_pass(f: &mut [f32], dx: usize, dy: usize, dz: usize) {

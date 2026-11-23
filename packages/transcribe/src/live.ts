@@ -1,5 +1,5 @@
 /**
- * Live segmentation (KERF EARS): audio arrives in blocks, is decimated to
+ * Live segmentation (as earlier builds did): audio arrives in blocks, is decimated to
  * 16 kHz, and is cut into segments either when a gate closes for 500 ms
  * (squelch mode), at a fixed window (8 s with the squelch off, 2 to 12 s
  * in spirit box mode), or at 24 s, since Whisper pads to 30 s. Segments

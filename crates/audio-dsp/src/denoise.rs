@@ -1,4 +1,4 @@
-//! Spectral subtraction from a noise print (SCRIBE July): a median
+//! Spectral subtraction from a noise print (as earlier builds did): a median
 //! magnitude spectrum of up to 320 quiet frames, then a gain per bin of
 //! max(floor, 1 - alpha N / |X|), smoothed over time (0.55 old, 0.45 new)
 //! and across neighbour bins (0.25, 0.5, 0.25), resynthesized by sqrt Hann

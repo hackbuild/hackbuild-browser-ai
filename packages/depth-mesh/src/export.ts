@@ -1,5 +1,5 @@
 /**
- * Mesh export: binary STL (CALIPER layout, scaled so the longest side is
+ * Mesh export: binary STL (an earlier scan bench layout, scaled so the longest side is
  * the print size in mm and centred), OBJ, binary PLY for point clouds and
  * meshes, and checks a slicer cares about (bounds, open edges).
  */
@@ -23,7 +23,7 @@ export function bounds(pos: Float32Array): Bounds {
   return { min, max };
 }
 
-/** Centre the mesh and scale it so its longest side is `sizeMM` (CALIPER exportSTL). */
+/** Centre the mesh and scale it so its longest side is `sizeMM` (as earlier builds did). */
 export function fitToPrint(m: Mesh, sizeMM: number): Mesh {
   const b = bounds(m.positions);
   const dim = [0, 1, 2].map((k) => b.max[k]! - b.min[k]!);

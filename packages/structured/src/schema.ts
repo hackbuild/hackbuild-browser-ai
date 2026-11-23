@@ -1,7 +1,7 @@
 /**
  * Schemas for grammar constrained decoding. XGrammar (WebLLM) and
  * llama.cpp grammars refuse some JSON Schema keywords, so the sanitizer
- * strips them recursively (satchel sanitizeSchemaForXGrammar). The agent
+ * strips them recursively (as earlier builds did). The agent
  * schema is a root anyOf with one strict variant per tool plus a
  * respond_to_user pseudo tool; the loose schema allows any tool name and
  * any arguments object, for runtimes that cannot compile the strict one.

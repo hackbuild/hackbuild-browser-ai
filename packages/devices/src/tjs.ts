@@ -4,7 +4,7 @@
  * `hub.provide("tjs", tjs.factory)` is called once per page and the
  * runtime is configured once: no local models, the browser cache on, wasm
  * threads from the probe, the proxy worker off (it cannot start on
- * file://, SCRIBE), the wasm cache off (BAIL).
+ * file://), the wasm cache off (as earlier builds did).
  */
 
 import type { Env } from "@hackbuild/ai-env";

@@ -34,11 +34,11 @@ Apache-2.0).
 
 ## Ladders
 
-    LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32 (BAIL)
-    LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu (ARBOR)
-    LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm (SCRIBE)
-    LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap (GIMBAL, MORTISE)
-    LADDERS.ort()            // webgpu at basic, all, disabled, then wasm (SCRIBE August)
+    LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32 (as earlier builds did)
+    LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu (as earlier builds did)
+    LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm (as earlier builds did)
+    LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap (an earlier vision build)
+    LADDERS.ort()            // webgpu at basic, all, disabled, then wasm (as earlier builds did)
     tjsLadder({ webgpu: ["q4f16"], wasm: ["q8"] })
 
 The walk and error names (`walkLadder`, `classifyError`) are the models

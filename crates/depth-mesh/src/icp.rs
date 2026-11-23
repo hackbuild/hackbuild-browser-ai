@@ -1,4 +1,4 @@
-//! Point to plane ICP against a voxel model (CALIPER dense RGB-D odometry):
+//! Point to plane ICP against a voxel model (as earlier builds did):
 //! the model keeps one averaged point and normal per voxel; each iteration
 //! finds the nearest model point in the 27 neighbour voxels, keeps pairs
 //! whose normals agree and whose plane distance is under the stage limit,

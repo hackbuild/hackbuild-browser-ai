@@ -1,4 +1,4 @@
-//! Onsets, tempo and grid fit (SCRIBE August): positive difference of an
+//! Onsets, tempo and grid fit (as earlier builds did): positive difference of an
 //! RMS envelope as novelty, peak picking over a local mean, autocorrelation
 //! tempo over 60 to 200 bpm with a phase search, and a vector strength fit
 //! of onset times over 55 to 208 bpm.

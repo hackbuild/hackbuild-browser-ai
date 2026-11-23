@@ -1,8 +1,8 @@
 # @hackbuild/transcribe
 
-Speech to text in a tab: the SCRIBE July quiet speech front end, silence
+Speech to text in a tab: the quiet speech front end, silence
 reel packing with a source map back to file time, Whisper and Moonshine
-records for the models hub, the phantom text filter, the KERF live
+records for the models hub, the phantom text filter, the earlier live captioner live
 segmenter and a Web Speech adapter. Code MIT; this README CC-BY-4.0 with
 the code samples also MIT. No weights ship here.
 
@@ -24,7 +24,7 @@ the code samples also MIT. No weights ship here.
     const out = await transcribe(hub, dsp, pcm16k, { model: defaultTranscribeId(env.webgpu), language: "en" });
     // out.segments, out.dropped (with the reason), out.stats (levels in dB, computed)
 
-Steps, with SCRIBE's numbers: dc block, 80 Hz high pass twice, a 250 to
+Steps, with the earlier transcription tool's numbers: dc block, 80 Hz high pass twice, a 250 to
 3800 Hz copy for speech decisions, minimum statistics floor, gate at
 floor + 6 dB, speech level and a gain toward -20 dBFS capped at +60 dB;
 reels of at most 26 s cut on the quietest frame of the last 2 s, runs
@@ -64,16 +64,16 @@ the audio to its service; tell the user).
   english only rule, the live segmenter (tail, blips, queue cap, fixed
   windows, 48 to 16 kHz streaming decimation, and 44.1, 32, 24, 22.05 and 8 kHz to 16 kHz
   through the fractional resampler at the right speed, measured on a 440 Hz tone), and the Web Speech adapter.
-- 2026-11-22: parity with real SCRIBE exports: re-running the phantom
-  filter over each transcript's kept plus dropped lines gives SCRIBE's
+- 2026-11-22: parity with real exports from an earlier transcription tool: re-running the phantom
+  filter over each transcript's kept plus dropped lines gives the earlier transcription tool's
   split and reasons for all 19 transcripts of one batch zip. The files
-  hold personal speech and stay in the gitignored `.local/scribe`; the
+  hold personal speech and stay in the gitignored `.local/transcripts`; the
   test is skipped without them. Dropped lines carry no end time in the
   export, so the test gives them 2 s, and coverage is set to full.
 
 ### Not verified by anything
 
 - Any Whisper or Moonshine model in a browser; word error rates.
-- The front end against SCRIBE on the same audio file sample for sample;
-  no SCRIBE input audio was available, only its text outputs.
+- The front end against the earlier transcription tool on the same audio file sample for sample;
+  no input audio from that tool was available, only its text outputs.
 - Moonshine's licence beyond the model card line.

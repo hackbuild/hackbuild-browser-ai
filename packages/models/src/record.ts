@@ -1,8 +1,8 @@
 /**
  * Model records: what a model provides, which runtime runs it, the device
  * and dtype ladder to walk, the quirks app code used to hard code, and the
- * weight licence. Ladders are per model (BAIL retries fp32 on the same
- * device, ARBOR drops to wasm q8, MORTISE retries q4 in a fresh heap), so
+ * weight licence. Ladders are per model (an earlier relief bench retries fp32 on the same
+ * device, an earlier chat build drops to wasm q8, an earlier vision build retries q4 in a fresh heap), so
  * they live here instead of in one global ladder.
  */
 
@@ -48,7 +48,7 @@ export interface Rung {
   needs?: Need[];
   /** onnxruntime-web session options for this rung. */
   ort?: OrtRung;
-  /** Load into a fresh wasm heap (MORTISE retry after an out of memory). */
+  /** Load into a fresh wasm heap (as earlier builds did). */
   freshHeap?: boolean;
   /** Runtime specific knobs, e.g. `{ context_window_size: 4096 }` for WebLLM. */
   options?: Record<string, unknown>;
@@ -154,7 +154,7 @@ export function ladderFor(rec: ModelRecord, env?: Env): { rungs: Rung[]; skipped
   return { rungs, skipped };
 }
 
-/** The onnxruntime-web ladder SCRIBE walks after one fetch: webgpu at basic, all, disabled, then wasm. */
+/** The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm. */
 export function ortLadder(): Rung[] {
   return [
     { device: "webgpu", ort: { executionProviders: ["webgpu", "wasm"], graphOptimizationLevel: "basic" } },

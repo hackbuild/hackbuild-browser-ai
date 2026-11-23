@@ -136,7 +136,7 @@ if (auto) {
   } catch (e) {
     check(r, "transcribe: whisper-base.en round trip on kokoro speech, wasm and webgpu", "fail", (e as Error).message.slice(0, 300));
   }
-  check(r, "#27 transcribe: large v3 turbo and base.en over a 10 minute file against scribe", "not run", "large v3 turbo is about 900 MB (inferred), over this pass's download limit; no 10 minute test recording or scribe output here");
+  check(r, "#27 transcribe: large v3 turbo and base.en over a 10 minute file against the earlier transcription tool", "not run", "large v3 turbo is about 900 MB (inferred), over this pass's download limit; no 10 minute test recording or the earlier transcription tool output here");
   check(r, "#28 transcribe: live segmenter on a microphone and web speech in chrome", "not run", "needs a microphone");
   const failed = Object.values(r.checks).some((c) => c.status === "fail");
   finish(r, failed ? "fail" : "pass");

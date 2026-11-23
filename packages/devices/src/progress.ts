@@ -1,6 +1,6 @@
 /**
  * transformers.js reports progress per file. A status line wants one
- * fraction across files, and an MB count when totals are unknown (BAIL
+ * fraction across files, and an MB count when totals are unknown (an earlier relief bench
  * summed loaded over total by file name).
  */
 

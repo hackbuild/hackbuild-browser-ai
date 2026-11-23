@@ -43,7 +43,7 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["BAIL: fp16 on webgpu, fp32 on the same device after a failure"],
+    notes: ["earlier builds: fp16 on webgpu, fp32 on the same device after a failure"],
   },
   mp("efficientdet-lite0", "detect", "object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite", 7, "mediapipe efficientdet lite0 (coco, 80 classes)"),
   mp("selfie-segmenter", "segment.person", "image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite", 1, "mediapipe selfie segmenter"),
@@ -63,7 +63,7 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["mask-studio-sam: one image embedding, then any number of point prompts"],
+    notes: ["earlier builds: one image embedding, then any number of point prompts"],
   },
   {
     id: "smolvlm-256m-instruct",
@@ -96,7 +96,7 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: "unknown",
     place: "gpu",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["HACKLE: q4f16 on webgpu only; the licence limits commercial use by revenue, read it before shipping"],
+    notes: ["earlier builds: q4f16 on webgpu only; the licence limits commercial use by revenue, read it before shipping"],
   },
 ];
 
@@ -134,6 +134,6 @@ export function yoloRecord(o: { url: string; sha256?: string; id?: string; licen
     licence: o.licence ?? "AGPL-3.0 (Ultralytics YOLOv8 weights), supplied by the app",
     commercial: false,
     place: "gpu",
-    notes: ["HACKLE: 640 letterbox, per class nms at iou 0.45, at most 13 boxes"],
+    notes: ["earlier builds: 640 letterbox, per class nms at iou 0.45, at most 13 boxes"],
   };
 }

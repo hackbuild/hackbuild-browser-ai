@@ -58,9 +58,9 @@ remote engine never loads WebLLM.
   `toolCallId` goes out as a native tool result; one without an id goes as
   user text. `repeat_penalty` is sent only with `llamaParams: true`
   (llama.cpp, Ollama), since OpenAI rejects it.
-- `loadWebLLM` walks the context ladder `[want, 8192, 4096, 2048]` (SHIM)
+- `loadWebLLM` walks the context ladder `[want, 8192, 4096, 2048]` (as earlier builds did)
   and names a LinkError or TVMFFI failure as a runtime and model library
-  mismatch. `loadWllama` uses the FERRULE parameters (n_ctx 6144, top_p
+  mismatch. `loadWllama` uses the earlier chat build parameters (n_ctx 6144, top_p
   .95, top_k 40, min_p .05, penalty_repeat 1.08, cache_prompt) and only
   counts a load once `getLoadedContextInfo()` returns, naming the last
   native error otherwise.

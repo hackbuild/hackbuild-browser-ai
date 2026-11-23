@@ -1,4 +1,4 @@
-//! Silhouette space carving on a turntable (CALIPER doCarve, the path that
+//! Silhouette space carving on a turntable (an earlier scan bench doCarve, the path that
 //! beat depth tracking for printable meshes): a voxel is kept when it
 //! projects inside every silhouette. The object turns by theta about +y;
 //! the camera sits at distance d looking down +z, focal f in pixels, image
@@ -83,7 +83,7 @@ pub fn carve(
     (v, tris)
 }
 
-/// Erode then dilate a mask with a 3 by 3 square (CALIPER morphOpen): kills speckle, keeps the object.
+/// Erode then dilate a mask with a 3 by 3 square (as earlier builds did): kills speckle, keeps the object.
 pub fn morph_open(src: &[u8], w: usize, h: usize) -> Vec<u8> {
     let at = |m: &[u8], x: i64, y: i64| {
         x >= 0

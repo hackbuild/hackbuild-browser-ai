@@ -149,7 +149,7 @@ export class DepthMesh {
     const n = this.with([depth], (p) => this.x.dm_cloud(p, w, h, o.near, o.far, o.focal, o.stride ?? 1, o.dmin ?? 0, o.dmax ?? 1));
     return { positions: this.f32(n * 3), normals: this.f32(n * 3, true), count: n };
   }
-  /** Heights in mm, 0 where there is no relief (BAIL). */
+  /** Heights in mm, 0 where there is no relief (as earlier builds did). */
   relief(values: Float32Array, o: ReliefOptions): Float32Array {
     if (o.mask && o.mask.length !== values.length) throw new RangeError(`relief: mask has ${o.mask.length} cells, values have ${values.length}`);
     const args = [o.base, o.height, o.gamma ?? 1, o.bgcut ?? 0, o.invert ? 1 : 0] as const;
@@ -188,13 +188,13 @@ export class DepthMesh {
     this.with([all, Float64Array.from(angles)], (m, a) => this.x.dm_carve(m, a, masks.length, t.width, t.height, t.focal, t.dist, t.half, resolution, smooth));
     return this.mesh();
   }
-  /** Erode then dilate with a 3 by 3 square (CALIPER morphOpen). */
+  /** Erode then dilate with a 3 by 3 square (as earlier builds did). */
   morphOpen(mask: Uint8Array, w: number, h: number): Uint8Array {
     grid("morphOpen", mask.length, w, h);
     this.with([mask], (p) => this.x.dm_morph_open(p, w, h));
     return Uint8Array.from(this.u32(w * h));
   }
-  /** A voxel model for ICP tracking (CALIPER). Call `dispose` when done. */
+  /** A voxel model for ICP tracking (as earlier builds did). Call `dispose` when done. */
   model(voxel: number, cap = 400_000): VoxelModel {
     return new VoxelModel(this.x, this.x.dm_model_new(voxel, cap), this);
   }
@@ -255,7 +255,7 @@ export class VoxelModel {
   }
 }
 
-/** The CALIPER gate for a tracked frame: enough inliers, low error, and no jump. */
+/** The earlier scan bench gate for a tracked frame: enough inliers, low error, and no jump. */
 export function trackGood(r: { inliers: number; error: number; pose: Pose }, prev: Pose, sampled: number, maxDist = 0.03): boolean {
   const tr = r.pose.r.reduce((a, v, i) => a + v * prev.r[i]!, 0);
   const ang = Math.acos(Math.max(-1, Math.min(1, (tr - 1) / 2)));

@@ -153,7 +153,7 @@ engine sang (no word times; the speaker estimates those).
 ### Not verified by anything
 
 - Any real engine: Kokoro 82M on webgpu fp32 or wasm q8, the Pocket
-  worker (its message names are taken from the source builds, not from
+  worker (its message names are taken from earlier builds, not from
   upstream documentation), system voices in Chrome, Safari and Firefox.
 - Audible gaps or clicks at chunk joins; looked at by nobody.
 - Time to first audio (no measurement).

@@ -198,7 +198,7 @@ export interface OrtSessionLike {
  * 512 new samples at 16 kHz with the previous 64 as context, a [2, 1, 128]
  * state carried between frames. The model bytes are the caller's (URL,
  * ArrayBuffer or File through @hackbuild/weights); single threaded wasm is
- * the setting the source build ran, since threaded wasm hung in workers.
+ * the setting an earlier build ran, since threaded wasm hung in workers.
  */
 export async function sileroVad(ort: OrtLike, model: ArrayBuffer | Uint8Array, o: { executionProviders?: string[] } = {}): Promise<VadSource> {
   const session = await ort.InferenceSession.create(model, { executionProviders: o.executionProviders ?? ["wasm"] });

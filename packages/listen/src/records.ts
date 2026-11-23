@@ -15,6 +15,6 @@ export const VAD_RECORDS: ModelRecord[] = [
     licence: "MIT",
     commercial: true,
     place: "main",
-    notes: ["512 samples at 16 kHz per frame with 64 samples of context", "single threaded wasm; threaded wasm hung inside workers in the source build"],
+    notes: ["512 samples at 16 kHz per frame with 64 samples of context", "single threaded wasm; threaded wasm hung inside workers in an earlier build"],
   },
 ];

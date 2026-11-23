@@ -15,7 +15,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
 | [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 10 vitest |
 | [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 16 vitest, 11 cargo |
-| [@hackbuild/transcribe](packages/transcribe) | scribe front end, silence reels with a source map, whisper and moonshine records, phantom filter, live segmenter, web speech adapter | 10 vitest |
+| [@hackbuild/transcribe](packages/transcribe) | the quiet speech front end, silence reels with a source map, whisper and moonshine records, phantom filter, live segmenter, web speech adapter | 10 vitest |
 | [@hackbuild/vision](packages/vision) | depth anything v2, mediapipe detection, segmentation and landmarks with fallback, optional external yolo, slimsam, smolvlm and lfm2-vl captions, loop, readback loop and cache | 15 vitest |
 | [@hackbuild/depth-mesh](packages/depth-mesh) | rust wasm core (simd128): depth to point cloud, relief heightfield solids, surface nets, point to plane icp, silhouette carving; stl, obj and ply export | 4 vitest, 8 cargo |
 | [@hackbuild/stems](packages/stems) | htdemucs tiers on onnxruntime-web, own overlap add, realtime factor | 3 vitest |

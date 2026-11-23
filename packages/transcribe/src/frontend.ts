@@ -1,8 +1,8 @@
 /**
- * The SCRIBE July quiet speech front end at 16 kHz: clean the wire (dc
+ * The quiet speech front end at 16 kHz: clean the wire (dc
  * block, 80 Hz high pass run twice), decide speech on a 250 to 3800 Hz
  * copy, find the floor and gate, measure the speech found, and pick a gain
- * toward -20 dBFS capped at +60 dB (SCRIBE's default cap; its readme says
+ * toward -20 dBFS capped at +60 dB (the earlier transcription tool's default cap; its readme says
  * +45). Each reel is then denoised from the noise print, levelled once more
  * (per reel AGC, plus or minus 9 dB), gained and limited.
  */

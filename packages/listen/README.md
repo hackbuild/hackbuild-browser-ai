@@ -67,7 +67,7 @@ code samples also MIT. No weights ship here.
 - Silero VAD v5 on real onnxruntime-web, and whether its output and
   state names match this code (taken from the model's published python
   wrapper, not run here).
-- Barge in with real speakers and echo cancellation; the source build
+- Barge in with real speakers and echo cancellation; an earlier build
   did not verify it either.
 - The capture worklet and `openMic` in a browser, including from file://.
 - Latency from end of speech to text (no measurement).

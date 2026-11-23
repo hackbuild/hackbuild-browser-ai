@@ -1,6 +1,6 @@
 # @hackbuild/media
 
-Media in a tab, from SCRIBE and JIG: decode a file's audio to a target
+Media in a tab, from earlier builds: decode a file's audio to a target
 rate, pick keyframes by scene change, and record a canvas or stream. Code
 MIT; this README CC-BY-4.0 with the code samples also MIT. No models.
 

@@ -1,7 +1,7 @@
 /**
- * A perception loop beside a render loop: one step at a time (CALIPER's
+ * A perception loop beside a render loop: one step at a time (the earlier scan bench's
  * busy guard), each step started no sooner than `interval(lastLatency)`
- * after the previous one began (HACKLE detection cadence, ARBOR's fixed
+ * after the previous one began (an earlier scene app detection cadence, the earlier chat build's fixed
  * periods), stopped by `stop()` or an abort signal. The scheduler is
  * injectable so tests run without timers.
  */
@@ -88,7 +88,7 @@ export interface ReadbackOptions<T> {
   read: () => Promise<T>;
   /** Consumer of each frame; a slow consumer holds the loop (it runs inside the busy window). */
   onFrame: (frame: T) => void | Promise<void>;
-  /** Rate cap. Default 10 Hz (the HACKLE agent eye). */
+  /** Rate cap. Default 10 Hz (as earlier builds did). */
   maxHz?: number;
   onError?: (e: unknown) => void;
   now?: () => number;
@@ -139,7 +139,7 @@ export function readbackLoop<T>(o: ReadbackOptions<T>): Loop & { readonly skippe
   };
 }
 
-/** A small LRU of results by key (BAIL keeps the depth map with the design so it never reruns). */
+/** A small LRU of results by key (an earlier relief bench keeps the depth map with the design so it never reruns). */
 export class ResultCache<T> {
   private readonly m = new Map<string, T>();
   constructor(private readonly max = 16) {}
@@ -168,7 +168,7 @@ export class ResultCache<T> {
   }
 }
 
-/** A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (BAIL stores depth as a PNG data URL). */
+/** A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (an earlier relief bench stores depth as a PNG data URL). */
 export function depthToRgba(d: { width: number; height: number; data: Float32Array }): Uint8ClampedArray {
   const out = new Uint8ClampedArray(d.width * d.height * 4);
   for (let i = 0; i < d.width * d.height; i++) {
@@ -179,7 +179,7 @@ export function depthToRgba(d: { width: number; height: number; data: Float32Arr
   return out;
 }
 
-/** Scale so the longest side is at most maxPx (BAIL shrinks inputs to 1024). */
+/** Scale so the longest side is at most maxPx (as earlier builds did). */
 export function fitSize(w: number, h: number, maxPx = 1024): { width: number; height: number; scale: number } {
   const s = Math.min(1, maxPx / Math.max(w, h));
   return { width: Math.max(1, Math.round(w * s)), height: Math.max(1, Math.round(h * s)), scale: s };

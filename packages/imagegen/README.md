@@ -44,7 +44,7 @@ current upstream weights and check its licence before use.
   replace it. The same seed gives the same initial latent bit for bit.
 - Graph names: `input_ids` to `last_hidden_state`; `sample`, `timestep`
   (int64) and `encoder_hidden_states` to `out_sample`; `latent_sample` to
-  `sample`, as in the source build. Output sides are multiples of 8;
+  `sample`, as in an earlier build. Output sides are multiples of 8;
   the default is 512.
 - Every graph call goes through `run`, so the models hub's gpu lock and
   frame budget apply.
@@ -67,5 +67,5 @@ crate was written.
 
 - SD-Turbo on real onnxruntime-web webgpu: graph names, image quality,
   speed and memory.
-- The repo file paths in the record (inferred from the source build).
-- A wasm path; the source build had none.
+- The repo file paths in the record (inferred from an earlier build).
+- A wasm path; an earlier build had none.

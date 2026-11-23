@@ -1,9 +1,9 @@
 # @hackbuild/depth-mesh
 
 Depth maps and silhouettes to printable geometry: a Rust core built for
-wasm32 with SIMD128 (`crates/depth-mesh`) and TS exporters. From CALIPER
+wasm32 with SIMD128 (`crates/depth-mesh`) and TS exporters. From an earlier scan bench
 (point clouds, point to plane ICP, silhouette carving, surface nets) and
-BAIL (relief heightfields and their closed solids). Code MIT; this README
+an earlier relief bench (relief heightfields and their closed solids). Code MIT; this README
 CC-BY-4.0 with the code samples also MIT. No model and no weights here;
 depth maps come from `@hackbuild/vision` (Depth Anything V2 small,
 Apache-2.0) or any other source.
@@ -28,18 +28,18 @@ Apache-2.0) or any other source.
     const r = model.icp(cloud, pose);
     if (trackGood(r, pose, cloud.count)) model.integrate(cloud, (pose = r.pose));
 
-    // scan by silhouettes on a turntable (CALIPER's better path for printable meshes)
+    // scan by silhouettes on a turntable (as earlier builds did)
     const hull = dm.carve(masks, angles, { width, height, focal, dist, half }, 64, 1);
     const stl = toStl(fitToPrint(hull, 40));
 
 - `cloud`: Z = near + (1 - d)(far - near), camera down -Z; normals from the
   grid neighbours facing the camera; depth edge fliers dropped.
 - `relief`: normalized over the region (or a mask), background cut,
-  gamma, floor 0.12 mm (BAIL); `heightfieldMesh` splits each top quad on
+  gamma, floor 0.12 mm (as earlier builds did); `heightfieldMesh` splits each top quad on
   its shorter diagonal and closes the walls and the bottom.
 - `model(voxel).icp`: two stages (2 maxDist then maxDist), 27 voxel
   nearest neighbour, normal agreement, 6 by 6 solve, Rodrigues update;
-  `trackGood` is CALIPER's accept test.
+  `trackGood` is the earlier scan bench's accept test.
 - `carve`: a voxel stays when it projects inside every mask; blur, then
   surface nets; `morphOpen` cleans masks first.
 - Export: `toStl` (binary), `toObj`, `toPly` and `cloudToPly` (binary),

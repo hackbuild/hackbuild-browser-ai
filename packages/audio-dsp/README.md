@@ -20,12 +20,12 @@ also MIT. No model and no weights here.
     const quiet = noise ? dsp.denoise(clean, noise, 1.8, 0.08) : clean;
     const safe = dsp.limit(quiet, 0.891, 16000);
 
-Kernels, all from the SCRIBE July and August builds unless noted:
+Kernels, all from the earlier transcription tool's July and August builds unless noted:
 dc blocker (pole 0.9975), RBJ biquads, frame levels, percentiles, minimum
 statistics noise floor, spectral subtraction from a noise print (512
 point sqrt Hann, median of up to 320 quiet frames, temporal and cross bin
 gain smoothing), lookahead limiter (4 ms blocks, 120 ms release),
-resampling (windowed sinc, linear, and the KERF style FIR decimator; the
+resampling (windowed sinc, linear, and the earlier live captioner style FIR decimator; the
 sinc takes a polyphase table of normalized kernels when both rates are
 whole numbers and the reduced ratio has at most 4096 output phases, and
 evaluates the kernel per tap otherwise),
@@ -47,13 +47,13 @@ so the native and wasm builds give the same bits.
 
 ## TS
 
-- `gate(db, threshold, n)`: the SCRIBE hysteresis gate (on after 3 frames,
+- `gate(db, threshold, n)`: the earlier transcription tool hysteresis gate (on after 3 frames,
   off after 25, 0.25 s pad, merge under 0.30 s, drop under 0.20 s),
   `gateThreshold(floor, p95, margin)` and `coverage(regions, a, b)`.
 - `planSegments`, `fadeWeight`, `OverlapAdd`: the htdemucs overlap add
-  from SHEAR and SCRIBE August.
-- Writers: `toTxt`, `toSrt`, `toVtt`, `toJson` (SCRIBE layouts),
-  `toLrc`, `parseLrc`, `spreadWords` (JIG), `encodeWav` and `decodeWav`,
+  from an earlier August build.
+- Writers: `toTxt`, `toSrt`, `toVtt`, `toJson` (as earlier builds did),
+  `toLrc`, `parseLrc`, `spreadWords` (as earlier builds did), `encodeWav` and `decodeWav`,
   `writeMidi` (format 1, 480 ticks per quarter, drums on channel 10,
   note times in seconds), `zipStore` (store only, reproducible with a
   fixed date).
@@ -76,11 +76,11 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   on) gives the same bits as the native build for 14 kernel outputs over
   a seeded 3 s signal (hashed), the onset list, tempo, grid fit, noise
   floor and percentile, and 35 math samples.
-- 2026-11-22: parity with real SCRIBE exports: `toTxt`, `toSrt`, `toVtt`
+- 2026-11-22: parity with real exports from an earlier transcription tool: `toTxt`, `toSrt`, `toVtt`
   and `toJson` reproduce byte for byte the 76 txt, srt, vtt and json files
-  of one SCRIBE batch zip (19 transcripts) from their segments. Those
+  of one batch zip from that tool (19 transcripts) from their segments. Those
   files hold personal speech, so they stay out of git; the test reads
-  `.local/scribe` (gitignored) or `SCRIBE_FIXTURES` and is skipped
+  `.local/transcripts` (gitignored) or `TRANSCRIPT_FIXTURES` and is skipped
   without them.
 
 - 2026-11-23: `cargo test -p hackbuild-audio-dsp` passes 13 tests (12
@@ -100,7 +100,7 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 
 ### Not verified by anything
 
-- The kernels against the SCRIBE JS functions sample for sample. The
+- The kernels against the earlier transcription tool JS functions sample for sample. The
   crate keeps their arithmetic order but sums frames in two lanes, so
   the numbers differ from the JS builds in the last bits (inferred, not
   measured).

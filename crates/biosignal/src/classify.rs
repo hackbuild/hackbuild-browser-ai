@@ -1,4 +1,4 @@
-//! The COLLET classifier: per band covariances to tangent vectors at the
+//! The classifier: per band covariances to tangent vectors at the
 //! training set's log-Euclidean mean, then multinomial logistic regression
 //! (standardized features, Adam, L2). Cross validation folds by trial, so
 //! windows cut from one trial never sit on both sides of a split, and the

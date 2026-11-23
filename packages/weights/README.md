@@ -21,10 +21,10 @@ No weights ship with this package; each file keeps its own licence.
     await store.put({ key: "local:model.onnx", licence: "MIT" }, file);  // a File the user dropped
 
 - `auto` picks the first of opfs, idb, cache, memory that opens; on file://
-  opfs and cache are left out (the FERRULE `opfsOk` rule). A backend that
+  opfs and cache are left out (as earlier builds did). A backend that
   throws on its first read is skipped.
 - Every backend stores numbered parts of `partBytes` (default 128 MB, the
-  FERRULE and ARBOR size) plus a meta record written after each part. An
+  earlier builds size) plus a meta record written after each part. An
   interrupted download keeps its parts. The next `get` sends
   `Range: bytes=<kept>-` with `If-Range` (ETag, else Last-Modified); a 206
   continues, a 200 starts over, a `Content-Range` that starts elsewhere is
@@ -32,7 +32,7 @@ No weights ship with this package; each file keeps its own licence.
 - The SHA-256 is computed as bytes arrive (parts are re-read on resume). A
   mismatch removes the parts and throws `WeightError` code `sha256`.
 - Before a download with a known length, free space must be at least 1.2
-  times the file (FERRULE margin), else `WeightError` code `quota`.
+  times the file (as earlier builds did), else `WeightError` code `quota`.
 - The first `get` or `put` of a key per store states the licence through
   `onNotice` (default `console.info`).
 - Concurrent `get`s of one key share one download.

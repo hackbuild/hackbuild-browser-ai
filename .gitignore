@@ -15,7 +15,7 @@ target/
 pkg/
 *.wasm.b64
 
-# local only fixtures with personal content (SCRIBE outputs); tests skip without them
+# local only fixtures with personal content (as earlier builds did); tests skip without them
 .local/
 
 # example site build

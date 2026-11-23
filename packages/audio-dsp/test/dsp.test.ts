@@ -131,7 +131,7 @@ describe("writers", () => {
     { start: 1.86, end: 2.9, text: "two" },
     { start: 6, end: 3661.9996, text: "three" },
   ];
-  it("writes srt, vtt and txt in the SCRIBE layout", () => {
+  it("writes srt, vtt and txt in the earlier transcription tool layout", () => {
     expect(timestamp(3661.9996, true)).toBe("01:01:01,999");
     expect(toSrt(segs)).toBe("1\n00:00:00,000 --> 00:00:01,140\none.\n\n2\n00:00:01,860 --> 00:00:02,900\ntwo\n\n3\n00:00:06,000 --> 01:01:01,999\nthree\n");
     expect(toVtt(segs).startsWith("WEBVTT\n\n00:00:00.000 --> 00:00:01.140\none.\n")).toBe(true);
@@ -180,12 +180,12 @@ describe("writers", () => {
   });
 });
 
-// Parity with real SCRIBE exports. The files hold personal speech, so they
-// live in the gitignored .local/scribe folder (or SCRIBE_FIXTURES) and the
+// Parity with real exports from an earlier transcription tool. The files hold personal speech, so they
+// live in the gitignored .local/transcripts folder (or TRANSCRIPT_FIXTURES) and the
 // test is skipped on machines without them.
-const dir = process.env.SCRIBE_FIXTURES ?? join(root, ".local", "scribe");
+const dir = process.env.TRANSCRIPT_FIXTURES ?? join(root, ".local", "transcripts");
 const have = existsSync(join(dir, "manifest.json"));
-describe.skipIf(!have)("SCRIBE export parity (local fixtures)", () => {
+describe.skipIf(!have)("the earlier transcription tool export parity (local fixtures)", () => {
   const names = have ? readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "manifest.json") : [];
   test("every txt, srt, vtt and json file is reproduced byte for byte from its segments", () => {
     expect(names.length).toBeGreaterThan(0);

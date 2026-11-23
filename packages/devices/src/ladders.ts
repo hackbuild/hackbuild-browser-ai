@@ -1,12 +1,12 @@
 /**
  * Rung builders for the two runtimes every model package uses. The models
  * package keeps the ladder walk and error classification; this file builds
- * the rungs those walks try, in the orders the source builds settled on:
+ * the rungs those walks try, in the orders the earlier builds settled on:
  *
- * - BAIL depth: fp16 on webgpu, fp32 on the same device; q8 then fp32 on wasm.
- * - ARBOR perception: webgpu first, wasm q8 after.
- * - MORTISE VLM: q4f16, then q4 in a fresh heap.
- * - SCRIBE transcription: per sub graph dtypes (fp16 encoder, q4 decoder).
+ * - earlier builds: fp16 on webgpu, fp32 on the same device; q8 then fp32 on wasm.
+ * - earlier builds: webgpu first, wasm q8 after.
+ * - earlier builds: q4f16, then q4 in a fresh heap.
+ * - earlier builds: per sub graph dtypes (fp16 encoder, q4 decoder).
  */
 
 import type { Env } from "@hackbuild/ai-env";
@@ -19,9 +19,9 @@ export interface TjsLadderSpec {
   webgpu?: readonly Dtype[];
   /** dtypes tried on wasm, in order. */
   wasm?: readonly Dtype[];
-  /** Put wasm before webgpu (ARBOR keeps perception off the gpu the chat model uses). */
+  /** Put wasm before webgpu (an earlier chat build keeps perception off the gpu the chat model uses). */
   wasmFirst?: boolean;
-  /** Retry the last wasm dtype in a fresh heap after an out of memory (MORTISE). */
+  /** Retry the last wasm dtype in a fresh heap after an out of memory (as earlier builds did). */
   freshHeapRetry?: boolean;
   /** Extra runtime options copied onto every rung, e.g. `{ task: "depth-estimation" }`. */
   options?: Record<string, unknown>;
@@ -43,7 +43,7 @@ export function tjsLadder(spec: TjsLadderSpec): Rung[] {
   return spec.wasmFirst ? [...cpu, ...gpu] : [...gpu, ...cpu];
 }
 
-/** onnxruntime-web rungs: the SCRIBE walk, or wasm only when the graph is known to fail on webgpu. */
+/** onnxruntime-web rungs: the earlier transcription tool walk, or wasm only when the graph is known to fail on webgpu. */
 export function ortRungs(opts: { webgpu?: boolean } = {}): Rung[] {
   const all = ortLadder();
   return opts.webgpu === false ? all.filter((r) => r.device === "wasm") : all;
@@ -51,11 +51,11 @@ export function ortRungs(opts: { webgpu?: boolean } = {}): Rung[] {
 
 /** Ladders by name, from the builds. Each model record may copy one or write its own. */
 export const LADDERS = {
-  /** BAIL runDepth. */
+  /** an earlier relief bench runDepth. */
   depth: (): Rung[] => tjsLadder({ webgpu: ["fp16", "fp32"], wasm: ["q8", "fp32"] }),
-  /** ARBOR: perception models on cpu by default. */
+  /** earlier builds: perception models on cpu by default. */
   perceptionCpu: (): Rung[] => tjsLadder({ webgpu: ["fp32"], wasm: ["q8", "fp32"], wasmFirst: true }),
-  /** SCRIBE whisper-large-v3-turbo. */
+  /** the earlier transcription tool whisper-large-v3-turbo. */
   whisperTurbo: (): Rung[] =>
     tjsLadder({
       webgpu: [
@@ -64,13 +64,13 @@ export const LADDERS = {
       ],
       wasm: [{ encoder_model: "q8", decoder_model_merged: "q8" }],
     }),
-  /** SCRIBE whisper-base and the Xenova .en exports. */
+  /** the earlier transcription tool whisper-base and the Xenova .en exports. */
   whisperSmall: (q4Decoder = true): Rung[] =>
     tjsLadder({
       webgpu: [{ encoder_model: "fp32", decoder_model_merged: q4Decoder ? "q4" : "fp32" }],
       wasm: [{ encoder_model: "q8", decoder_model_merged: "q8" }],
     }),
-  /** GIMBAL and ARBOR SmolVLM: fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm. */
+  /** earlier builds: fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm. */
   smolvlm: (): Rung[] =>
     tjsLadder({
       // fp32 encoder first: with the fp16 embed and vision encoder, Chrome 150 on an Apple M1 gave
@@ -82,7 +82,7 @@ export const LADDERS = {
       wasm: [{ embed_tokens: "fp32", vision_encoder: "q8", decoder_model_merged: "q4" }],
       freshHeapRetry: true,
     }),
-  /** HACKLE: q4f16 on webgpu only. */
+  /** earlier builds: q4f16 on webgpu only. */
   vlmGpuOnly: (): Rung[] => tjsLadder({ webgpu: ["q4f16", "q4"] }),
   ort: ortRungs,
 } as const;

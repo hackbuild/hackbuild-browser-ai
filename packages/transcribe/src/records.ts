@@ -1,6 +1,6 @@
 /**
  * Speech to text records for the models hub. Ladders and dtypes are
- * SCRIBE July's per model table; sizes are inferred from the builds'
+ * the earlier transcription tool's per model table; sizes are inferred from the builds'
  * notes. Licences are the model cards' as of 2026-11-22.
  */
 
@@ -26,7 +26,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     ladder: LADDERS.whisperTurbo(),
     licence: "MIT",
     place: "gpu",
-    notes: ["best accuracy, multilingual, wants webgpu (SCRIBE default with an adapter)"],
+    notes: ["best accuracy, multilingual, wants webgpu (as earlier builds did)"],
   }),
   asr({
     id: "whisper-base",
@@ -52,7 +52,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     sizeMB: 90,
     ladder: LADDERS.whisperSmall(false),
     licence: "MIT",
-    notes: ["english only; SCRIBE's no gpu default"],
+    notes: ["english only; the earlier transcription tool's no gpu default"],
   }),
   asr({
     id: "whisper-tiny.en",
@@ -75,7 +75,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
   }),
 ];
 
-/** The record SCRIBE picks: turbo with a webgpu adapter, base.en without. */
+/** The record earlier builds picked: turbo with a webgpu adapter, base.en without. */
 export function defaultTranscribeId(webgpu: boolean): string {
   return webgpu ? "whisper-large-v3-turbo" : "whisper-base.en";
 }

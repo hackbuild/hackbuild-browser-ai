@@ -47,7 +47,7 @@ function host(files: Record<string, string>) {
 }
 
 describe("ladders", () => {
-  it("builds the BAIL depth ladder", () => {
+  it("builds the earlier relief bench depth ladder", () => {
     expect(LADDERS.depth().map((r) => `${r.device} ${String(r.dtype)}`)).toEqual(["webgpu fp16", "webgpu fp32", "wasm q8", "wasm fp32"]);
   });
   it("puts wasm first for cpu perception and adds a fresh heap retry", () => {

@@ -1,4 +1,4 @@
-//! Zero phase band pass (COLLET bpZero): a high pass and a low pass biquad
+//! Zero phase band pass (as earlier builds did): a high pass and a low pass biquad
 //! (Butterworth Q), run forward then backward, and an optional notch with
 //! its first harmonic (Q 30).
 

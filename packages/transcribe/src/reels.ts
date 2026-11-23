@@ -1,5 +1,5 @@
 /**
- * Silence reel packing (SCRIBE July): speech regions are cut into reels of
+ * Silence reel packing (as earlier builds did): speech regions are cut into reels of
  * at most 26 s; a cut inside a region lands on the quietest frame of the
  * last 2 s (never before half a reel). Runs are joined with 0.12 s of
  * silence and a 0.1 s lead, and a source map takes model timestamps back

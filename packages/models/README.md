@@ -60,7 +60,7 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
 - `exclusive(resource, fn, { priority })`: one job per resource, higher
   priority first, FIFO within a priority, waiters can abort.
 - `chain(name)`: a serial queue for one capability.
-- Scheduling around rendering (HACKLE: a webgpu model shares the GPU with
+- Scheduling around rendering (earlier builds: a webgpu model shares the GPU with
   the scene and stutters it, and JS profiling does not show it):
   `run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs, maxDeferMs, when })`
   waits for the gap since the model's last start, an idle callback, and

@@ -1,7 +1,7 @@
 /**
  * The vision calls. Each routes through the hub (`use`, `run`, `release`),
  * so webgpu models take the gpu lock and idle models fall out under the
- * budget. VLM calls also go through one serial chain (HACKLE vlmChain).
+ * budget. VLM calls also go through one serial chain (as earlier builds did).
  * Landmarks walk a fallback chain of records: MediaPipe GPU, MediaPipe
  * CPU (both rungs of one record), then any other record for the same
  * capability, such as face-api.js.

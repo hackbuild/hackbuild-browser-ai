@@ -35,7 +35,7 @@ const MODULE_WORKER = /new\s+Worker\(\s*([^,()]+(?:\([^()]*\))?[^,()]*)\s*,\s*\{
 
 /**
  * Turn module workers into classic workers: Chrome refuses module workers
- * from a file:// page (FERRULE and ARBOR wllama patch). Other option keys
+ * from a file:// page (as earlier builds did). Other option keys
  * are kept. Returns the text and how many constructors changed.
  */
 export function toClassicWorker(src: string): { text: string; count: number } {

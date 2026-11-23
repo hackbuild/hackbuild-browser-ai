@@ -12,7 +12,7 @@
     },
     {
       "name": "transcribe",
-      "what": "whisper through the scribe front end: drop a file, or speak a sentence with kokoro and read it back.",
+      "what": "whisper through the quiet speech front end: drop a file, or speak a sentence with kokoro and read it back.",
       "timeoutS": 600
     },
     {

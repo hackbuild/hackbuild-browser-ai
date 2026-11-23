@@ -1,6 +1,6 @@
 // The biosignal wasm core (crates/biosignal) and helpers around it:
 // filtering, epoching, covariances per band, training, cross validation
-// folded by trial, and a JSON model export. From COLLET.
+// folded by trial, and a JSON model export. From an earlier biosignal build.
 
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
@@ -61,7 +61,7 @@ export interface ModelJson {
   values: number[];
 }
 
-/** Where a neural model (EEGNet on tfjs in COLLET) plugs in. Not built here. */
+/** Where a neural model (EEGNet on tfjs in an earlier biosignal build) plugs in. Not built here. */
 export interface EegNetRunner {
   fit(epochs: readonly Epoch[], classes: number): Promise<void>;
   proba(epoch: Epoch): Promise<number[]>;

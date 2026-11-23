@@ -1,6 +1,6 @@
-//! Sample rate conversion: linear interpolation (SCRIBE August, cheap and
+//! Sample rate conversion: linear interpolation (the earlier transcription tool, cheap and
 //! fine for onset work), a Hann windowed sinc for speech and model input,
-//! and a FIR decimator by an integer factor (KERF used 41 taps at 7 kHz
+//! and a FIR decimator by an integer factor (an earlier live captioner used 41 taps at 7 kHz
 //! to go from 48 kHz to 16 kHz).
 
 use crate::math::{PI, cos, sin};

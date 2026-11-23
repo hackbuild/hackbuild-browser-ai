@@ -1,4 +1,4 @@
-//! Symmetric positive definite matrices (COLLET): cyclic Jacobi eigen
+//! Symmetric positive definite matrices (as earlier builds did): cyclic Jacobi eigen
 //! decomposition, matrix functions through it (log, exp, inverse square
 //! root), shrunk covariances, the log-Euclidean mean as the tangent space
 //! reference, and tangent vectors (upper triangle, off diagonals times

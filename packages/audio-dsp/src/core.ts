@@ -127,7 +127,7 @@ export class Dsp {
   frameCount(n: number, frame: number, hop: number): number {
     return this.x.ad_frame_count(n, frame, hop);
   }
-  /** Level per frame in dB; SCRIBE uses 400 sample frames on a 160 sample hop at 16 kHz. */
+  /** Level per frame in dB; the earlier transcription tool uses 400 sample frames on a 160 sample hop at 16 kHz. */
   frameDb(x: Float32Array, hop = 160, frame = 400): Float32Array {
     if (!(Number.isInteger(hop) && hop >= 1 && Number.isInteger(frame) && frame >= 1)) throw new RangeError(`frameDb: hop ${hop} and frame ${frame} must be integers of at least 1`);
     const m = this.frameCount(x.length, frame, hop);
@@ -171,7 +171,7 @@ export class Dsp {
       this.free(pd, db.byteLength);
     }
   }
-  /** Spectral subtraction; SCRIBE strengths: alpha 1.2, 1.8, 2.6 with gain floors 0.15, 0.08, 0.04. */
+  /** Spectral subtraction; earlier builds: alpha 1.2, 1.8, 2.6 with gain floors 0.15, 0.08, 0.04. */
   denoise(x: Float32Array, noise: Float32Array, alpha: number, gFloor: number, w = 512, hop = 256): Float32Array {
     const pn = this.put(noise);
     try {
@@ -193,7 +193,7 @@ export class Dsp {
   resampleLength(n: number, src: number, dst: number): number {
     return this.x.ad_resample_len(n, src, dst);
   }
-  /** Windowed sinc by default; "linear" is the SCRIBE August interpolator. */
+  /** Windowed sinc by default; "linear" is the earlier transcription tool interpolator. */
   resample(x: Float32Array, src: number, dst: number, mode: "sinc" | "linear" = "sinc", zeros = 16): Float32Array {
     if (src === dst) return x.slice();
     const m = this.resampleLength(x.length, src, dst);
@@ -201,7 +201,7 @@ export class Dsp {
       mode === "linear" ? this.x.ad_resample_linear(a, x.length, src, dst, b, m) : this.x.ad_resample_sinc(a, x.length, src, dst, zeros, b, m),
     );
   }
-  /** FIR low pass then every factor-th sample (KERF: factor 3, 41 taps, 7 kHz from 48 kHz). */
+  /** FIR low pass then every factor-th sample (earlier builds: factor 3, 41 taps, 7 kHz from 48 kHz). */
   decimate(x: Float32Array, factor: number, taps = 41, cutoff = 7000, sr = 48000): Float32Array {
     return this.map(x, Math.floor(x.length / factor), (a, b) => this.x.ad_decimate(a, x.length, factor, taps, cutoff, sr, b));
   }

@@ -7,11 +7,16 @@
 export const MARKETING = ["seamless", "powerful", "robust", "comprehensive", "beautiful", "blazing", "delightful", "elegant"];
 export const FILLER = ["delve", "tapestry", "leverage", "utilize", "facilitate", "streamline", "empower", "unlock", "elevate", "crucial", "vital", "straightforward", "genuinely", "cutting-edge", "state-of-the-art"];
 export const OPENERS = ["Let's", "Simply", "Just", "Note that", "In this section"];
+// RULES.md Privacy: internal names a public reader cannot find, and the
+// private source's nickname. Code names match as capitalised words only.
+// Base64, so a plain text search of the repository for these words finds nothing.
+export const PRIVATE_WORDS = ["Y29tcGFuaW9u", "bGxtLWNvbXBhbmlvbg==", "c2F0Y2hlbA==", "bWFzay1zdHVkaW8tc2Ft"].map((b) => Buffer.from(b, "base64").toString("utf8"));
+export const CODE_NAMES = ["SCRIBE", "BAIL", "CALIPER", "COLLET", "KERF", "JIG", "SHEAR", "HACKLE", "FERRULE", "ARBOR", "MORTISE", "SHIM", "GIMBAL", "SPLICE"];
 export const BRAND_HEX = ["ff3366", "ff2d7b", "E91E8C", "f5f2eb"];
 export const JSON_MESSAGE_KEYS = ["title", "what", "message", "help", "label", "hint", "description", "constraint"];
 
 export const CHAR_RULES = ["dash", "emoji", "sparkle"];
-export const WORD_RULES = ["marketing", "filler", "opener", "frame"];
+export const WORD_RULES = ["marketing", "filler", "opener", "frame", "private"];
 export const ALLOWABLE_RULES = [...WORD_RULES, "brand-hex", "exclaim", "legacy-archive"];
 /** Dashes beyond U+2012 to U+2015 and U+2212: two- and three-em dash, the small and fullwidth forms, the vertical forms. */
 export const EXTRA_DASHES = [0x2e3a, 0x2e3b, 0xfe58, 0xfe63, 0xfe31, 0xfe32, 0xff0d];
@@ -51,6 +56,7 @@ const RX = {
       `|&#(?:9[7-9][0-9]{2}|10[01][0-9]{2}|12[6-9][0-9]{3}|65039|${decAlt(EXTRA_EMOJI)});`,
     "giu",
   ),
+  private: new RegExp(`(?<![\\w-])(?:${PRIVATE_WORDS.join("|")})s?(?![\\w-])|\\b(?:${CODE_NAMES.join("|")})\\b`, "gi"),
   "brand-hex": new RegExp(`#(?:${BRAND_HEX.join("|")})(?![0-9a-f])`, "gi"),
   marketing: new RegExp(`\\b(?:${MARKETING.join("|")})\\b`, "gi"),
   filler: new RegExp(`(?<![\\w-])(?:${FILLER.join("|")})(?![\\w-])`, "gi"),
@@ -138,6 +144,7 @@ export function lintText(path, text, kind = null) {
   add("brand-hex", text, RX["brand-hex"]);
   add("marketing", words, RX.marketing);
   add("filler", words, RX.filler);
+  add("private", text, RX.private, "block", (m) => CODE_NAMES.includes(m[0]) || PRIVATE_WORDS.includes(m[0].toLowerCase().replace(/s$/, "")));
   if (prose) {
     add("opener", words, RX.opener);
     add("frame", words, RX.frame, "warn");

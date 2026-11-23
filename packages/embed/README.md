@@ -82,4 +82,4 @@ zero download fallback.
 - MiniLM and bge-small through transformers.js 4.3.2 in a browser, and
   their speed.
 - Speed of the static embedder (the 0.08 ms per sentence figure is the
-  source build's, not measured here).
+  earlier build's, not measured here).

@@ -2,7 +2,7 @@
  * One weight store over OPFS, Cache Storage, IndexedDB parts and memory.
  *
  * A download is written as parts of `partBytes` (default 128 MB, the size
- * FERRULE and ARBOR use) with a meta record updated after each part. An
+ * earlier builds use) with a meta record updated after each part. An
  * interrupted download keeps what it has; the next `get` asks the server
  * for the rest with a Range request guarded by If-Range, and starts over
  * when the server answers 200 instead of 206 or when the 206 carries a
@@ -66,7 +66,7 @@ export interface StoreOptions {
 export interface Estimate {
   used: number | null;
   quota: number | null;
-  /** True when quota is unknown or free space is at least 1.2 times `bytes` (FERRULE margin). */
+  /** True when quota is unknown or free space is at least 1.2 times `bytes` (as earlier builds did). */
   fits(bytes: number): boolean;
 }
 

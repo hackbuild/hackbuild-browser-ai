@@ -22,7 +22,7 @@ export const EMBED_RECORDS: ModelRecord[] = [
     licence: "MIT",
     commercial: true,
     place: "main",
-    notes: ["256 dims, no runtime, about 0.08 ms per sentence in the source build (measured there, not here)", "misses paraphrase"],
+    notes: ["256 dims, no runtime, about 0.08 ms per sentence in an earlier build (measured there, not here)", "misses paraphrase"],
   },
   {
     id: "minilm-l6",
@@ -37,7 +37,7 @@ export const EMBED_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["384 dims; webgpu with q8 garbled other models in the source builds, so q8 stays on wasm"],
+    notes: ["384 dims; webgpu with q8 garbled other models in earlier builds, so q8 stays on wasm"],
   },
   {
     id: "bge-small-en",

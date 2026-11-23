@@ -50,7 +50,7 @@ export interface CoreItem {
   vector?: Float32Array | undefined;
 }
 
-/** Recall parameters. Defaults are the values the source builds used. */
+/** Recall parameters. Defaults are the values earlier builds used. */
 export interface CoreParams {
   k1?: number;
   b?: number;

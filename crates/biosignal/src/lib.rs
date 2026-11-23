@@ -1,7 +1,7 @@
 //! hackbuild-biosignal: EEG zero phase filters, shrunk covariances, a
 //! Riemannian tangent space classifier (log-Euclidean reference,
 //! multinomial logistic regression) and leak free cross validation, from
-//! COLLET. Builds natively and for wasm32-unknown-unknown with simd128; the
+//! an earlier biosignal build. Builds natively and for wasm32-unknown-unknown with simd128; the
 //! two give the same bits (tests/parity.rs and the TS parity test).
 //!
 //! The wasm surface is plain `extern "C"`: buffers from `bs_alloc`, results

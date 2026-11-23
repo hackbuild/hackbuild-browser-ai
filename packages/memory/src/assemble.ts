@@ -1,7 +1,7 @@
 // Token budgeted context assembly, recall selection, prefix stable
 // injection and core memory. Pure functions over strings.
 
-/** Characters per token for the default estimate (inferred from the source builds, not measured on a tokenizer). */
+/** Characters per token for the default estimate (inferred from earlier builds, not measured on a tokenizer). */
 export const CHARS_PER_TOKEN = 3.6;
 export const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
 

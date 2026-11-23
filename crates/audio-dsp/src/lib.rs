@@ -1,7 +1,7 @@
-//! hackbuild-audio-dsp: the speech front end of SCRIBE July (dc block,
+//! hackbuild-audio-dsp: the speech front end of the earlier transcription tool (dc block,
 //! cascaded high pass, a speech band copy, frame levels, minimum statistics
 //! noise floor, spectral subtraction, lookahead limiter), resampling, STFT
-//! magnitudes, onsets, tempo and grid fit (SCRIBE August), and LPC
+//! magnitudes, onsets, tempo and grid fit (as earlier builds did), and LPC
 //! formants (ported from bellowsjs, MIT, same owner). Builds natively
 //! and for wasm32-unknown-unknown with simd128; the two give the same bits
 //! for the same input (tests/parity.rs and the TS parity test).

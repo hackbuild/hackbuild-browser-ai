@@ -2,11 +2,11 @@
  * One tool decision from a chat engine, in the mode that suits the runtime:
  *
  *   constrained  grammar constrained JSON with a strict per tool anyOf, then the
- *                loose schema, then free text parsed tolerantly (satchel default)
+ *                loose schema, then free text parsed tolerantly (as earlier builds did)
  *   prompt       Hermes and Qwen `<tool_call>{...}</tool_call>` prompt format
  *   native       the runtime's own tools (WebLLM Hermes builds, remote APIs)
  *   tags         `[tool: argument]` inline in prose (BonziBuddy style tool grammar)
- *   lines        THOUGHT: / ACTION: lines (SHIM), good for code and multi line values
+ *   lines        THOUGHT: / ACTION: lines (as earlier builds did), good for code and multi line values
  *
  * "auto" picks constrained when the engine takes schemas, native when the
  * quirks say so, prompt for tool call tag models, else lines. Whatever the

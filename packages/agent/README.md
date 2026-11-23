@@ -76,7 +76,7 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
   and the turn contract. The user message holds fixed lines (what was
   heard, the host's fixed lines, the goal, the hint, done this turn) and
   then ranked sections added while they fit the budget (default 1000
-  tokens at 3.6 characters per token, inferred from the source builds):
+  tokens at 3.6 characters per token, inferred from earlier builds):
   the host's sections, LESSONS at 7, YOU REMEMBER at 5, LAST TURNS at 3.
   This is `budget()` from `@hackbuild/memory`.
 - Plan cache: a heard request that ended done with no failures and at

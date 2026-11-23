@@ -61,7 +61,7 @@ export interface KokoroOptions {
   runtime: () => Promise<KokoroModule>;
   /** onnx-community/Kokoro-82M-v1.0-ONNX, weights Apache-2.0. */
   model?: string;
-  /** "webgpu" runs fp32, "wasm" runs q8 (webgpu with q8 gave garbled audio in the source build). Default wasm. */
+  /** "webgpu" runs fp32, "wasm" runs q8 (webgpu with q8 gave garbled audio in an earlier build). Default wasm. */
   device?: "webgpu" | "wasm";
   voice?: string;
   /**

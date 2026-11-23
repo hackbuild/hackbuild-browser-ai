@@ -1,8 +1,7 @@
 # @hackbuild/stems
 
 Stem separation in a tab: htdemucs on onnxruntime-web through the models
-hub, an own overlap add runner, and a realtime factor readout. From SHEAR
-and SCRIBE August. Code MIT; this README CC-BY-4.0 with the code samples
+hub, an own overlap add runner, and a realtime factor readout. From an earlier August build. Code MIT; this README CC-BY-4.0 with the code samples
 also MIT. No weights ship here.
 
     npm install @hackbuild/stems
@@ -20,7 +19,7 @@ also MIT. No weights ship here.
 Segments are 343980 samples at 44.1 kHz; crossfades are linear over
 min(S minus stride, S / 4), weights floored at 1e-4. Pass `schedule` to
 keep a rendering page smooth (see the models hub). Separate first, then
-hand a stem to transcribe or notes (JIG, SCRIBE).
+hand a stem to transcribe or notes (an earlier lyrics tool).
 
 ## What is verified, and what is not
 
@@ -36,7 +35,7 @@ hand a stem to transcribe or notes (JIG, SCRIBE).
 
 - htdemucs in a browser on webgpu or wasm; separation quality; realtime
   factors.
-- The SHEAR medium tier (the demucs-web embedded graph with a spectrogram
+- The earlier stem splitter medium tier (the demucs-web embedded graph with a spectrogram
   input): not built, since its STFT branch is not written here.
-- A worker path for wasm (SHEAR ran wasm in a blob module worker): not
+- A worker path for wasm (an earlier stem splitter ran wasm in a blob module worker): not
   built; run the call inside a worker with the single file build.

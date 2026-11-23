@@ -1,7 +1,7 @@
 /**
  * One onnxruntime-web provider for the models hub. The graph bytes are
  * fetched once through the weight store (`store.once`) and every rung of
- * the ladder builds a session from the same bytes (SCRIBE August), since
+ * the ladder builds a session from the same bytes (as earlier builds did), since
  * onnxruntime aborts on a webgpu partition failure instead of falling back
  * on its own. Records list their graphs in `source.files`; files that are
  * not `.onnx` are passed as external data.

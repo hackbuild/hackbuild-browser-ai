@@ -70,7 +70,7 @@ function req<T>(r: IDBRequest<T>): Promise<T> {
 }
 
 /**
- * IndexedDB parts, the FERRULE and ARBOR layout: one `kv` store with
+ * IndexedDB parts, the layout earlier builds used: one `kv` store with
  * `<key>:meta` and `<key>:<n>` records. Works on file://.
  */
 export function idbBackend(opts: { db?: string; indexedDB?: IDBFactory } = {}): Backend {

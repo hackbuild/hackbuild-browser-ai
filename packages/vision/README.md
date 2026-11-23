@@ -30,15 +30,15 @@ also MIT. No weights ship here.
 
 | capability | record | runtime | weight licence |
 |---|---|---|---|
-| depth | depth-anything-v2-small | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm (BAIL) | Apache-2.0 |
+| depth | depth-anything-v2-small | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm (as earlier builds did) | Apache-2.0 |
 | detect | efficientdet-lite0 (default) | MediaPipe, GPU then CPU delegate | Apache-2.0 |
-| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes (HACKLE) | AGPL-3.0 (Ultralytics), supplied by the app |
+| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes (as earlier builds did) | AGPL-3.0 (Ultralytics), supplied by the app |
 | segment (points) | slimsam-77-uniform | transformers.js, one embedding per image | Apache-2.0 |
 | segment.person | selfie-segmenter | MediaPipe | Apache-2.0 |
 | landmarks.face | face-landmarker, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | Apache-2.0; MIT |
 | landmarks.hand, landmarks.pose | hand-landmarker, pose-landmarker-lite | MediaPipe | Apache-2.0 |
 | vision.caption, vision.ask | smolvlm-256m-instruct | transformers.js, per sub graph dtypes, repetition penalty 1.3 | Apache-2.0 |
-| vision.caption, vision.ask | lfm2-vl-450m | transformers.js, q4f16 on webgpu only (HACKLE) | LFM Open License v1.0, commercial use limited by revenue |
+| vision.caption, vision.ask | lfm2-vl-450m | transformers.js, q4f16 on webgpu only (as earlier builds did) | LFM Open License v1.0, commercial use limited by revenue |
 
 The YOLO decoder is written from the published output layout
 ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by
@@ -72,10 +72,9 @@ frames instead of queueing them, and a rate cap (default 10 Hz).
 ## Loop and cache
 
 `perceptionLoop({ step, interval })` runs one step at a time beside the
-render loop; `detectCadenceMs(latency)` is HACKLE's max(0.45 s, 4 times
+render loop; `detectCadenceMs(latency)` is the earlier scene app's max(0.45 s, 4 times
 the last latency). `ResultCache` keeps results by key so a depth map is
-computed once per image (BAIL). `depthToRgba` and `fitSize` (BAIL's 1024
-px cap) help with canvases.
+computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as earlier builds did) help with canvases.
 
 ## What is verified, and what is not
 
@@ -109,7 +108,7 @@ px cap) help with canvases.
 
 ### Not verified by anything
 
-- Any model in a browser: tasks-vision 1.2.3 (the HACKLE pin) task
+- Any model in a browser: tasks-vision 1.2.3 (as earlier builds did) task
   options and result shapes, transformers.js 4.3.2 SmolVLM, LFM2-VL and
   SlimSAM class names and processor calls, a real YOLOv8n export's output
   name and layout.
