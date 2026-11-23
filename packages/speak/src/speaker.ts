@@ -390,14 +390,23 @@ export class Speaker {
     this.nativeBusy = true;
     this.current = e.id;
     this.o.onSegment?.({ ...seg, utterance: utt, engine: e.id });
-    this.setSpeaking(true);
+    // speaking starts when the platform reports audio (onstart, or the first word boundary);
+    // a native engine that reports neither never sets it, so its time to first audio is unknown
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      this.setSpeaking(true);
+    };
     this.progress({ utterance: utt, offset: seg.start, kind: "segment", estimated: false });
     try {
       await e.speak(
         sp.text,
         this.cfg(e.id),
         {
+          onStart: start,
           onBoundary: (ci, len) => {
+            start();
             const t = this.o.ctx.currentTime;
             this.nativeLevelUntil = t + 0.15;
             const end = len !== undefined ? ci + len : (/[\p{L}\p{N}'’]+/u.exec(sp.text.slice(ci))?.[0].length ?? 0) + ci;

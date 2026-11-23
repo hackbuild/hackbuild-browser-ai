@@ -213,6 +213,53 @@ describe("speaker", () => {
   });
 });
 
+describe("native first audio", () => {
+  const run = async (events: ("start" | "boundary")[]) => {
+    const ctx = new FakeCtx();
+    const log: string[] = [];
+    const synth = {
+      speak(u: UtteranceLike) {
+        log.push("speak");
+        setTimeout(() => {
+          for (const e of events) {
+            log.push(e);
+            if (e === "start") u.onstart?.();
+            else u.onboundary?.({ charIndex: 0, name: "word" });
+          }
+          u.onend?.();
+        }, 5);
+      },
+      cancel() {},
+      getVoices: () => [],
+    };
+    class U {
+      rate = 1;
+      pitch = 1;
+      voice = null;
+      onboundary = null;
+      onstart = null;
+      onend = null;
+      onerror = null;
+      constructor(public text: string) {}
+    }
+    const sp = createSpeaker({ ctx, engines: [webSpeechEngine({ synth, Utterance: U })], tickMs: 0, onSpeaking: (b) => log.push(`speaking ${b}`) });
+    await sp.say("Hello there.");
+    return log;
+  };
+
+  test("speaking starts at the platform's start event, not at the call", async () => {
+    expect(await run(["start", "boundary"])).toEqual(["speak", "start", "speaking true", "boundary", "speaking false"]);
+  });
+
+  test("the first boundary starts it when there is no start event", async () => {
+    expect(await run(["boundary"])).toEqual(["speak", "boundary", "speaking true", "speaking false"]);
+  });
+
+  test("with neither, speaking never starts, so first audio stays unknown", async () => {
+    expect(await run([])).toEqual(["speak"]);
+  });
+});
+
 describe("engines", () => {
   test("kokoro runs fp32 on webgpu and q8 on wasm and states its licence", async () => {
     const seen: unknown[] = [];

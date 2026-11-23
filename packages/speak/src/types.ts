@@ -53,8 +53,11 @@ export interface NativeEngine {
   readonly id: string;
   readonly licence: string;
   load(ctx: LoadContext): Promise<void>;
-  /** Speak and resolve when done. onBoundary gets character offsets in `text`. */
-  speak(text: string, cfg: VoiceConfig, hooks: { onBoundary(charIndex: number, charLength?: number): void }, signal: AbortSignal): Promise<void>;
+  /**
+   * Speak and resolve when done. onBoundary gets character offsets in `text`;
+   * onStart fires when the platform says audio started, when it says so.
+   */
+  speak(text: string, cfg: VoiceConfig, hooks: { onBoundary(charIndex: number, charLength?: number): void; onStart?(): void }, signal: AbortSignal): Promise<void>;
   stop(): void;
   voices?(): string[];
 }

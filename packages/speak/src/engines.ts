@@ -113,6 +113,7 @@ export interface UtteranceLike {
   pitch: number;
   voice: { name: string; lang: string } | null;
   onboundary: ((ev: { charIndex: number; charLength?: number; name?: string }) => void) | null;
+  onstart?: (() => void) | null;
   onend: (() => void) | null;
   onerror: ((ev: { error?: string }) => void) | null;
 }
@@ -139,6 +140,7 @@ export function webSpeechEngine(o: { synth?: SynthLike; Utterance?: new (text: s
         u.onboundary = (ev) => {
           if (ev.name === undefined || ev.name === "word") hooks.onBoundary(ev.charIndex, ev.charLength);
         };
+        u.onstart = () => hooks.onStart?.();
         u.onend = () => resolve();
         u.onerror = (ev) => (ev.error === "interrupted" || ev.error === "canceled" ? resolve() : reject(new Error(`speech synthesis: ${ev.error ?? "error"}`)));
         signal.addEventListener("abort", () => synth.cancel(), { once: true });

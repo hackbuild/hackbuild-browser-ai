@@ -59,7 +59,10 @@ references ship here.
   Kokoro through kokoro-js reports none, so word times are estimated from
   word length over the segment's duration and marked `estimated`. Web
   Speech reports word boundaries as they happen; its level is a pulse per
-  boundary (estimated).
+  boundary (estimated). A native engine counts as speaking from the
+  platform's start event, or its first word boundary when there is none;
+  with neither, `onSpeaking` never fires and time to first audio is
+  unknown rather than 0.
 - Cache: recent clips by engine, voice, rate and text, bounded at 3
   minutes of 24 kHz samples (computed), so a replay does no synthesis.
 - `tick()` fires due cues; it runs every 25 ms while speaking, or pass
