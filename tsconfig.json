@@ -9,6 +9,9 @@
     },
     {
       "path": "packages/models"
+    },
+    {
+      "path": "packages/memory"
     }
   ]
 }

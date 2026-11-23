@@ -1,0 +1,33 @@
+{
+  "name": "@hackbuild/memory",
+  "version": "0.1.0",
+  "description": "Memory for in-tab agents: BM25 plus vector recall fused by reciprocal rank in a wasm core, decay and merge, IndexedDB persistence, token budgeted context and prefix stable injection.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/memory"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./inline": {
+      "types": "./dist/inline.d.ts",
+      "import": "./dist/inline.js"
+    },
+    "./memory.wasm": "./wasm/memory.wasm"
+  },
+  "files": ["dist", "wasm/memory.wasm", "README.md"],
+  "scripts": {
+    "build": "tsc -b",
+    "build:wasm": "node scripts/build-wasm.mjs"
+  }
+}

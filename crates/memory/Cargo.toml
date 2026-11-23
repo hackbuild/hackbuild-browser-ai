@@ -1,0 +1,11 @@
+[package]
+name = "hackbuild-memory"
+version = "0.1.0"
+description = "BM25 plus flat cosine search with reciprocal rank fusion, linear and organic scorers, decay and merge, for native and wasm32."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
