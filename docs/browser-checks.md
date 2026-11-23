@@ -57,3 +57,5 @@ README).
 | 47 | listen | capture worklet from a Blob and a data: URL, end of speech to text latency with whisper-base.en (MIT) measured | Chrome, Safari, microphone | not run |
 | 48 | character | the inlined wasm core from a file:// page: read a PNG card dropped on the page, write it back, open the result in a card reader of another tool | Chrome, Safari, file:// page | not run |
 | 49 | character | CHARX archives written by other tools (deflate entries, data descriptors) read, and this package's CHARX opened by another reader | browser, CHARX files with CC0 or own content | not run |
+| 50 | act | the act GBNF grammar compiled by wllama 4.0.0 and the JSON Schema by WebLLM XGrammar, and how often Qwen2.5 0.5B and 1.5B (Apache-2.0) place valid tags with and without it | browser, models | not run |
+| 51 | act | cues fired from word timestamps of a real voice on a VRM avatar: timing, cooldown and mood decay looked at by a person | browser, a voice engine, an avatar | not run |

@@ -26,6 +26,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/speak](packages/speak) | engine chain over kokoro, pocket tts and web speech; first clause streaming, gapless playback, one analyser, watchdog, offsets for cues and lip sync | 17 vitest |
 | [@hackbuild/listen](packages/listen) | vad state machine with silero and energy sources, transcribe adapter with the phantom filter, barge in by threshold swap, mic helpers | 11 vitest |
 | [@hackbuild/character](packages/character) | rust wasm core: character card v2 and v3 as json, png text chunks and charx, upgrade, downgrade, validate; a versioned profile extension for avatar, voice and actions with migration; native cli; macros and lorebook matching | 46 vitest, 27 cargo |
+| [@hackbuild/act](packages/act) | speech timeline action grammar: mood, gesture and posture tags fire when the voice reaches them; per avatar vocabulary, strict resolver, gbnf and json schema, hybrid inference, replay | 22 vitest |
 
 Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
 components).

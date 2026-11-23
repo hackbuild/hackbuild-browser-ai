@@ -1,0 +1,41 @@
+{
+  "name": "@hackbuild/act",
+  "version": "0.1.0",
+  "description": "Speech timeline action grammar: mood, gesture and posture tags placed in spoken text fire when the voice reaches them, with names constrained per avatar, a strict resolver, a grammar for constrained decoding and a sentence inferrer.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/act"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/structured": "0.1.0"
+  },
+  "peerDependencies": {
+    "@hackbuild/memory": "0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@hackbuild/memory": {
+      "optional": true
+    }
+  }
+}

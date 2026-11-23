@@ -26,3 +26,4 @@ Versions follow semver per package. Nothing is published to npm yet.
 - embed: model2vec static embedder in plain typescript and a transformers.js minilm adapter, both with a fingerprint id, and hub records.
 - speak: engine chain over kokoro, pocket tts and web speech with first clause streaming, gapless playback, a watchdog and text offsets for cues and lip sync.
 - listen: vad state machine with silero and energy sources, a transcribe adapter and barge in by a threshold swap while speaking.
+- act: speech timeline cues with names constrained per avatar, a strict resolver, a gbnf and json schema grammar, hybrid sentence inference and replay.
