@@ -13,6 +13,7 @@ const expected = {
   chat: ["createEngine", "scripted"],
   structured: ["call", "createTagParser"],
   memory: ["open", "loadCore"],
+  devices: ["tjsProvider", "ortProvider", "LADDERS"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {

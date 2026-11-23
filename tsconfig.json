@@ -18,6 +18,9 @@
     },
     {
       "path": "packages/structured"
+    },
+    {
+      "path": "packages/devices"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 Run language, vision and speech models in a browser tab: one chat interface over local runtimes, a resumable weights cache, structured output for small models, memory, voice in and out, character cards and an agent loop.
 
-Status: phase A, 2026-11-22. Packages land in `packages/` as they pass
+Status: phase A and phase P (perception and audio) in progress, 2026-11-22. Packages land in `packages/` as they pass
 their tests; the table below grows with them. Nothing is published to npm.
 
 | package | what | tests |
@@ -13,6 +13,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/memory](packages/memory) | bm25 plus flat cosine with rrf in a rust wasm core (simd128), linear and organic scorers, decay, merge, indexeddb, budgeted context | 44 vitest, 15 cargo |
 | [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 30 vitest |
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
+| [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 10 vitest |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion, built natively and for wasm32 with SIMD128).

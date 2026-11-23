@@ -31,3 +31,5 @@ README).
 | 21 | memory | recall quality with MiniLM (Apache-2.0) and bge-small (MIT) embedders | browser, transformers.js, embedder weights | not run |
 | 22 | memory | prefix stable injection keeping a wllama or WebLLM KV prefix warm (time to first token, measured) | browser, model | not run |
 | 23 | all | every `dist/single/*.js` file loaded from a file:// page | Chrome, Safari | not run |
+| 24 | devices | `loadTransformers()` and `loadOrt()` import transformers.js 4.3.2 and onnxruntime-web 1.27.0 from the pinned URLs over https and from file:// | Chrome, Safari, network | not run |
+| 25 | devices | the ort ladder from webgpu basic to wasm on a graph that fails to partition (htdemucs, MIT) with one download | WebGPU machine, network | not run |
