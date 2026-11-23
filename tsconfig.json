@@ -36,6 +36,9 @@
     },
     {
       "path": "packages/stems"
+    },
+    {
+      "path": "packages/notes"
     }
   ]
 }

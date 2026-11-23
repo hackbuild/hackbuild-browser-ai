@@ -19,6 +19,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/vision](packages/vision) | depth anything v2, mediapipe detection, segmentation and landmarks with fallback, optional external yolo, slimsam, smolvlm and lfm2-vl captions, loop, readback loop and cache | 15 vitest |
 | [@hackbuild/depth-mesh](packages/depth-mesh) | rust wasm core (simd128): depth to point cloud, relief heightfield solids, surface nets, point to plane icp, silhouette carving; stl, obj and ply export | 4 vitest, 8 cargo |
 | [@hackbuild/stems](packages/stems) | htdemucs tiers on onnxruntime-web, own overlap add, realtime factor | 3 vitest |
+| [@hackbuild/notes](packages/notes) | basic pitch runner, note decoding and refinement, drum onsets, tempo and grid fit, midi out | 6 vitest |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music

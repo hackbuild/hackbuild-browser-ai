@@ -44,3 +44,4 @@ README).
 | 34 | depth-mesh | a CALIPER turntable carve from a webcam and an ICP scan, at real frame rate, looked at by a person | Chrome, webcam, turntable | not run |
 | 35 | models, vision | a webgpu depth or VLM model beside a three.js scene with and without `frameBudgetMs` and `minIntervalMs`: frame times measured, stutter looked at by a person | WebGPU machine, a scene | not run |
 | 36 | stems | htdemucs fast and slow (MIT) on webgpu and wasm over a 3 minute song: realtime factor measured, stems listened to | WebGPU machine, network, a CC0 song | not run |
+| 37 | notes | Basic Pitch (Apache-2.0) on tfjs 3.21.0 webgl and cpu over a separated bass stem; notes compared with the basic-pitch library's decoder | browser, network | not run |

@@ -19,6 +19,7 @@ const expected = {
   vision: ["attachVision", "depth", "detect", "landmarks", "mediapipeProvider"],
   "depth-mesh": ["loadDepthMesh", "toStl", "fitToPrint"],
   stems: ["separate", "attachStems"],
+  notes: ["runPitch", "decodeNotes", "drumNotes"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {
