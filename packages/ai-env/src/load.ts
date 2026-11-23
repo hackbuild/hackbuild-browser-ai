@@ -6,11 +6,14 @@
  * Blob URL, then from a base64 data: URL (FERRULE importWllama). Each URL in
  * `urls` is tried in order, so a CDN fallback list is one call.
  *
- * spawnWorker: the worker ladder from the plan, written once. Rungs are
- * module-blob, classic-blob and inline (the source runs on the page with a
- * worker shaped shim). A rung counts once the worker posts the ready
+ * spawnWorker: the worker ladder, written once. Rungs are module-blob,
+ * classic-blob and, opt in only, inline (the source runs on the page with
+ * a worker shaped shim). A rung counts once the worker posts the ready
  * handshake appended after the source, so a worker whose top level code
  * throws moves to the next rung instead of hanging.
+ *
+ * Integrity: importEsm takes a SHA-256 per URL and spawnWorker one for a
+ * URL source; fetched text whose hash differs is refused.
  */
 
 import { absolutizeImports, rewriteSource, textToDataUrl, toClassicWorker, type Rewrite } from "./source.js";
@@ -26,7 +29,21 @@ export interface LoadDeps {
   protocol?: string;
 }
 
+/** Lowercase hex SHA-256 of a string's UTF-8 bytes, through Web Crypto. */
+export async function sha256Text(text: string): Promise<string> {
+  const subtle = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
+  if (!subtle) throw new Error("no web crypto in this context, so a sha256 cannot be checked");
+  const d = new Uint8Array(await subtle.digest("SHA-256", new TextEncoder().encode(text)));
+  return Array.from(d, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export interface ImportEsmOptions extends LoadDeps {
+  /**
+   * SHA-256 (lowercase hex) of the fetched text per URL. A URL listed here
+   * is always fetched as text and checked before it runs; a mismatch moves
+   * to the next URL.
+   */
+  integrity?: Readonly<Record<string, string>>;
   /** Rewrites applied to the fetched text. Missing matches are reported through onMissed. */
   rewrites?: readonly Rewrite[];
   /** Swap module workers for classic workers in the source. Default: true on file://. */
@@ -62,6 +79,7 @@ export async function importEsm<T = unknown>(urls: string | readonly string[], o
   const classic = opts.classicWorkers ?? onFile;
   const needsPatch = classic || !!opts.patch || (opts.rewrites?.length ?? 0) > 0;
   const mkUrl = opts.createObjectURL ?? ((b: Blob) => URL.createObjectURL(b));
+  const revoke = opts.revokeObjectURL ?? ((u: string) => URL.revokeObjectURL?.(u));
   const attempts: { url: string; via: string; error: string }[] = [];
   const note = (url: string, via: "import" | "blob" | "data", ok: boolean, error?: string) => {
     opts.onAttempt?.(error === undefined ? { url, via, ok } : { url, via, ok, error });
@@ -69,7 +87,8 @@ export async function importEsm<T = unknown>(urls: string | readonly string[], o
   };
 
   for (const url of list) {
-    if (!needsPatch) {
+    const want = opts.integrity?.[url]?.toLowerCase();
+    if (!needsPatch && !want) {
       try {
         const m = (await importer(url)) as T;
         note(url, "import", true);
@@ -88,6 +107,13 @@ export async function importEsm<T = unknown>(urls: string | readonly string[], o
       note(url, "blob", false, `fetch failed: ${errText(e)}`);
       continue;
     }
+    if (want) {
+      const got = await sha256Text(src);
+      if (got !== want) {
+        note(url, "blob", false, `sha256 ${got}, expected ${want}`);
+        continue;
+      }
+    }
     if (opts.rewrites?.length) {
       const r = rewriteSource(src, opts.rewrites);
       if (r.missed.length) opts.onMissed?.(r.missed, url);
@@ -96,13 +122,17 @@ export async function importEsm<T = unknown>(urls: string | readonly string[], o
     if (classic) src = toClassicWorker(src).text;
     if (opts.patch) src = opts.patch(src, url);
     src = absolutizeImports(src, url);
+    let blobUrl: string | null = null;
     try {
-      const blobUrl = mkUrl(new Blob([src], { type: "text/javascript" }));
+      blobUrl = mkUrl(new Blob([src], { type: "text/javascript" }));
       const m = (await importer(blobUrl)) as T;
       note(url, "blob", true);
       return m;
     } catch (e) {
       note(url, "blob", false, errText(e));
+    } finally {
+      // the module is fetched once import settles, so the URL can go
+      if (blobUrl) revoke(blobUrl);
     }
     try {
       const m = (await importer(textToDataUrl(src))) as T;
@@ -139,6 +169,7 @@ export interface SpawnOptions {
   /** Worker constructor. Default globalThis.Worker. */
   Worker?: new (url: string, opts?: { type?: "module" | "classic"; name?: string }) => WorkerLike;
   createObjectURL?: (b: Blob) => string;
+  revokeObjectURL?: (u: string) => void;
   fetch?: typeof fetch;
   name?: string;
 }
@@ -156,15 +187,37 @@ function handshake(): string {
 }
 
 /**
- * A worker shaped object that runs the source on the page. Messages are
- * delivered on a later task so ordering matches a real worker. Used only as
- * the last rung: it blocks the page while the source computes.
+ * Import module text: a Blob URL first, then a base64 data: URL (file://
+ * pages and runtimes without Blob URL imports). No eval.
+ */
+async function importText(text: string): Promise<unknown> {
+  let u: string | null = null;
+  try {
+    u = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+    return await import(/* @vite-ignore */ u);
+  } catch {
+    return await import(/* @vite-ignore */ textToDataUrl(text));
+  } finally {
+    if (u) URL.revokeObjectURL(u);
+  }
+}
+
+/**
+ * A worker shaped object that runs the source on the page. The source is
+ * wrapped in a function in a module and imported from a Blob or data: URL,
+ * so no eval or Function constructor is used, and it runs in strict mode.
+ * Messages are delivered on a later task so ordering matches a real
+ * worker. It shares the page realm, so `globalThis`, the DOM and storage
+ * are in reach: spawnWorker uses it only when the caller lists "inline",
+ * and never for a URL source without a SHA-256.
  */
 export class InlineWorker implements WorkerLike {
   private readonly pageListeners = new Map<string, Set<(ev: { data?: unknown; message?: string }) => void>>();
   private readonly innerListeners = new Set<(ev: { data: unknown }) => void>();
   private innerOnMessage: ((ev: { data: unknown }) => void) | null = null;
   private dead = false;
+  /** Settles once the source has run; page messages wait for it, as a real worker queues them. */
+  private readonly started: Promise<void>;
 
   constructor(src: string) {
     const self = {
@@ -187,14 +240,20 @@ export class InlineWorker implements WorkerLike {
       },
     };
     const inner = this;
-    queueMicrotask(() => {
+    this.started = (async () => {
+      let run: (s: unknown, p: unknown, i: unknown) => void;
       try {
-        // The worker source is code the caller chose to run; this is the inline rung of the ladder.
-        new Function("self", "postMessage", "importScripts", src)(self, self.postMessage, self.importScripts);
+        run = ((await importText(`export default function (self, postMessage, importScripts) {\n${src}\n}\n`)) as { default: typeof run }).default;
+      } catch (e) {
+        this.emit("error", { message: errText(e) });
+        return;
+      }
+      try {
+        run(self, self.postMessage, self.importScripts);
       } catch (e) {
         this.emit("error", { message: errText(e) });
       }
-    });
+    })();
   }
 
   private emit(type: "message" | "error", ev: { data?: unknown; message?: string }): void {
@@ -207,12 +266,14 @@ export class InlineWorker implements WorkerLike {
 
   postMessage(data: unknown): void {
     if (this.dead) return;
-    setTimeout(() => {
-      if (this.dead) return;
-      const ev = { data };
-      this.innerOnMessage?.(ev);
-      for (const fn of this.innerListeners) fn(ev);
-    }, 0);
+    void this.started.then(() =>
+      setTimeout(() => {
+        if (this.dead) return;
+        const ev = { data };
+        this.innerOnMessage?.(ev);
+        for (const fn of this.innerListeners) fn(ev);
+      }, 0),
+    );
   }
 
   terminate(): void {
@@ -252,17 +313,24 @@ function waitReady(w: WorkerLike, ms: number): Promise<void> {
 
 /**
  * Spawn a worker from source text or a URL to source text, walking the
- * rungs in `prefer` (default module-blob, classic-blob, inline). The ready
- * handshake message is swallowed; the caller sees only its own messages.
+ * rungs in `prefer` (default module-blob, classic-blob). The inline rung
+ * runs on the page and is used only when listed; for a URL source it also
+ * needs `sha256`. The ready handshake message is swallowed; the caller
+ * sees only its own messages.
  */
-export async function spawnWorker(source: string | { url: string }, opts: SpawnOptions = {}): Promise<Spawned> {
+export async function spawnWorker(source: string | { url: string; sha256?: string }, opts: SpawnOptions = {}): Promise<Spawned> {
   let src: string;
+  const want = typeof source === "string" ? undefined : source.sha256?.toLowerCase();
   if (typeof source === "string") src = source;
   else {
     const f = opts.fetch ?? globalThis.fetch.bind(globalThis);
     const res = await f(source.url);
     if (!res.ok) throw new LoadError(`worker source http ${res.status}`, [{ url: source.url, via: "fetch", error: `http ${res.status}` }]);
     src = await res.text();
+    if (want) {
+      const got = await sha256Text(src);
+      if (got !== want) throw new LoadError(`worker source sha256 ${got}, expected ${want}`, [{ url: source.url, via: "fetch", error: "sha256 mismatch" }]);
+    }
   }
   if (opts.rewrites?.length) {
     const r = rewriteSource(src, opts.rewrites);
@@ -270,16 +338,21 @@ export async function spawnWorker(source: string | { url: string }, opts: SpawnO
     src = r.text;
   }
   const base = opts.base ?? (typeof source === "string" ? undefined : source.url);
-  const prefer = opts.prefer ?? ["module-blob", "classic-blob", "inline"];
+  const prefer = opts.prefer ?? ["module-blob", "classic-blob"];
   const readyMs = opts.readyMs ?? 4000;
   const W = opts.Worker ?? (globalThis as { Worker?: SpawnOptions["Worker"] }).Worker;
   const mkUrl = opts.createObjectURL ?? ((b: Blob) => URL.createObjectURL(b));
+  const revoke = opts.revokeObjectURL ?? ((u: string) => URL.revokeObjectURL?.(u));
   const failures: Spawned["failures"] = [];
   const prelude = opts.prelude ? opts.prelude + "\n" : "";
 
   for (const rung of prefer) {
     let w: WorkerLike | undefined;
+    let url: string | null = null;
     try {
+      if (rung === "inline" && typeof source !== "string" && !want) {
+        throw new Error("inline runs on the page, so a url source needs a sha256 for it");
+      }
       if (rung === "inline") {
         w = new InlineWorker(prelude + src + "\n" + handshake());
       } else {
@@ -288,7 +361,7 @@ export async function spawnWorker(source: string | { url: string }, opts: SpawnO
         if (rung === "classic-blob") {
           body = toClassicWorker(body).text;
         } else if (base) body = absolutizeImports(body, base);
-        const url = mkUrl(new Blob([prelude + body + "\n" + handshake()], { type: "text/javascript" }));
+        url = mkUrl(new Blob([prelude + body + "\n" + handshake()], { type: "text/javascript" }));
         const o: { type?: "module" | "classic"; name?: string } = { type: rung === "module-blob" ? "module" : "classic" };
         if (opts.name) o.name = opts.name;
         w = new W(url, o);
@@ -298,6 +371,9 @@ export async function spawnWorker(source: string | { url: string }, opts: SpawnO
     } catch (e) {
       w?.terminate();
       failures.push({ rung, error: errText(e) });
+    } finally {
+      // the worker has fetched its script once it posted the handshake, or it is gone
+      if (url) revoke(url);
     }
   }
   throw new LoadError(

@@ -124,9 +124,10 @@ export async function probe(opts: ProbeOptions = {}): Promise<Env> {
   } else notes.push("opfs is missing.");
 
   let cacheStorage = false;
-  const caches = g.caches as { open?: (n: string) => Promise<unknown> } | undefined;
-  if (caches && typeof caches.open === "function" && protocol !== "file") {
-    cacheStorage = (await withTimeout(caches.open("ai-env-probe").then(() => true), timeoutMs)) === true;
+  // keys() answers without creating a cache, so a probe leaves nothing behind
+  const caches = g.caches as { keys?: () => Promise<unknown> } | undefined;
+  if (caches && typeof caches.keys === "function" && protocol !== "file") {
+    cacheStorage = (await withTimeout(caches.keys().then(() => true), timeoutMs)) === true;
   }
   const idb = !!g.indexedDB && typeof (g.indexedDB as { open?: unknown }).open === "function";
   if (!idb) notes.push("indexeddb is missing. weights stay in memory for this tab only.");

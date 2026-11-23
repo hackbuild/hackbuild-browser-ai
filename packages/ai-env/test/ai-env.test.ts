@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  sha256Text,
   absolutizeImports,
   base64ToBytes,
   bytesToBase64,
@@ -32,7 +35,7 @@ describe("probe", () => {
         location: { protocol: "https:" },
         crossOriginIsolated: true,
         indexedDB: { open() {} },
-        caches: { open: async () => ({}) },
+        caches: { keys: async () => [] },
       },
     });
     expect(env).toMatchObject({
@@ -146,6 +149,21 @@ function fakeFetch(files: Record<string, string>) {
 }
 
 describe("importEsm", () => {
+  it("checks a pinned sha256 and moves to the next url on a mismatch", async () => {
+    const good = "export const v = 1;";
+    const seen: string[] = [];
+    const m = await importEsm<{ via: string }>(["https://a.test/x.js", "https://b.test/x.js"], {
+      protocol: "https:",
+      fetch: fakeFetch({ "https://a.test/x.js": "export const v = 2;", "https://b.test/x.js": good }),
+      integrity: { "https://a.test/x.js": await sha256Text(good), "https://b.test/x.js": await sha256Text(good) },
+      createObjectURL: () => "blob:fake/2",
+      revokeObjectURL: (u) => seen.push(`revoked ${u}`),
+      importer: async (s) => (seen.push(s), { via: s }),
+    });
+    expect(m.via).toBe("blob:fake/2");
+    expect(seen).toEqual(["blob:fake/2", "revoked blob:fake/2"]);
+  });
+
   it("uses plain import over http when nothing is patched", async () => {
     const seen: string[] = [];
     const m = await importEsm<{ ok: number }>("https://cdn.test/a.js", {
@@ -275,6 +293,24 @@ describe("spawnWorker", () => {
       out.worker.postMessage(21);
     });
     expect(reply).toEqual({ echo: 42 });
+  });
+
+  it("never runs inline unless asked, and a url source needs a matching sha256 for it", async () => {
+    const src = `self.onmessage = (e) => self.postMessage(e.data);`;
+    const fetch = (async () => new Response(src)) as unknown as typeof globalThis.fetch;
+    await expect(spawnWorker(src, { Worker: undefined as never, readyMs: 100 })).rejects.toThrow(/module-blob.*classic-blob/);
+    const noHash = await spawnWorker({ url: "https://cdn.test/w.js" }, { prefer: ["inline"], fetch, readyMs: 100 }).catch((e: Error) => e.message);
+    expect(noHash).toMatch(/needs a sha256/);
+    const good = await sha256Text(src);
+    const ok = await spawnWorker({ url: "https://cdn.test/w.js", sha256: good }, { prefer: ["inline"], fetch, readyMs: 200 });
+    expect(ok.rung).toBe("inline");
+    const bad = await spawnWorker({ url: "https://cdn.test/w.js", sha256: "00".repeat(32) }, { prefer: ["inline"], fetch }).catch((e: Error) => e.message);
+    expect(bad).toMatch(/sha256/);
+  });
+
+  it("runs the inline rung with no eval", () => {
+    const src = readFileSync(join(import.meta.dirname, "..", "src", "load.ts"), "utf8");
+    expect(src).not.toMatch(/new Function|\beval\(/);
   });
 
   it("names every failed rung when none starts", async () => {

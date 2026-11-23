@@ -46,12 +46,20 @@ code samples also MIT.
   imports from a Blob URL, then from a base64 `data:` URL built in 32 KB
   steps. Each URL in the list is tried in turn; a `LoadError` lists every
   attempt.
-- `spawnWorker` walks the rungs `module-blob`, `classic-blob`, `inline`. A
-  rung counts once the worker reaches the end of its top level code and
-  posts the ready handshake the loader appends; an error event or a
-  missing handshake in `readyMs` (default 4000) moves to the next rung. The
-  inline rung runs the source on the page through a worker shaped shim and
-  blocks the page while it computes.
+- `importEsm` takes `integrity: { [url]: sha256 }`. A listed URL is
+  always fetched as text and its SHA-256 checked before it runs; a
+  mismatch moves to the next URL. Blob URLs are revoked once the import
+  settles.
+- `spawnWorker` walks the rungs `module-blob` and `classic-blob` by
+  default. A rung counts once the worker reaches the end of its top level
+  code and posts the ready handshake the loader appends; an error event or
+  a missing handshake in `readyMs` (default 4000) moves to the next rung.
+  `inline` is opt in: it runs the source on the page through a worker
+  shaped shim, so the page realm (DOM, storage, any key typed in) is in
+  its reach, and it blocks the page while it computes. It imports the
+  source wrapped in a function from a Blob or `data:` URL, with no eval,
+  in strict mode. A `{ url }` source runs inline only with a `sha256`
+  that matches, and `{ url, sha256 }` is checked on every rung.
 - `rewriteSource` reports each rewrite that matched nothing, so an upstream
   change to a patched string shows at load time.
 

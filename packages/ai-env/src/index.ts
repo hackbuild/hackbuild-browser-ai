@@ -12,6 +12,7 @@ export {
 export {
   importEsm,
   spawnWorker,
+  sha256Text,
   InlineWorker,
   LoadError,
   type Importer,
