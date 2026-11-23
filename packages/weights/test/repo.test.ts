@@ -62,4 +62,11 @@ describe("transformers.js cache", () => {
     await cache.put("https://other.test/tok.json", new Response("tok"));
     expect(await (await cache.match("https://other.test/tok.json"))!.text()).toBe("tok");
   });
+
+  it("checks a known SHA-256 for a managed url", async () => {
+    const h = host({ [base + "onnx/model_q4.onnx"]: "abc" });
+    const store = await openWeightStore({ backends: ["memory"], fetch: h.fetch, onNotice: () => {} });
+    const cache = transformersCache(store, { licenceFor: () => "Apache-2.0", sha256For: () => "00".repeat(32) });
+    await expect(cache.match(base + "onnx/model_q4.onnx")).rejects.toThrow(/sha256/);
+  });
 });

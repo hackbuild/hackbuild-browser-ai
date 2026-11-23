@@ -11,14 +11,14 @@
 
 import { OverlapAdd, planSegments } from "@hackbuild/audio-dsp";
 import { LADDERS, type OrtModel } from "@hackbuild/devices";
-import type { Hub, ModelRecord, RunOptions } from "@hackbuild/models";
+import { pinnedBase, type Hub, type ModelRecord, type RunOptions } from "@hackbuild/models";
 
 export const SAMPLE_RATE = 44100;
 export const SEGMENT = 343980;
 export const TRACKS = ["drums", "bass", "other", "vocals"] as const;
 export type Track = (typeof TRACKS)[number];
 
-const base = "https://huggingface.co/StemSplitio/htdemucs-onnx/resolve/main/";
+const base = pinnedBase("StemSplitio/htdemucs-onnx");
 const rec = (id: string, file: string, mb: number, overlap: number, label: string): ModelRecord => ({
   id,
   label,

@@ -14,15 +14,19 @@ export async function pipeline(task, model, opts) {
   };
 }`;
 const url = `data:text/javascript,${encodeURIComponent(fake)}`;
-// the inline rung runs the source through new Function, which has no import(); hand it this module's
+// the inline rung runs the source inside an imported function; hand it this module's import for data: urls
 (globalThis as { __testImport?: unknown }).__testImport = (u: string) => import(u);
 const prelude = "self.__import = (u) => globalThis.__testImport(u);";
 
 describe("depth worker", () => {
   it("loads the pipeline and returns a normalized depth map", async () => {
-    const w = await depthWorker({ urls: ["data:text/javascript,throw new Error('first url fails')", url], spawn: { prefer: ["inline"], prelude }, device: "wasm" });
+    const lines: string[] = [];
+    const w = await depthWorker({ urls: ["data:text/javascript,throw new Error('first url fails')", url], spawn: { prefer: ["inline"], prelude }, device: "wasm", onLicence: (l) => lines.push(l) });
     expect(w.rung).toBe("inline");
-    expect((globalThis as { __depthOpts?: unknown }).__depthOpts).toEqual({ model: "onnx-community/depth-anything-v2-small", device: "wasm", dtype: "q8" });
+    const opts = (globalThis as { __depthOpts?: { revision?: string } }).__depthOpts;
+    expect(opts).toMatchObject({ model: "onnx-community/depth-anything-v2-small", device: "wasm", dtype: "q8" });
+    expect(opts!.revision).toMatch(/^[0-9a-f]{40}$/);
+    expect(lines[0]).toMatch(/Apache-2.0/);
     const data = new Uint8ClampedArray(2 * 2 * 4);
     [0, 100, 200, 50].forEach((v, i) => (data[i * 4] = v));
     const d = await w.estimate({ width: 2, height: 2, data });
@@ -30,6 +34,10 @@ describe("depth worker", () => {
     expect(Array.from(d.data)).toEqual([0, 0.5, 1, 0.25]);
     expect(d.range).toEqual([0, 200]);
     w.dispose();
+  });
+
+  it("refuses a model that is not a registered depth record", async () => {
+    await expect(depthWorker({ urls: [url], modelId: "depth-anything/Depth-Anything-V2-Large-hf", spawn: { prefer: ["inline"], prelude } })).rejects.toThrow(/not a registered depth record/);
   });
 
   it("rejects when no runtime url loads", async () => {

@@ -94,16 +94,28 @@ export function staticEmbedder(f: StaticFiles): StaticEmbedder {
 }
 
 /** Fetch the three files of a model2vec repo from a base URL (caller supplied) and build the embedder. */
-export async function loadStaticEmbedder(base: string, o: { name?: string; fetch?: typeof fetch } = {}): Promise<StaticEmbedder> {
+export async function loadStaticEmbedder(
+  base: string,
+  o: { name?: string; fetch?: typeof fetch; /** SHA-256 per file URL when known; a mismatch throws. */ sha256For?: (url: string) => string | undefined } = {},
+): Promise<StaticEmbedder> {
   const f = o.fetch ?? globalThis.fetch.bind(globalThis);
-  const get = async (p: string) => {
-    const r = await f(new URL(p, base.endsWith("/") ? base : `${base}/`).href);
+  const get = async (p: string): Promise<ArrayBuffer> => {
+    const url = new URL(p, base.endsWith("/") ? base : `${base}/`).href;
+    const r = await f(url);
     if (!r.ok) throw new Error(`model2vec: http ${r.status} for ${p}`);
-    return r;
+    const b = await r.arrayBuffer();
+    const want = o.sha256For?.(url);
+    if (want) {
+      const d = new Uint8Array(await crypto.subtle.digest("SHA-256", b));
+      const got = Array.from(d, (x) => x.toString(16).padStart(2, "0")).join("");
+      if (got !== want) throw new Error(`model2vec: sha256 of ${p} is ${got}, expected ${want}`);
+    }
+    return b;
   };
   const [t, w, c] = await Promise.all([get("tokenizer.json"), get("model.safetensors"), get("config.json").catch(() => null)]);
-  const files: StaticFiles = { tokenizer: await t.text(), weights: await w.arrayBuffer() };
-  if (c) files.config = await c.text();
+  const dec = new TextDecoder();
+  const files: StaticFiles = { tokenizer: dec.decode(t), weights: w };
+  if (c) files.config = dec.decode(c);
   if (o.name) files.name = o.name;
   return staticEmbedder(files);
 }

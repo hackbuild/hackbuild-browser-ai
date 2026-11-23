@@ -1,5 +1,6 @@
 import type { Env } from "@hackbuild/ai-env";
 import { ladderFor, type Capability, type ModelRecord, type Provider } from "./record.js";
+import { withPin } from "./pinning.js";
 
 export type SizeClass = "tiny" | "small" | "medium" | "large";
 
@@ -51,7 +52,8 @@ export function createRegistry(initial: readonly ModelRecord[] = []): Registry {
     add(...rs) {
       for (const r of rs) {
         validateRecord(r);
-        recs.set(r.id, r);
+        // a record of a pinned repo loads that commit, not main
+        recs.set(r.id, withPin(r));
       }
     },
     get: (id) => recs.get(id),

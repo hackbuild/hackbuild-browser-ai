@@ -201,6 +201,8 @@ export async function loadWeight(
   onProgress: (loaded: number, total: number) => void = () => {},
 ): Promise<{ bytes: ArrayBuffer; sha256: string; ms: number }> {
   const t = performance.now();
+  // the licence is stated before the bytes load, as every model reference must
+  status(`${src.label}: weight licence ${src.licence}. the weights are not part of this page.`);
   let bytes: ArrayBuffer;
   if (typeof from === "string") {
     const res = await fetch(from);

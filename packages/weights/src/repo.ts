@@ -98,7 +98,12 @@ export async function ortExternalData(files: Map<string, Blob>, graphPath: strin
  */
 export function transformersCache(
   store: WeightStore,
-  opts: { licenceFor: (url: string) => string | null; onProgress?: (p: Progress) => void },
+  opts: {
+    licenceFor: (url: string) => string | null;
+    /** SHA-256 for a URL when known (e.g. pinnedSha from @hackbuild/models); the store checks it. */
+    sha256For?: (url: string) => string | undefined;
+    onProgress?: (p: Progress) => void;
+  },
 ): { match(req: string | Request): Promise<Response | undefined>; put(req: string | Request, res: Response): Promise<void> } {
   const urlOf = (r: string | Request) => (typeof r === "string" ? r : r.url);
   return {
@@ -108,7 +113,8 @@ export function transformersCache(
       if (licence !== null) {
         const o: GetOptions = opts.onProgress ? { onProgress: opts.onProgress } : {};
         try {
-          return new Response(await store.get({ url, licence }, o));
+          const sha256 = opts.sha256For?.(url);
+          return new Response(await store.get({ url, licence, ...(sha256 ? { sha256 } : {}) }, o));
         } catch (e) {
           if (e instanceof Error && /http 404/.test(e.message)) return undefined;
           throw e;

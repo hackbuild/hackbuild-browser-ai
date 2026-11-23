@@ -32,6 +32,17 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
 - `walkLadder` tries rungs in order, names each failure with
   `classifyError` (runtime mismatch, out of memory, f16, device lost,
   unsupported op, network, abort) and stops on network and abort.
+- Pinned commits: `PINS` (written by `tools/pin-weights.mjs`) holds a
+  commit per Hugging Face repo the records load and a SHA-256 per weight
+  and config file at it: the LFS oid (vendor), or a download and hash
+  (measured) for files kept in git and for LFS files up to 30 MB. A
+  registry gives a record of a pinned repo its `source.revision`, so
+  transformers.js and the ort provider fetch `resolve/<commit>/`, not
+  `main`; `pinnedSha(url)` gives the hash for such a URL, which the ort
+  provider, the static embedder and `transformersCache({ sha256For })`
+  check. WebLLM loads its own config at `resolve/main` and is not pinned.
+- The hub states each record's weight licence once, before its first
+  load (`onLicence`, default console.info).
 - `quirks` carries what app code used to hard code: no system role and
   strict alternation (Gemma 3), think tags, repetition penalty, native
   tools (WebLLM Hermes), `<tool_call>` tags (Hermes, Qwen), warnings such

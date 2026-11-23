@@ -4,7 +4,7 @@
  */
 
 import { tjsLadder, type TjsProvider } from "@hackbuild/devices";
-import type { Factory, Hub, ModelRecord } from "@hackbuild/models";
+import { pinnedBase, pinnedSha, type Factory, type Hub, type ModelRecord } from "@hackbuild/models";
 import type { Embedder } from "@hackbuild/memory";
 import { loadStaticEmbedder } from "./static.js";
 import { tjsEmbedder, type FeaturePipeline } from "./tjs.js";
@@ -15,7 +15,7 @@ export const EMBED_RECORDS: ModelRecord[] = [
     label: "potion base 8M (static)",
     provides: ["embed"],
     provider: "static",
-    source: { repo: "minishlab/potion-base-8M", url: "https://huggingface.co/minishlab/potion-base-8M/resolve/main/" },
+    source: { repo: "minishlab/potion-base-8M", url: pinnedBase("minishlab/potion-base-8M") },
     sizeMB: 30,
     sizeSource: "inferred",
     ladder: [{ device: "cpu" }],
@@ -57,11 +57,12 @@ export const EMBED_RECORDS: ModelRecord[] = [
 ];
 
 /** A hub factory for static records: fetches tokenizer.json, model.safetensors and config.json from `source.url`. */
-export function staticFactory(o: { fetch?: typeof fetch } = {}): Factory<Embedder> {
+/** `sha256For` defaults to pinnedSha, so files at the pinned commit are checked. */
+export function staticFactory(o: { fetch?: typeof fetch; sha256For?: (url: string) => string | undefined } = {}): Factory<Embedder> {
   return async (ctx) => {
     const base = ctx.record.source.url;
     if (!base) throw new Error(`${ctx.record.id}: a static record needs source.url`);
-    return loadStaticEmbedder(base, { name: ctx.record.id, ...(o.fetch ? { fetch: o.fetch } : {}) });
+    return loadStaticEmbedder(base, { name: ctx.record.id, sha256For: o.sha256For ?? pinnedSha, ...(o.fetch ? { fetch: o.fetch } : {}) });
   };
 }
 
@@ -70,7 +71,7 @@ export function staticFactory(o: { fetch?: typeof fetch } = {}): Factory<Embedde
  * "embed" (an Embedder, with the rung's dtype and device in its id) and the
  * static factory.
  */
-export function attachEmbed(hub: Hub, tjs?: TjsProvider, o: { fetch?: typeof fetch } = {}): void {
+export function attachEmbed(hub: Hub, tjs?: TjsProvider, o: { fetch?: typeof fetch; sha256For?: (url: string) => string | undefined } = {}): void {
   hub.registry.add(...EMBED_RECORDS);
   hub.provide("static", staticFactory(o));
   tjs?.loader<Embedder>("embed", async (ctx) => {

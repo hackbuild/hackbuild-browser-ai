@@ -9,7 +9,7 @@
 
 import type { Env } from "@hackbuild/ai-env";
 import type { Factory, ModelRecord, Rung } from "@hackbuild/models";
-import { classifyError } from "@hackbuild/models";
+import { classifyError, pinnedSha } from "@hackbuild/models";
 import { hfResolve, type WeightRef, type WeightStore } from "@hackbuild/weights";
 import { wasmThreads } from "./ladders.js";
 
@@ -66,13 +66,15 @@ export function graphFiles(rec: ModelRecord): GraphFile[] {
   if (!list.length && s.url?.endsWith(".onnx")) {
     const path = s.url.split("/").pop()!;
     const ref: WeightRef = { url: s.url, licence: rec.licence };
-    if (s.sha256) ref.sha256 = s.sha256;
+    const sha = s.sha256 ?? pinnedSha(s.url);
+    if (sha) ref.sha256 = sha;
     return [{ name: path.replace(/\.onnx$/, ""), path, ref, external: false }];
   }
   if (!list.length) throw new Error(`${rec.id}: an ort record needs source.url, source.file or source.files`);
   return list.map((f) => {
     const ref: WeightRef = { url: /^https?:|^blob:|^data:/.test(f.path) ? f.path : base + f.path, licence: rec.licence };
-    if (f.sha256) ref.sha256 = f.sha256;
+    const sha = f.sha256 ?? pinnedSha(ref.url);
+    if (sha) ref.sha256 = sha;
     const file = f.path.split("/").pop()!;
     return { name: file.replace(/\.onnx$/, ""), path: file, ref, external: !file.endsWith(".onnx") };
   });

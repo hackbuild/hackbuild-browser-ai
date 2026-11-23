@@ -109,6 +109,8 @@ export function tjsProvider(opts: TjsProviderOptions): TjsProvider {
       if (configured !== tjs) p.configure(tjs, ctx.env);
       const progress = opts.onProgress ? progressMerger((m) => opts.onProgress!(ctx.record.id, m)) : undefined;
       const options = pipelineOptions(ctx.rung, progress);
+      // the pinned commit, so transformers.js fetches resolve/<commit>/ and not main
+      if (ctx.record.source.revision && options.revision === undefined) options.revision = ctx.record.source.revision;
       const named = ctx.rung.options?.loader;
       const cap = typeof named === "string" ? named : ctx.record.provides.find((c) => loaders.has(c));
       const custom = cap ? loaders.get(cap) : undefined;

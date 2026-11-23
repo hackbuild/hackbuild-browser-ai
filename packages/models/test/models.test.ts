@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Env } from "@hackbuild/ai-env";
 import {
   CATALOG,
+  PINS,
+  pinnedSha,
   classifyError,
   createHub,
   createRegistry,
@@ -374,3 +376,22 @@ describe("run scheduling", () => {
     off();
   });
 });
+
+describe("pinned commits", () => {
+  it("gives catalog records of pinned repos their commit, and a SHA-256 for files at it", () => {
+    const repo = "Xenova/all-MiniLM-L6-v2";
+    const pin = PINS[repo]!;
+    expect(pin.revision).toMatch(/^[0-9a-f]{40}$/);
+    const rec = createRegistry([...CATALOG]).get("all-minilm-l6-v2")!;
+    expect(rec.source.revision).toBe(pin.revision);
+    const [path, [sha]] = Object.entries(pin.files).find(([p]) => p.endsWith(".onnx"))!;
+    expect(pinnedSha(`https://huggingface.co/${repo}/resolve/${pin.revision}/${path}`)).toBe(sha);
+    expect(pinnedSha(`https://huggingface.co/${repo}/resolve/main/${path}`)).toBeUndefined();
+    // every catalog record on a hugging face repo is pinned
+    for (const r of createRegistry([...CATALOG]).list()) {
+      const id = r.source.repo ?? r.source.modelId;
+      if (id && id.includes("/")) expect(r.source.revision, r.id).toMatch(/^[0-9a-f]{40}$/);
+    }
+  });
+});
+

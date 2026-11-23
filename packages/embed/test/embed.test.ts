@@ -172,8 +172,12 @@ describe("records and hub", () => {
       "config.json": () => new Response('{"normalize": true}'),
     };
     const fetch = (async (u: string) => files[u.split("/").pop()!]?.() ?? new Response("", { status: 404 })) as typeof globalThis.fetch;
+    // the pinned hashes refuse these fake files, as they should
     attachEmbed(hub, undefined, { fetch });
-    const l = await hub.use<import("@hackbuild/embed").Embedder>({ id: "potion-base-8m" });
+    await expect(hub.use({ id: "potion-base-8m" })).rejects.toThrow();
+    const hub2 = createHub({});
+    attachEmbed(hub2, undefined, { fetch, sha256For: () => undefined });
+    const l = await hub2.use<import("@hackbuild/embed").Embedder>({ id: "potion-base-8m" });
     expect(l.value.id).toMatch(/^model2vec:potion-base-8m:4:/);
     expect((await l.value.embed(["dog"]))[0]!.length).toBe(4);
   });

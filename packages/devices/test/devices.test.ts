@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "@hackbuild/ai-env";
-import { createHub, createRegistry, type ModelRecord } from "@hackbuild/models";
+import { createHub, createRegistry, PINS, type ModelRecord } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 import {
   LADDERS,
@@ -112,6 +112,8 @@ describe("transformers.js provider", () => {
     expect(l.rung).toMatchObject({ device: "webgpu", dtype: "fp32" });
     expect(l.failures[0]!.kind).toBe("f16");
     expect(calls.map((c) => c.task)).toEqual(["depth-estimation", "depth-estimation"]);
+    // the registry pinned the repo, and transformers.js gets that commit
+    expect(calls[0]!.opts.revision).toBe(PINS["onnx-community/depth-anything-v2-small"]!.revision);
     expect(mod.env).toMatchObject({ allowLocalModels: false, useWasmCache: false, useBrowserCache: true });
     expect(mod.env!.backends!.onnx!.wasm).toEqual({ numThreads: 1, proxy: false });
   });

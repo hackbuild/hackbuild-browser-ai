@@ -50,7 +50,10 @@ No weights ship with this package; each file keeps its own licence.
     const externalData = await ortExternalData(files, "onnx/model.onnx");
 
     env.useCustomCache = true;                      // transformers.js
-    env.customCache = transformersCache(store, { licenceFor: (u) => u.includes("/onnx-community/") ? "Apache-2.0" : null });
+    env.customCache = transformersCache(store, {
+      licenceFor: (u) => u.includes("/onnx-community/") ? "Apache-2.0" : null,
+      sha256For: pinnedSha,                         // from @hackbuild/models: files at pinned commits
+    });
 
 `transformersCache` downloads the URLs `licenceFor` names through the store
 on `match`, so transformers.js repos get parts, resume and the licence

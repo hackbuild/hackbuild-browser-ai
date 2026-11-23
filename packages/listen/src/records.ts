@@ -8,9 +8,14 @@ export const VAD_RECORDS: ModelRecord[] = [
     label: "silero vad v5",
     provides: ["vad"],
     provider: "ort",
-    source: { repo: "snakers4/silero-vad", file: "src/silero_vad/data/silero_vad.onnx" },
-    sizeMB: 2.3,
-    sizeSource: "inferred",
+    // a GitHub repo, not a Hugging Face one: pinned by commit on raw.githubusercontent.com (CORS open)
+    source: {
+      url: "https://raw.githubusercontent.com/snakers4/silero-vad/63d4a2a7bfce8cd9bb39ed8fa0afcb5236d73e01/src/silero_vad/data/silero_vad.onnx",
+      revision: "63d4a2a7bfce8cd9bb39ed8fa0afcb5236d73e01",
+      sha256: "f6f4407b41e05e277e7f5cfd9b9ae957b1dfe763c6076a934734c0b448e09b31",
+    },
+    sizeMB: 2.2,
+    sizeSource: "measured",
     ladder: [{ device: "wasm", ort: { executionProviders: ["wasm"] } }],
     licence: "MIT",
     commercial: true,

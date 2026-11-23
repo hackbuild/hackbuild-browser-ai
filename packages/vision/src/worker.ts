@@ -11,12 +11,23 @@
 
 import { spawnWorker, type Spawned, type SpawnOptions } from "@hackbuild/ai-env";
 import type { DepthMap } from "./types.js";
+import { withPin, type ModelRecord } from "@hackbuild/models";
+import { VISION_RECORDS } from "./records.js";
 
 export interface DepthWorkerOptions {
   /** transformers.js ESM URLs tried in order (transformersUrls() from @hackbuild/devices). */
   urls: readonly string[];
-  /** Default onnx-community/depth-anything-v2-small. */
+  /**
+   * Default onnx-community/depth-anything-v2-small. Only models of the
+   * registered depth records load, at their pinned commit, since Depth
+   * Anything base and large carry CC-BY-NC-4.0 weights; pass `record` for
+   * another model with its licence named.
+   */
   modelId?: string;
+  /** A depth record of your own: its modelId, revision and licence are used instead of the built in list. */
+  record?: ModelRecord;
+  /** Called once with the weight licence line before the model loads. Default console.info. */
+  onLicence?: (line: string) => void;
   /** Default "webgpu". */
   device?: "webgpu" | "wasm";
   /** Default "fp16" on webgpu, "q8" on wasm. */
@@ -71,7 +82,7 @@ self.onmessage = async (ev) => {
       for (const u of m.urls) { try { tjs = await load(u); break; } catch (e) { err = e; } }
       if (!tjs) throw err || new Error("no transformers.js url loaded");
       RawImage = tjs.RawImage;
-      pipe = await tjs.pipeline("depth-estimation", m.modelId, { device: m.device, dtype: m.dtype });
+      pipe = await tjs.pipeline("depth-estimation", m.modelId, { device: m.device, dtype: m.dtype, revision: m.revision });
       self.postMessage({ id: m.id, ok: true });
     } else if (m.op === "run") {
       if (!pipe) throw new Error("depth worker is not loaded");
@@ -100,6 +111,11 @@ export async function depthWorker(o: DepthWorkerOptions): Promise<DepthWorker> {
     if (d.ok) w.resolve(d.depth);
     else w.reject(new Error(`depth worker: ${d.error ?? "error"}`));
   });
+  // a worker that dies after startup rejects what is waiting instead of leaving estimate() pending
+  worker.addEventListener("error", (ev: { message?: string }) => {
+    for (const w of waiting.values()) w.reject(new Error(`depth worker crashed: ${ev.message ?? "error event"}`));
+    waiting.clear();
+  });
   const call = (msg: Record<string, unknown>, transfer: Transferable[] = []) =>
     new Promise<unknown>((resolve, reject) => {
       const id = next++;
@@ -107,10 +123,15 @@ export async function depthWorker(o: DepthWorkerOptions): Promise<DepthWorker> {
       worker.postMessage({ ...msg, id }, transfer);
     });
   try {
+    const rec = o.record ?? VISION_RECORDS.find((r) => r.provides.includes("depth") && r.source.modelId === (o.modelId ?? "onnx-community/depth-anything-v2-small"));
+    if (!rec?.source.modelId) throw new Error(`depth worker: ${o.modelId} is not a registered depth record; pass record with its licence named`);
+    const pinned = withPin(rec);
+    (o.onLicence ?? ((l: string) => console.info(l)))(`model ${pinned.id}: weight licence ${pinned.licence}. the weights are not part of this library.`);
     await call({
       op: "load",
       urls: [...o.urls],
-      modelId: o.modelId ?? "onnx-community/depth-anything-v2-small",
+      modelId: pinned.source.modelId,
+      revision: pinned.source.revision ?? "main",
       device,
       dtype: o.dtype ?? (device === "webgpu" ? "fp16" : "q8"),
     });
