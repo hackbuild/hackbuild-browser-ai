@@ -355,7 +355,8 @@ export function createHub(opts: HubOptions = {}): Hub {
               next();
               return;
             }
-            fn().then(resolve, reject).finally(next);
+            // a synchronous throw in fn must still release the queue
+            Promise.resolve().then(fn).then(resolve, reject).finally(next);
           },
         };
         const next = () => {

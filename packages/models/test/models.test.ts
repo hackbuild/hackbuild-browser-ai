@@ -203,6 +203,15 @@ describe("hub", () => {
     expect(maxRunning).toBe(1);
   });
 
+  it("keeps the queue moving after a job throws synchronously", async () => {
+    const hub = createHub();
+    const a = hub.exclusive("gpu", (() => {
+      throw new Error("sync");
+    }) as unknown as () => Promise<void>);
+    await expect(a).rejects.toThrow("sync");
+    expect(await hub.exclusive("gpu", async () => "ran")).toBe("ran");
+  });
+
   it("drops an aborted waiter and keeps the queue moving after a failure", async () => {
     const hub = createHub();
     const ac = new AbortController();
