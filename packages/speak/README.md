@@ -78,6 +78,25 @@ refuses module workers). `cloneVoice(samples, rate)` takes a reference
 the caller supplies, makes it mono 24 kHz, 15 s at most, peak 0.9, and
 encodes it as voice "custom"; nothing is stored or bundled.
 
+## Bellows voice
+
+`bellowsEngine({ runtime, rng })` speaks through bellows-voice, the
+owner's articulatory voice for the bellowsjs engine (MIT): a physical
+model of a vocal tract, so it has no weights and no weight licence; its
+code is MIT and is loaded by the caller, never bundled. `runtime` returns
+`bellows-voice/engine` from 0.8.0 (git ac30dc2, not on npm on
+2026-11-23), which imports bellowsjs 0.5.x. Each segment goes through its
+offline `renderSpeech`, and the chunk carries the exact phoneme spans the
+engine sang (no word times; the speaker estimates those).
+
+- Seed: one draw from the injected `rng` when the engine is made, plus the
+  segment count, so the same Rng gives the same audio.
+- The render runs on the calling thread; pass `render(text, opts, signal)`
+  to call `renderSpeech` in a worker instead.
+- Voices are the 14 bellows-voice starter voices (`BELLOWS_VOICES`); its
+  naturalness is below the neural engines (inferred), so it fits a robot,
+  creature or singing voice, or a fallback that needs no download.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -89,6 +108,13 @@ encodes it as voice "custom"; nothing is stored or bundled.
   against the audio clock, the engine chain with a load failure and a
   watchdog trip, the cache, stop, Pocket patching, missed patch refusal,
   chunk streaming and clone preparation.
+
+- 2026-11-23: `test/bellows.test.ts`, 5 tests on a fake module: one
+  draw from the rng for the seed, the seed per segment, phoneme times from
+  the spans, a refusal without `renderSpeech`, a caller render. Then in
+  Node 22.18.0 against a local build of bellows-voice at ac30dc2: a 2.30 s
+  line rendered in 873 ms cold and 516 ms warm, byte identical for the
+  same rng seed and different for another, 25 phonemes (measured).
 
 ### Not verified by anything
 
