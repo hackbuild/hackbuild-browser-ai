@@ -8,6 +8,7 @@ action names a character has. The same crate builds a native CLI. Code
 MIT; this README CC-BY-4.0 with the code samples also MIT. No character
 content, avatar or voice reference ships here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/character
 
 ## Use

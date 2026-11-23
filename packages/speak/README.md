@@ -8,6 +8,7 @@ offsets in the caller's text when the voice reaches them. Code MIT; this
 README CC-BY-4.0 with the code samples also MIT. No weights and no voice
 references ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/speak
 
 ## Use

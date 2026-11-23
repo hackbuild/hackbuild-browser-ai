@@ -5,6 +5,7 @@ SIMD128 (`crates/audio-dsp`) and TS around it for the gate, overlap add
 and file writers. Code MIT; this README CC-BY-4.0 with the code samples
 also MIT. No model and no weights here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/audio-dsp
 
 ## Core

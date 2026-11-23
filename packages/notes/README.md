@@ -6,6 +6,7 @@ tempo and grid fit on the `@hackbuild/audio-dsp` wasm core, and MIDI out.
 Code MIT; this README CC-BY-4.0 with the code samples also MIT. No
 weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/notes
 
     import { attachNotes, tfjsPitchProvider, runPitch, decodeNotes, refineNotes, DETAILS, drumNotes, estimateTempo, writeMidi } from "@hackbuild/notes";

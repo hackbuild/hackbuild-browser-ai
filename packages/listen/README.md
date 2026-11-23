@@ -6,6 +6,7 @@ phantom text filter, and speech that clears a stricter bar while the
 character talks is a barge in. Code MIT; this README CC-BY-4.0 with the
 code samples also MIT. No weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/listen
 
 ## Use

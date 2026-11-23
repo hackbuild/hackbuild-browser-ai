@@ -8,6 +8,7 @@ model and settings, so memory re-embeds only when the vectors would
 change. Code MIT; this README CC-BY-4.0 with the code samples also MIT. No
 weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/embed
 
 ## Static (model2vec)

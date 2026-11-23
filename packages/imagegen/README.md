@@ -10,6 +10,7 @@ Research Community License, so it allows no commercial use. Upstream
 2024; to use that licence, point the record at an export made from the
 current upstream weights and check its licence before use.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/imagegen
 
 ## Use

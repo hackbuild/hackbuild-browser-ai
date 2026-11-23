@@ -6,6 +6,7 @@ fallback for grammar mode, JSON repair, loop and garbage guards, a
 streaming inline tag parser and line tagged formats. Code MIT; this README
 CC-BY-4.0 with the code samples also MIT.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/structured
 
 ## One decision

@@ -6,6 +6,7 @@ framework, shadow DOM, theming through CSS custom properties, icons as
 inline SVG. Nothing registers on import; the page calls `define()`. Code
 MIT; this README CC-BY-4.0 with the code samples also MIT.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/ai-elements
 
 ## Use

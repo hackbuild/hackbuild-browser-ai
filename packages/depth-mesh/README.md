@@ -8,6 +8,7 @@ CC-BY-4.0 with the code samples also MIT. No model and no weights here;
 depth maps come from `@hackbuild/vision` (Depth Anything V2 small,
 Apache-2.0) or any other source.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/depth-mesh
 
 ## Use

@@ -36,12 +36,18 @@ export function toTxt(segs: readonly Segment[]): string {
   return out + "\n";
 }
 
+/** Cue text that cannot end the cue or open markup: "-->" becomes "->", blank lines close up. */
+function cueText(t: string): string {
+  return t.replace(/-->/g, "->").replace(/\n\s*\n/g, "\n");
+}
+
 export function toSrt(segs: readonly Segment[]): string {
-  return segs.map((s, i) => `${i + 1}\n${timestamp(s.start, true)} --> ${timestamp(s.end, true)}\n${s.text}\n`).join("\n");
+  return segs.map((s, i) => `${i + 1}\n${timestamp(s.start, true)} --> ${timestamp(s.end, true)}\n${cueText(s.text)}\n`).join("\n");
 }
 
 export function toVtt(segs: readonly Segment[]): string {
-  return "WEBVTT\n\n" + segs.map((s) => `${timestamp(s.start, false)} --> ${timestamp(s.end, false)}\n${s.text}\n`).join("\n");
+  // WebVTT cue text is markup: & and < are escaped
+  return "WEBVTT\n\n" + segs.map((s) => `${timestamp(s.start, false)} --> ${timestamp(s.end, false)}\n${cueText(s.text).replace(/&/g, "&amp;").replace(/</g, "&lt;")}\n`).join("\n");
 }
 
 export interface TranscriptJson {

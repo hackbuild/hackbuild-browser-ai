@@ -7,6 +7,7 @@ weights and no runtime ship here: both runtimes load at run time from
 pinned CDN URLs (transformers.js 4.3.2 and onnxruntime-web 1.27.0, both
 Apache-2.0).
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/devices
 
 ## One provider per runtime

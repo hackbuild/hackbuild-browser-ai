@@ -7,6 +7,7 @@ also writes hints for the smallest ones, persistent goals with planners
 that need no model, a token budgeted context and a plan cache. Code MIT;
 this README CC-BY-4.0 with the code samples also MIT. No model ships here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/agent
 
 ## Use

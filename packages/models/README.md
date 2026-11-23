@@ -5,6 +5,7 @@ licences, and a hub that routes a capability request to a record, loads it
 under a memory budget, and runs GPU work one job at a time. Code MIT; this
 README CC-BY-4.0 with the code samples also MIT. No weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/models
 
 ## Records

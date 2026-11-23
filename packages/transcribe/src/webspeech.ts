@@ -51,7 +51,11 @@ export function webSpeech(o: WebSpeechOptions): { start(): void; stop(): void } 
       if (r.isFinal) lastEnd = end;
     }
   };
-  rec.onerror = (ev) => o.onError?.(ev.error);
+  rec.onerror = (ev) => {
+    // a refused or missing microphone ends for good; restarting on end would loop
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed" || ev.error === "audio-capture") running = false;
+    o.onError?.(ev.error);
+  };
   rec.onend = () => {
     if (running) rec.start();
   };

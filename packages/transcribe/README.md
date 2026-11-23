@@ -6,6 +6,7 @@ records for the models hub, the phantom text filter, the earlier live captioner 
 segmenter and a Web Speech adapter. Code MIT; this README CC-BY-4.0 with
 the code samples also MIT. No weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/transcribe
 
 ## Files

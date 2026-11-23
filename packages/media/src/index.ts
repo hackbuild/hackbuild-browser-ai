@@ -33,7 +33,8 @@ export type OfflineCtor = new (channels: number, length: number, sampleRate: num
 export async function decodeAudio(data: ArrayBuffer | Blob, sampleRate = 16000, Ctx?: OfflineCtor): Promise<DecodedAudio> {
   const C = Ctx ?? ((globalThis as { OfflineAudioContext?: OfflineCtor }).OfflineAudioContext as OfflineCtor | undefined);
   if (!C) throw new Error("no OfflineAudioContext here. decode on the page, not in a worker.");
-  const ab = data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+  // decodeAudioData detaches the buffer it is given, so the caller's stays usable
+  const ab = data instanceof ArrayBuffer ? data.slice(0) : await data.arrayBuffer();
   let buf: AudioBufferLike;
   try {
     buf = await new C(1, 1, sampleRate).decodeAudioData(ab);

@@ -4,6 +4,7 @@ Stem separation in a tab: htdemucs on onnxruntime-web through the models
 hub, an own overlap add runner, and a realtime factor readout. From an earlier August build. Code MIT; this README CC-BY-4.0 with the code samples
 also MIT. No weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/stems
 
     import { attachStems, separate, stemsStubs } from "@hackbuild/stems";

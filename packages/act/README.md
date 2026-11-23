@@ -8,6 +8,7 @@ the avatar can realize: moods (expression presets), gestures (one shot
 clips) and postures (held clips). Code MIT; this README CC-BY-4.0 with the
 code samples also MIT. No model ships here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/act
 
 ## Use

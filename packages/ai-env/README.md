@@ -4,6 +4,7 @@ Capability probe and file:// safe loading of ES modules and workers, for
 pages that run models in the tab. Code MIT; this README CC-BY-4.0 with the
 code samples also MIT.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/ai-env
 
 ## Probe

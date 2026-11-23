@@ -133,6 +133,9 @@ describe("writers", () => {
   ];
   it("writes srt, vtt and txt in the earlier transcription tool layout", () => {
     expect(timestamp(3661.9996, true)).toBe("01:01:01,999");
+    const odd = [{ start: 0, end: 1, text: "a --> b & <i>c</i>" }];
+    expect(toSrt(odd)).toBe("1\n00:00:00,000 --> 00:00:01,000\na -> b & <i>c</i>\n");
+    expect(toVtt(odd)).toBe("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\na -> b &amp; &lt;i>c&lt;/i>\n");
     expect(toSrt(segs)).toBe("1\n00:00:00,000 --> 00:00:01,140\none.\n\n2\n00:00:01,860 --> 00:00:02,900\ntwo\n\n3\n00:00:06,000 --> 01:01:01,999\nthree\n");
     expect(toVtt(segs).startsWith("WEBVTT\n\n00:00:00.000 --> 00:00:01.140\none.\n")).toBe(true);
     expect(toTxt(segs)).toBe("one. two\n\nthree\n");

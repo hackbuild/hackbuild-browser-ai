@@ -25,7 +25,12 @@
     },
     "./memory.wasm": "./wasm/memory.wasm"
   },
-  "files": ["dist", "wasm/memory.wasm", "README.md"],
+  "files": [
+    "dist",
+    "wasm/memory.wasm",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -b",
     "build:wasm": "node ../../tools/build-wasm.mjs memory memory MEMORY_WASM_BASE64"

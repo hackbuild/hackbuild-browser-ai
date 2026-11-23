@@ -6,6 +6,7 @@ works without a Content-Length, and one fetch shared by many session
 attempts. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 No weights ship with this package; each file keeps its own licence.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/weights
 
 ## Use

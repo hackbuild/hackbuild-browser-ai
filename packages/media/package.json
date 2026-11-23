@@ -1,7 +1,7 @@
 {
   "name": "@hackbuild/media",
   "version": "0.1.0",
-  "description": "Media in a tab: decode files to 16 kHz mono or any rate, keyframe sampling by scene change, and canvas and stream recording with a codec ladder.",
+  "description": "Media in a tab: decode a file's audio at any rate (16 kHz by default) with every channel kept, keyframe sampling by scene change, and canvas and stream recording with a codec ladder.",
   "type": "module",
   "license": "MIT",
   "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
@@ -22,7 +22,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -b"

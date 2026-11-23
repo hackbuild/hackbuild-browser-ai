@@ -6,6 +6,7 @@ captions and questions through small VLMs, plus a webcam loop helper and
 a result cache. Code MIT; this README CC-BY-4.0 with the code samples
 also MIT. No weights ship here.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/vision
 
 ## Wire it once

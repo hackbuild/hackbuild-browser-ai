@@ -4,6 +4,7 @@ Media in a tab, from earlier builds: decode a file's audio to a target
 rate, pick keyframes by scene change, and record a canvas or stream. Code
 MIT; this README CC-BY-4.0 with the code samples also MIT. No models.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/media
 
     import { decodeAudio, lumaHistogram, pickKeyframes, record } from "@hackbuild/media";

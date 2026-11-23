@@ -6,6 +6,7 @@ Rust core built for wasm32 with SIMD128 (`crates/biosignal`). Code MIT;
 this README CC-BY-4.0 with the code samples also MIT. No weights here;
 models are trained in the tab.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/biosignal
 
     import { loadBiosignal, epochsFromEvents } from "@hackbuild/biosignal";

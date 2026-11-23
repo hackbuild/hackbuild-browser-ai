@@ -143,7 +143,14 @@ export class Listener {
       return;
     }
     this.set("transcribing");
-    const text = (await this.o.transcribe(audio)).trim();
+    let text: string;
+    try {
+      text = (await this.o.transcribe(audio)).trim();
+    } catch (e) {
+      // a failed transcription must not leave the state at "transcribing"
+      if (this.running) this.set("listening");
+      throw e;
+    }
     const u: Utterance = { text, pcm: audio, sec, bargeIn };
     if (this.o.filter !== false && text) {
       const r = cleanup([{ start: 0, end: sec, text }], speech);

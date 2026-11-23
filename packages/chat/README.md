@@ -7,6 +7,7 @@ fallback are applied the same way for every runtime. Code MIT; this README
 CC-BY-4.0 with the code samples also MIT. No weights ship here; each model
 keeps its own licence.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/chat
 
 Each runtime is an optional peer behind its own subpath, and no file

@@ -28,7 +28,8 @@
   "files": [
     "dist",
     "wasm/audio-dsp.wasm",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -b",

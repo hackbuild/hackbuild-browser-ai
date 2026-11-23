@@ -239,6 +239,10 @@ describe("web speech", () => {
     inst!.onend!();
     expect(segs).toEqual([{ start: 0, end: 2, text: "hi there", final: true }]);
     expect(starts).toBe(2);
+    // a refused microphone stops the restarts
+    inst!.onerror!({ error: "not-allowed" });
+    inst!.onend!();
+    expect(starts).toBe(2);
   });
 });
 

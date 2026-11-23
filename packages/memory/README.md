@@ -8,6 +8,7 @@ keeps items in IndexedDB, caches vectors per embedder, assembles a token
 budgeted context and injects recall without breaking a cached prompt
 prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 
+    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
     npm install @hackbuild/memory
 
 ## Use
