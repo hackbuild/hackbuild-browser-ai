@@ -127,6 +127,7 @@ fn codes(
             if out.len() >= cap {
                 return Err("inflate: output over the size cap".into());
             }
+            room(out, 1)?;
             out.push(s as u8);
         } else if s == 256 {
             return Ok(());
@@ -147,6 +148,7 @@ fn codes(
             if out.len() + len > cap {
                 return Err("inflate: output over the size cap".into());
             }
+            room(out, len)?;
             let st = out.len() - dd;
             for k in 0..len {
                 let b = out[st + k];
@@ -154,6 +156,17 @@ fn codes(
             }
         }
     }
+}
+
+/// Grows `out` for `extra` more bytes with a fallible reservation, so a
+/// large archive returns an error instead of aborting when memory runs
+/// out (an abort traps the whole wasm instance).
+fn room(out: &mut Vec<u8>, extra: usize) -> Result<(), String> {
+    if out.capacity() - out.len() >= extra {
+        return Ok(());
+    }
+    out.try_reserve(extra.max(out.len()))
+        .map_err(|_| format!("inflate: out of memory at {} bytes", out.len()))
 }
 
 /// Raw DEFLATE data to bytes, at most `cap` bytes out.
@@ -185,6 +198,7 @@ pub fn inflate_raw(data: &[u8], cap: usize) -> Result<Vec<u8>, String> {
                 if out.len() + len > cap {
                     return Err("inflate: output over the size cap".into());
                 }
+                room(&mut out, len)?;
                 out.extend_from_slice(blk);
                 br.pos += len;
             }
