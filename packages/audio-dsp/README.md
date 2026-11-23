@@ -25,7 +25,10 @@ dc blocker (pole 0.9975), RBJ biquads, frame levels, percentiles, minimum
 statistics noise floor, spectral subtraction from a noise print (512
 point sqrt Hann, median of up to 320 quiet frames, temporal and cross bin
 gain smoothing), lookahead limiter (4 ms blocks, 120 ms release),
-resampling (windowed sinc, linear, and the KERF style FIR decimator),
+resampling (windowed sinc, linear, and the KERF style FIR decimator; the
+sinc takes a polyphase table of normalized kernels when both rates are
+whole numbers and the reduced ratio has at most 4096 output phases, and
+evaluates the kernel per tap otherwise),
 Hann STFT magnitudes, RMS and peak envelopes, onset picking (novelty over
 a local mean), tempo by autocorrelation with a phase search, a vector
 strength grid fit, and LPC formants.
@@ -84,6 +87,13 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   five test vowels, the port agrees within 7.1e-9 Hz on all 45 formants;
   1,000 frames of a 10 s vowel took 214 ms in wasm against 283 ms in the
   JS, Node 22.18.0 (measured).
+
+- 2026-11-23: the sinc resampler from 16 to 48 kHz over 10 minutes took
+  3,751 ms in wasm in Node 22.18.0 (measured), where the per tap kernel
+  took 4,825 ms for 30 s, about 96.5 s for 10 minutes (computed; the
+  browser pass measured 94,421 ms). The table output stays within 1e-5 of
+  the per tap kernel on four rate pairs (crate test) and the parity
+  fixture's sinc hash did not move.
 
 ### Not verified by anything
 
