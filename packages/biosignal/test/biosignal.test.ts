@@ -27,7 +27,7 @@ const FS = 128;
 const alpha = [{ lo: 8, hi: 12 }];
 
 describe("native and wasm parity", () => {
-  test("filters, covariances, tangent vectors, training and cross validation give the native bits", () => {
+  test("filters, covariances, distances, training and cross validation give the native bits", () => {
     expect(bs.simd).toBe(true);
     const ep = bs.synth(7, C, T, FS, 10, 20, 3);
     const all = new Float32Array(ep.length * C * T);
@@ -73,6 +73,27 @@ describe("classifier", () => {
     expect(fair.length).toBe(4);
     expect(leaky.length).toBe(4);
     expect(fair.every((a) => a >= 0 && a <= 1)).toBe(true);
+    // windows that share a trial share its mixing, and labels carry no signal: only a leak can score
+    let st = 99;
+    const rnd = () => ((st = (st * 1103515245 + 12345) >>> 0) / 2 ** 32) * 2 - 1;
+    const leakEp: { data: Float32Array; channels: number; samples: number; label: number; trial: number }[] = [];
+    for (let trial = 0; trial < 24; trial++) {
+      const mix = Array.from({ length: C * C }, () => rnd());
+      for (let w = 0; w < 6; w++) {
+        const data = new Float32Array(C * T);
+        for (let t = 0; t < T; t++) {
+          const z = Array.from({ length: C }, () => rnd());
+          for (let i = 0; i < C; i++) data[i * T + t] = z.reduce((acc, v, j) => acc + v * mix[i * C + j]!, 0);
+        }
+        leakEp.push({ data, channels: C, samples: T, label: trial % 2, trial });
+      }
+    }
+    const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+    const fairL = mean(bs.crossValidate(leakEp, [{ lo: 1, hi: 60 }], FS, { classes: 2, epochs: 80, folds: 4 }));
+    const leakyL = mean(bs.crossValidate(leakEp, [{ lo: 1, hi: 60 }], FS, { classes: 2, epochs: 80, folds: 4, byTrial: false }));
+    // measured 0.368 by trial and 0.604 by window on this fixture
+    expect(fairL).toBeLessThan(0.55);
+    expect(leakyL - fairL).toBeGreaterThan(0.15);
   });
 });
 

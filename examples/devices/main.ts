@@ -38,7 +38,8 @@ r.numbers["probe f16"] = String(env.f16);
 r.numbers["probe opfs"] = String(env.opfs);
 r.numbers["probe threads"] = env.threads;
 r.numbers["probe prompt api"] = String(env.promptApi);
-const probeOk = env.protocol === "http" && typeof env.webgpu === "boolean" && env.indexedDB;
+// the fields are what is checked; the published site is https and local runs are http
+const probeOk = (env.protocol === "http" || env.protocol === "https") && typeof env.webgpu === "boolean" && env.indexedDB;
 
 async function runtimes(): Promise<boolean> {
   status(`importing transformers.js ${PINS.transformers} and onnxruntime-web ${PINS.ort} from the pinned cdn urls.`);
@@ -110,17 +111,19 @@ async function resumeTest(): Promise<{ ok: boolean; why: string }> {
   return { ok: true, why: `206 for ${second.range} with if-range` };
 }
 
-function shaTest(): number {
+/** SHA-256 of 64 MiB on the main thread; correct only when it equals Web Crypto's digest of the same bytes. */
+async function shaTest(): Promise<{ mbps: number; ok: boolean }> {
   const n = 64 * 1024 * 1024;
   const buf = new Uint8Array(n);
   for (let i = 0; i < n; i += 4096) buf[i] = i & 255;
   const t = performance.now();
-  new Sha256().update(buf).digestHex();
+  const hex = new Sha256().update(buf).digestHex();
   const ms = performance.now() - t;
+  const ref = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buf)), (b) => b.toString(16).padStart(2, "0")).join("");
   const mbps = Math.round((n / 1e6 / ms) * 1000);
   show({ "sha-256 main thread MB/s over 64 MiB (measured)": mbps });
   r.numbers["sha-256 main thread MB/s (measured)"] = mbps;
-  return mbps;
+  return { mbps, ok: hex === ref && mbps > 0 };
 }
 
 $("#rt").addEventListener("click", () => void runtimes());
@@ -128,17 +131,18 @@ $("#resume").addEventListener("click", () => void resumeTest().then((x) => statu
 $("#sha").addEventListener("click", () => void shaTest());
 
 if (auto) {
-  check(r, "#1 ai-env: probe() fields", probeOk ? "pass" : "fail", "chrome over http only; safari, firefox and file:// not run");
+  check(r, "#1 ai-env: probe() fields", probeOk ? "pass" : "fail", "chrome over http or https; safari, firefox and file:// not run");
   const rt = await runtimes();
   check(r, "#24 devices: loadTransformers and loadOrt from the pinned urls", rt ? "pass" : "fail", "chrome over http only; safari and file:// not run");
   try {
     const x = await resumeTest();
-    check(r, "#5 weights: resume against hugging face with range and if-range", x.ok ? "pass" : "fail", x.why);
+    // the CDN answers 206 even to a stale If-Range; the validator compare on the 206 is covered by the weights unit tests
+    check(r, "#5 weights: resume against hugging face with range and if-range", x.ok ? "pass" : "fail", `${x.why}; a 206 shows the range works, the etag compare that guards a changed file is unit tested only`);
   } catch (e) {
     check(r, "#5 weights: resume against hugging face with range and if-range", "fail", (e as Error).message);
   }
-  shaTest();
-  check(r, "#7 weights: sha-256 throughput", "pass", "main thread measured; the worker half not run");
+  const sha = await shaTest();
+  check(r, "#7 weights: sha-256 throughput", sha.ok ? "pass" : "fail", `main thread ${sha.mbps} MB/s (measured), digest ${sha.ok ? "equals" : "differs from"} web crypto; the worker half not run`);
   const failed = Object.values(r.checks).some((c) => c.status === "fail");
   finish(r, failed ? "fail" : "pass");
 }
