@@ -27,6 +27,7 @@ import {
   rampDepth,
   segment,
   visionStubs,
+  vlmLoader,
   yoloRecord,
   type FaceApi,
   type TasksVision,
@@ -268,6 +269,31 @@ describe("vlm and sam loaders", () => {
     const [a, b] = await Promise.all([ask(hub, img, "first", { model: "smolvlm-256m-instruct" }), ask(hub, img, "second", { model: "smolvlm-256m-instruct" })]);
     expect([a, b]).toEqual(["answer <user>first", "answer <user>second"]);
     expect(order).toEqual(["<user>first", "<user>second"]);
+  });
+
+  it("passes images first to an lfm2-vl processor", async () => {
+    const rec = VISION_RECORDS.find((r) => r.id === "lfm2-vl-450m")!;
+    const seen: unknown[][] = [];
+    const tjs: TjsModule = {
+      env: {},
+      RawImage: { read: async (x: unknown) => ({ raw: x }) },
+      AutoProcessor: {
+        from_pretrained: async () =>
+          Object.assign(
+            async (images: unknown, text: unknown) => {
+              seen.push([images, text]);
+              if (!Array.isArray(images)) throw new TypeError("undefined is not iterable");
+              return { input_ids: { data: [1], dims: [1, 1] } };
+            },
+            { apply_chat_template: () => "<image>describe", batch_decode: () => [" a red cube "] },
+          ),
+      },
+      AutoModelForImageTextToText: { from_pretrained: async () => ({ generate: async () => ({ data: [], dims: [1, 3], slice: () => ({}) }) }) },
+    };
+    const vlm = await vlmLoader({ tjs, record: rec, options: {} } as unknown as Parameters<typeof vlmLoader>[0]);
+    expect(await vlm.ask(img)).toBe("a red cube");
+    expect(Array.isArray(seen[0]![0])).toBe(true);
+    expect(seen[0]![1]).toBe("<image>describe");
   });
 
   it("embeds an image once for several point prompts", async () => {

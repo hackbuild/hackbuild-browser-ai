@@ -70,6 +70,11 @@ export interface Quirks {
   warnings?: string[];
   /** Low token cap for action turns. */
   maxTokensAction?: number;
+  /**
+   * The model's transformers.js processor takes the images before the text
+   * (LFM2-VL, LLaVA, PaliGemma, Pixtral); Idefics3 and SmolVLM take the text first.
+   */
+  processorImagesFirst?: boolean;
 }
 
 export type SizeSource = "vendor" | "measured" | "inferred" | "unknown";

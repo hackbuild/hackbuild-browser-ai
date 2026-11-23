@@ -79,13 +79,15 @@ export async function vlmLoader(ctx: TjsLoadContext): Promise<Vlm> {
   };
   const rp = ctx.record.quirks?.repetitionPenalty;
   const cap = ctx.record.quirks?.maxTokensAction ?? 64;
+  const imagesFirst = ctx.record.quirks?.processorImagesFirst === true;
   return {
     async ask(image, question, o = {}) {
       const text = processor.apply_chat_template(
         [{ role: "user", content: [{ type: "image" }, { type: "text", text: question ?? "Describe this image in one sentence." }] }],
         { add_generation_prompt: true },
       );
-      const inputs = (await processor(text, [await toRaw(ctx.tjs, image)])) as Record<string, unknown> & { input_ids: TensorLike };
+      const raw = [await toRaw(ctx.tjs, image)];
+      const inputs = (await (imagesFirst ? processor(raw, text) : processor(text, raw))) as Record<string, unknown> & { input_ids: TensorLike };
       const ids = await model.generate({ ...inputs, max_new_tokens: o.maxTokens ?? cap, do_sample: false, ...(rp ? { repetition_penalty: rp } : {}) });
       const start = inputs.input_ids.dims[inputs.input_ids.dims.length - 1]!;
       const gen = ids.slice ? ids.slice(null, [start, null]) : ids;

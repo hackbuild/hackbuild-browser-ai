@@ -89,7 +89,9 @@ export const VISION_RECORDS: ModelRecord[] = [
     sizeMB: 320,
     sizeSource: "inferred",
     ladder: LADDERS.vlmGpuOnly(),
-    quirks: { maxTokensAction: 72 },
+    // transformers.js 4.3.2 Lfm2VlProcessor._call(images, text): text first threw
+    // "undefined is not iterable" in the browser pass (measured 2026-11-23)
+    quirks: { maxTokensAction: 72, processorImagesFirst: true },
     licence: "LFM Open License v1.0",
     commercial: "unknown",
     place: "gpu",
