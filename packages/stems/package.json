@@ -1,0 +1,35 @@
+{
+  "name": "@hackbuild/stems",
+  "version": "0.1.0",
+  "description": "Stem separation in a tab: htdemucs tiers on onnxruntime-web through the models hub, an own overlap add runner with overlap as the speed control, a realtime factor readout and a stub.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/stems"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/models": "0.1.0",
+    "@hackbuild/devices": "0.1.0",
+    "@hackbuild/audio-dsp": "0.1.0"
+  }
+}

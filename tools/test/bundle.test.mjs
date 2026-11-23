@@ -18,6 +18,7 @@ const expected = {
   transcribe: ["transcribe", "attachTranscribe", "LiveSegmenter"],
   vision: ["attachVision", "depth", "detect", "landmarks", "mediapipeProvider"],
   "depth-mesh": ["loadDepthMesh", "toStl", "fitToPrint"],
+  stems: ["separate", "attachStems"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {
