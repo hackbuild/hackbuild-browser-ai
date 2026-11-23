@@ -16,6 +16,8 @@ export interface LoopOptions<T> {
   /** Frame scheduler; default requestAnimationFrame, else setTimeout 16 ms. */
   schedule?: (fn: () => void) => void;
   signal?: AbortSignal;
+  /** Called on each frame that found the previous step still running. */
+  onBusy?: () => void;
 }
 
 export interface Loop {
@@ -41,7 +43,8 @@ export function perceptionLoop<T>(o: LoopOptions<T>): Loop {
       return;
     }
     const t = now();
-    if (!busy && t - lastStart >= (o.interval?.(last) ?? 0)) {
+    if (busy) o.onBusy?.();
+    else if (t - lastStart >= (o.interval?.(last) ?? 0)) {
       busy = true;
       lastStart = t;
       const tick = steps++;
@@ -76,6 +79,62 @@ export function perceptionLoop<T>(o: LoopOptions<T>): Loop {
     },
     get steps() {
       return steps;
+    },
+  };
+}
+
+export interface ReadbackOptions<T> {
+  /** An async readback, e.g. three.js readRenderTargetPixelsAsync or a canvas createImageBitmap. */
+  read: () => Promise<T>;
+  /** Consumer of each frame; a slow consumer holds the loop (it runs inside the busy window). */
+  onFrame: (frame: T) => void | Promise<void>;
+  /** Rate cap. Default 10 Hz (the HACKLE agent eye). */
+  maxHz?: number;
+  onError?: (e: unknown) => void;
+  now?: () => number;
+  schedule?: (fn: () => void) => void;
+  signal?: AbortSignal;
+}
+
+/**
+ * Agent eye style readback: one read at a time (a busy flag guards
+ * re-entry; frames while busy are counted as skipped instead of queued),
+ * capped at maxHz.
+ */
+export function readbackLoop<T>(o: ReadbackOptions<T>): Loop & { readonly skipped: number } {
+  let skipped = 0;
+  let inner: Loop | null = null;
+  const minMs = 1000 / (o.maxHz ?? 10);
+  const lo: LoopOptions<void> = {
+    step: async () => {
+      const f = await o.read();
+      await o.onFrame(f);
+    },
+    interval: () => minMs,
+    onBusy: () => skipped++,
+  };
+  if (o.onError) lo.onError = o.onError;
+  if (o.now) lo.now = o.now;
+  if (o.schedule) lo.schedule = o.schedule;
+  if (o.signal) lo.signal = o.signal;
+  inner = perceptionLoop(lo);
+  const l = inner;
+  return {
+    stop: () => l.stop(),
+    get running() {
+      return l.running;
+    },
+    get busy() {
+      return l.busy;
+    },
+    get lastLatencyMs() {
+      return l.lastLatencyMs;
+    },
+    get steps() {
+      return l.steps;
+    },
+    get skipped() {
+      return skipped;
     },
   };
 }

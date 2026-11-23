@@ -30,7 +30,8 @@ floor + 6 dB, speech level and a gain toward -20 dBFS capped at +60 dB;
 reels of at most 26 s cut on the quietest frame of the last 2 s, runs
 joined by 0.12 s of silence; each reel denoised, levelled again (plus or
 minus 9 dB), gained and limited at 0.891; one ASR call per reel through
-`hub.run`; times mapped back; the phantom filter.
+`hub.run` (pass `schedule` to keep a rendering page smooth, see the
+models hub); times mapped back; the phantom filter.
 
 ## Models
 

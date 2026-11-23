@@ -8,6 +8,13 @@
  * chain(name) is the HACKLE vlmChain: a plain serial queue.
  * Loads that run on webgpu go through exclusive("gpu") too, so a model
  * never compiles shaders while another one runs.
+ *
+ * run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs }) schedules heavy
+ * inference around rendering (HACKLE: a webgpu model shares the GPU with
+ * the scene and stutters it, which JS profiling does not show): a minimum
+ * gap between starts per model, waiting for an idle callback, and waiting
+ * while recent frames are over budget (`reportFrame(ms)` from the render
+ * loop). `busy()` and `onBusy` drive a model busy indicator.
  */
 
 import type { Env } from "@hackbuild/ai-env";
@@ -48,6 +55,25 @@ export interface ExclusiveOptions {
   signal?: AbortSignal;
 }
 
+export interface RunOptions extends ExclusiveOptions {
+  /** Least ms between the starts of two runs of this model. Default 0. */
+  minIntervalMs?: number;
+  /** Start only from an idle callback (requestIdleCallback where present). */
+  idleOnly?: boolean;
+  /** Start only while the mean of the last reported frame times is at most this many ms. */
+  frameBudgetMs?: number;
+  /** Give up waiting for the frame budget after this many ms and run anyway. Default 1000. */
+  maxDeferMs?: number;
+  /** "wait" (default) delays the run until it is due; "skip" rejects with HubError code "skipped" instead. */
+  when?: "wait" | "skip";
+}
+
+/** Clock and waits the scheduler uses; tests inject fakes. */
+export interface HubTimers {
+  sleep(ms: number): Promise<void>;
+  idle(): Promise<void>;
+}
+
 export interface HubStatus {
   id: string;
   provider: Provider;
@@ -55,6 +81,8 @@ export interface HubStatus {
   sizeMB: number | null;
   refs: number;
   lastUsed: number;
+  /** Runs in flight or waiting. */
+  busy: number;
 }
 
 export interface Hub {
@@ -66,7 +94,15 @@ export interface Hub {
   release(l: Loaded): void;
   unload(id: string): Promise<void>;
   /** Run inference on a loaded model; webgpu models take the gpu lock. */
-  run<T, R>(l: Loaded<T>, fn: (value: T) => Promise<R>, opts?: ExclusiveOptions): Promise<R>;
+  run<T, R>(l: Loaded<T>, fn: (value: T) => Promise<R>, opts?: RunOptions): Promise<R>;
+  /** Report one rendered frame's time in ms; the last 30 feed `frameBudgetMs`. */
+  reportFrame(ms: number): void;
+  /** Mean of the reported frame times, or 0 with none. */
+  frameMs(): number;
+  /** Runs in flight or waiting, for one model id or all. */
+  busy(id?: string): number;
+  /** Called with the total busy count whenever it changes. Returns an unsubscribe. */
+  onBusy(fn: (count: number) => void): () => void;
   exclusive<R>(resource: string, fn: () => Promise<R>, opts?: ExclusiveOptions): Promise<R>;
   chain(name: string): <R>(fn: () => Promise<R>) => Promise<R>;
   residentMB(): number;
@@ -74,7 +110,7 @@ export interface Hub {
 }
 
 export class HubError extends Error {
-  readonly code: "no-route" | "no-provider" | "budget" | "abort";
+  readonly code: "no-route" | "no-provider" | "budget" | "abort" | "skipped";
   constructor(code: HubError["code"], message: string) {
     super(message);
     this.name = "HubError";
@@ -90,6 +126,15 @@ export interface HubOptions {
   /** Route every request to the stub provider (the `?stub` switch). */
   stub?: boolean;
   now?: () => number;
+  timers?: HubTimers;
+}
+
+function defaultTimers(): HubTimers {
+  const g = globalThis as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => unknown };
+  return {
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    idle: () => new Promise((r) => (g.requestIdleCallback ? void g.requestIdleCallback(() => r(), { timeout: 1000 }) : void setTimeout(r, 0))),
+  };
 }
 
 interface Entry {
@@ -145,6 +190,41 @@ export function createHub(opts: HubOptions = {}): Hub {
   const queues = new Map<string, { busy: boolean; waiting: Waiter[] }>();
   const chains = new Map<string, Promise<unknown>>();
   let seq = 0;
+  const timers = opts.timers ?? defaultTimers();
+  const frames: number[] = [];
+  const lastStart = new Map<string, number>();
+  const busyBy = new Map<string, number>();
+  const busyFns = new Set<(n: number) => void>();
+  const busyTotal = () => [...busyBy.values()].reduce((a, b) => a + b, 0);
+  const bump = (id: string, d: number) => {
+    busyBy.set(id, (busyBy.get(id) ?? 0) + d);
+    if (!busyBy.get(id)) busyBy.delete(id);
+    const n = busyTotal();
+    for (const f of busyFns) f(n);
+  };
+  const frameMs = () => (frames.length ? frames.reduce((a, b) => a + b, 0) / frames.length : 0);
+  const skip = (id: string, why: string) => new HubError("skipped", `${id}: run skipped, ${why}`);
+  /** Wait (or refuse) until a scheduled run may start. */
+  async function due(id: string, ro: RunOptions): Promise<void> {
+    const mode = ro.when ?? "wait";
+    if (ro.minIntervalMs) {
+      const gap = (lastStart.get(id) ?? -Infinity) + ro.minIntervalMs - now();
+      if (gap > 0) {
+        if (mode === "skip") throw skip(id, `next start in ${Math.ceil(gap)} ms`);
+        await timers.sleep(gap);
+      }
+    }
+    if (ro.frameBudgetMs !== undefined && frameMs() > ro.frameBudgetMs) {
+      if (mode === "skip") throw skip(id, `frames at ${frameMs().toFixed(1)} ms over the ${ro.frameBudgetMs} ms budget`);
+      const until = now() + (ro.maxDeferMs ?? 1000);
+      while (frameMs() > ro.frameBudgetMs && now() < until) {
+        if (ro.signal?.aborted) throw new HubError("abort", `${id}: run aborted while waiting for the frame budget`);
+        await timers.sleep(16);
+      }
+    }
+    if (ro.idleOnly) await timers.idle();
+    if (ro.signal?.aborted) throw new HubError("abort", `${id}: run aborted before it started`);
+  }
 
   const residentMB = () => [...entries.values()].reduce((a, e) => a + (e.loaded.record.sizeMB ?? 0), 0);
 
@@ -234,10 +314,32 @@ export function createHub(opts: HubOptions = {}): Hub {
       const e = entries.get(id);
       if (e) await dispose(e);
     },
-    run(l, fn, eo = {}) {
+    async run(l, fn, ro = {}) {
       const e = entries.get(l.id);
       if (e) e.lastUsed = now();
-      return l.rung.device === "webgpu" ? hub.exclusive("gpu", () => fn(l.value), eo) : fn(l.value);
+      const scheduled = !!(ro.minIntervalMs || ro.idleOnly || ro.frameBudgetMs !== undefined);
+      if (scheduled && ro.when === "skip" && (busyBy.get(l.id) ?? 0) > 0) throw skip(l.id, "a run of this model is in flight");
+      bump(l.id, 1);
+      try {
+        if (scheduled) await due(l.id, ro);
+        lastStart.set(l.id, now());
+        const eo: ExclusiveOptions = {};
+        if (ro.priority !== undefined) eo.priority = ro.priority;
+        if (ro.signal) eo.signal = ro.signal;
+        return await (l.rung.device === "webgpu" ? hub.exclusive("gpu", () => fn(l.value), eo) : fn(l.value));
+      } finally {
+        bump(l.id, -1);
+      }
+    },
+    reportFrame(ms) {
+      frames.push(ms);
+      if (frames.length > 30) frames.shift();
+    },
+    frameMs,
+    busy: (id) => (id === undefined ? busyTotal() : (busyBy.get(id) ?? 0)),
+    onBusy(fn) {
+      busyFns.add(fn);
+      return () => busyFns.delete(fn);
     },
     exclusive<R>(resource: string, fn: () => Promise<R>, eo: ExclusiveOptions = {}): Promise<R> {
       let q = queues.get(resource);
@@ -303,6 +405,7 @@ export function createHub(opts: HubOptions = {}): Hub {
         sizeMB: e.loaded.record.sizeMB,
         refs: e.refs,
         lastUsed: e.lastUsed,
+        busy: busyBy.get(e.loaded.id) ?? 0,
       }));
     },
   };

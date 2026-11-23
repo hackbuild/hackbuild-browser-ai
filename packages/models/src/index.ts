@@ -34,4 +34,6 @@ export {
   type Loaded,
   type UseOptions,
   type ExclusiveOptions,
+  type RunOptions,
+  type HubTimers,
 } from "./hub.js";

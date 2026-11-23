@@ -265,3 +265,83 @@ describe("hub", () => {
     expect(((await hub.use("chat").catch((e: unknown) => e)) as HubError).code).toBe("no-provider");
   });
 });
+
+describe("run scheduling", () => {
+  const rec = (id: string): ModelRecord => ({
+    id,
+    provides: ["depth"],
+    provider: "fake",
+    source: {},
+    sizeMB: 10,
+    sizeSource: "measured",
+    ladder: [{ device: "wasm" }],
+    licence: "MIT",
+    commercial: true,
+  });
+  function setup() {
+    let t = 0;
+    const slept: number[] = [];
+    let idles = 0;
+    const hub = createHub({
+      registry: createRegistry([rec("m")]),
+      now: () => t,
+      timers: {
+        sleep: async (ms) => {
+          slept.push(ms);
+          t += ms;
+        },
+        idle: async () => {
+          idles++;
+        },
+      },
+    });
+    hub.provide("fake", async () => ({ run: async () => "ok" }));
+    return { hub, slept, idles: () => idles, advance: (ms: number) => (t += ms), now: () => t };
+  }
+
+  it("waits out the minimum interval, or skips when asked", async () => {
+    const s = setup();
+    const l = await s.hub.use("depth");
+    await s.hub.run(l, async () => 1, { minIntervalMs: 500 });
+    s.advance(200);
+    await s.hub.run(l, async () => 2, { minIntervalMs: 500 });
+    expect(s.slept).toEqual([300]);
+    s.advance(100);
+    await expect(s.hub.run(l, async () => 3, { minIntervalMs: 500, when: "skip" })).rejects.toMatchObject({ code: "skipped" });
+  });
+
+  it("waits for idle and for frames under budget, then runs anyway after the defer limit", async () => {
+    const s = setup();
+    const l = await s.hub.use("depth");
+    await s.hub.run(l, async () => 1, { idleOnly: true });
+    expect(s.idles()).toBe(1);
+    for (let i = 0; i < 30; i++) s.hub.reportFrame(25);
+    expect(s.hub.frameMs()).toBe(25);
+    await expect(s.hub.run(l, async () => 1, { frameBudgetMs: 20, when: "skip" })).rejects.toMatchObject({ code: "skipped" });
+    const t0 = s.now();
+    await s.hub.run(l, async () => 1, { frameBudgetMs: 20, maxDeferMs: 100 });
+    expect(s.now() - t0).toBeGreaterThanOrEqual(100);
+    for (let i = 0; i < 30; i++) s.hub.reportFrame(10);
+    s.slept.length = 0;
+    await s.hub.run(l, async () => 1, { frameBudgetMs: 20 });
+    expect(s.slept).toEqual([]);
+  });
+
+  it("reports busy counts per model and to listeners, and skips re-entry", async () => {
+    const s = setup();
+    const l = await s.hub.use("depth");
+    const seen: number[] = [];
+    const off = s.hub.onBusy((n) => seen.push(n));
+    let release!: () => void;
+    const p = s.hub.run(l, () => new Promise<void>((r) => (release = r)));
+    await Promise.resolve();
+    expect(s.hub.busy("m")).toBe(1);
+    expect(s.hub.status()[0]!.busy).toBe(1);
+    await expect(s.hub.run(l, async () => 1, { minIntervalMs: 1, when: "skip" })).rejects.toMatchObject({ code: "skipped" });
+    release();
+    await p;
+    expect(s.hub.busy()).toBe(0);
+    expect(seen).toEqual([1, 0]);
+    off();
+  });
+});

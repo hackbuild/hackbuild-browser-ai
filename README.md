@@ -9,14 +9,14 @@ their tests; the table below grows with them. Nothing is published to npm.
 |---|---|---|
 | [@hackbuild/ai-env](packages/ai-env) | capability probe, file:// safe ESM import and worker ladder | 16 vitest |
 | [@hackbuild/weights](packages/weights) | weight store over opfs, cache storage, indexeddb parts; resumable range downloads, sha-256, multi file repos | 20 vitest |
-| [@hackbuild/models](packages/models) | registry records with device and dtype ladders, quirks and licences; hub with budget, gpu queue and stubs | 17 vitest |
+| [@hackbuild/models](packages/models) | registry records with device and dtype ladders, quirks and licences; hub with budget, gpu queue, run scheduling around rendering, busy state and stubs | 20 vitest |
 | [@hackbuild/memory](packages/memory) | bm25 plus flat cosine with rrf in a rust wasm core (simd128), linear and organic scorers, decay, merge, indexeddb, budgeted context | 44 vitest, 15 cargo |
 | [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 30 vitest |
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
 | [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 10 vitest |
 | [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 16 vitest, 11 cargo |
 | [@hackbuild/transcribe](packages/transcribe) | scribe front end, silence reels with a source map, whisper and moonshine records, phantom filter, live segmenter, web speech adapter | 10 vitest |
-| [@hackbuild/vision](packages/vision) | depth anything v2, mediapipe detection, segmentation and landmarks with fallback, optional external yolo, slimsam, smolvlm and lfm2-vl captions, loop and cache | 13 vitest |
+| [@hackbuild/vision](packages/vision) | depth anything v2, mediapipe detection, segmentation and landmarks with fallback, optional external yolo, slimsam, smolvlm and lfm2-vl captions, loop, readback loop and cache | 15 vitest |
 | [@hackbuild/depth-mesh](packages/depth-mesh) | rust wasm core (simd128): depth to point cloud, relief heightfield solids, surface nets, point to plane icp, silhouette carving; stl, obj and ply export | 4 vitest, 8 cargo |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine

@@ -42,3 +42,4 @@ README).
 | 32 | vision | an external YOLOv8n export (AGPL-3.0, owner supplied) through the ort provider | browser, the onnx file | not run |
 | 33 | depth-mesh | a BAIL style relief from a Depth Anything map (Apache-2.0), sliced in Flash Studio and printed | browser, slicer, printer | not run |
 | 34 | depth-mesh | a CALIPER turntable carve from a webcam and an ICP scan, at real frame rate, looked at by a person | Chrome, webcam, turntable | not run |
+| 35 | models, vision | a webgpu depth or VLM model beside a three.js scene with and without `frameBudgetMs` and `minIntervalMs`: frame times measured, stutter looked at by a person | WebGPU machine, a scene | not run |

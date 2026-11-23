@@ -5,7 +5,7 @@
  */
 
 import type { Dsp } from "@hackbuild/audio-dsp";
-import type { Hub, Loaded } from "@hackbuild/models";
+import type { Hub, Loaded, RunOptions } from "@hackbuild/models";
 import { cleanup, type Dropped, type Seg } from "./cleanup.js";
 import { analyze, finishReel, SR, type FrontEndOptions } from "./frontend.js";
 import { mapTime, materialize, packReels } from "./reels.js";
@@ -25,6 +25,8 @@ export interface TranscribeOptions extends FrontEndOptions {
   /** Use this record id instead of routing by capability. */
   model?: string;
   signal?: AbortSignal;
+  /** Scheduling for each reel's run (minimum interval, idle only, frame time budget), for pages that also render. */
+  schedule?: RunOptions;
   onProgress?: (p: { done: number; total: number; rtf: number }) => void;
   /** Clock for realtime factor, in ms. */
   now?: () => number;
@@ -55,7 +57,7 @@ export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: Tr
       const m = materialize(reels[i]!, a.sig, Math.round(0.1 * SR));
       const audio = finishReel(dsp, m.audio, a, o);
       const opt = m.dur > 29 ? { ...call, chunk_length_s: 30, stride_length_s: 5 } : call;
-      const out = await hub.run(model, (asr) => asr(audio, opt));
+      const out = await hub.run(model, (asr) => asr(audio, opt), { ...(o.schedule ?? {}), ...(o.signal ? { signal: o.signal } : {}) });
       const chunks = out?.chunks?.length ? out.chunks : [{ timestamp: [0, m.dur] as [number, number], text: out?.text ?? "" }];
       for (const ch of chunks) {
         const ts = ch.timestamp ?? [0, null];

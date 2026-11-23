@@ -16,4 +16,5 @@ Versions follow semver per package. Nothing is published to npm yet.
 - transcribe: scribe front end, reels and source map, whisper and moonshine records, phantom filter matching scribe's drops, kerf live segmenter, web speech adapter.
 - vision: depth, detection, segmentation, landmarks with a fallback chain, captions and questions through the hub; mediapipe and face-api providers, an external yolo decoder, a perception loop and result cache.
 - depth-mesh: rust wasm core for point clouds, relief solids, surface nets, icp and silhouette carving with native and wasm parity; stl, obj and ply export.
+- models: run scheduling (minimum interval, idle only, frame time budget, wait or skip) and a busy state, for models that share the gpu with a scene; vision and transcribe pass it through, vision adds a rate capped readback loop.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.

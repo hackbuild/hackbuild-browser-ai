@@ -23,6 +23,8 @@ import {
   mediapipeProvider,
   nms,
   perceptionLoop,
+  readbackLoop,
+  rampDepth,
   segment,
   visionStubs,
   yoloRecord,
@@ -347,5 +349,77 @@ describe("loop and helpers", () => {
     expect(made).toBe(1);
     expect(fitSize(4000, 3000)).toEqual({ width: 1024, height: 768, scale: 0.256 });
     expect(Array.from(depthToRgba({ width: 1, height: 1, data: Float32Array.from([0.5]) }))).toEqual([128, 128, 128, 255]);
+  });
+});
+
+describe("scheduling around rendering", () => {
+  it("passes schedule options to the hub, routes to a smaller model, and reports busy", async () => {
+    let t = 0;
+    const slept: number[] = [];
+    const hub = createHub({
+      registry: createRegistry(),
+      env: env(),
+      now: () => t,
+      timers: {
+        sleep: async (ms) => {
+          slept.push(ms);
+          t += ms;
+        },
+        idle: async () => {},
+      },
+    });
+    attachVision(hub);
+    hub.registry.add({ ...VISION_RECORDS[0]!, id: "depth-big", sizeMB: 1300, provider: "fake" }, { ...VISION_RECORDS[0]!, id: "depth-small", sizeMB: 100, provider: "fake" });
+    hub.registry.add({ ...VISION_RECORDS[0]!, provider: "fake", sizeMB: 1300 });
+    const used: string[] = [];
+    hub.provide("fake", async ({ record }) => {
+      used.push(record.id);
+      return rampDepth();
+    });
+    const busy: number[] = [];
+    hub.onBusy((n) => busy.push(n));
+    await depth(hub, img, { size: "tiny", schedule: { minIntervalMs: 1000 } });
+    t += 400;
+    await depth(hub, img, { size: "tiny", schedule: { minIntervalMs: 1000 } });
+    expect(slept).toEqual([600]);
+    expect(used).toEqual(["depth-small"]);
+    await expect(depth(hub, img, { size: "tiny", schedule: { minIntervalMs: 1000, when: "skip" } })).rejects.toMatchObject({ code: "skipped" });
+    for (let i = 0; i < 30; i++) hub.reportFrame(40);
+    await expect(depth(hub, img, { size: "tiny", schedule: { frameBudgetMs: 20, when: "skip" } })).rejects.toMatchObject({ code: "skipped" });
+    expect(busy.filter((b) => b > 0).length).toBeGreaterThan(0);
+    expect(hub.busy()).toBe(0);
+  });
+
+  it("caps readback rate and skips frames while a read is in flight", async () => {
+    let t = 0;
+    const q: (() => void)[] = [];
+    let finish: (() => void) | null = null;
+    const frames: number[] = [];
+    const loop = readbackLoop<number>({
+      maxHz: 10,
+      now: () => t,
+      schedule: (f) => q.push(f),
+      read: () => new Promise<number>((r) => (finish = () => r(t))),
+      onFrame: (f) => {
+        frames.push(f);
+      },
+    });
+    const frame = () => q.shift()!();
+    frame();
+    t = 16;
+    frame();
+    t = 32;
+    frame();
+    expect(loop.skipped).toBe(2);
+    finish!();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(frames).toEqual([32]);
+    t = 60;
+    frame();
+    expect(loop.steps).toBe(1);
+    t = 101;
+    frame();
+    expect(loop.steps).toBe(2);
+    loop.stop();
   });
 });

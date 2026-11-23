@@ -44,6 +44,20 @@ The YOLO decoder is written from the published output layout
 ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by
 default.
 
+## Sharing the GPU with a scene
+
+Every call takes `schedule` (passed to `hub.run`: `minIntervalMs`,
+`idleOnly`, `frameBudgetMs`, `when: "skip"`) and `size` or `maxMB` to
+route to a smaller model. Report frame times with `hub.reportFrame(ms)`
+and show `hub.onBusy` in the UI:
+
+    hub.onBusy((n) => (pill.textContent = n ? "model busy" : ""));
+    await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBudgetMs: 20, when: "skip" } });
+
+`readbackLoop({ read, onFrame, maxHz })` is the agent eye pattern: an
+async readback (`readRenderTargetPixelsAsync`), a busy flag that skips
+frames instead of queueing them, and a rate cap (default 10 Hz).
+
 ## Loop and cache
 
 `perceptionLoop({ step, interval })` runs one step at a time beside the
@@ -56,7 +70,7 @@ px cap) help with canvases.
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/vision` passes 13 tests under Node
+- 2026-11-22: `npx vitest run packages/vision` passes 15 tests under Node
   22.18.0 with fake runtimes: licences on every record and YOLO kept
   external, every capability in stub mode, depth normalization from
   predicted_depth and from the 8 bit image, the depth record walking fp16
@@ -66,7 +80,10 @@ px cap) help with canvases.
   MediaPipe record fails, YOLO letterbox, decode and NMS, an external YOLO
   record through an ort model, VLM questions serialized on one chain,
   SlimSAM embedding an image once for several prompts, the loop's busy
-  guard and interval, the LRU cache.
+  guard and interval, the LRU cache, schedule options reaching the hub
+  (interval wait, skip, frame budget skip) with routing to a smaller
+  model and busy reports, and the readback loop's rate cap and busy
+  skips.
 
 ### Not verified by anything
 
@@ -77,3 +94,5 @@ px cap) help with canvases.
 - FastSAM: not built. Its weights are AGPL-3.0 and its mask decoder is
   not written; SlimSAM covers point prompts.
 - Accuracy and speed of every model (no numbers measured).
+- Whether the frame budget and idle waits remove stutter in a real scene
+  (needs a person looking at real frame rate).

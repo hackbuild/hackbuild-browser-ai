@@ -8,7 +8,7 @@
  */
 
 import type { OrtModel, TjsProvider } from "@hackbuild/devices";
-import type { Hub, Loaded, ModelRecord } from "@hackbuild/models";
+import type { Hub, Loaded, ModelRecord, RunOptions, SizeClass, UseOptions } from "@hackbuild/models";
 import { depthLoader, samLoader, vlmLoader } from "./loaders.js";
 import { VISION_RECORDS } from "./records.js";
 import type { DepthMap, Detection, Detector, ImageInput, LandmarkKind, Landmarker, Landmarks, Mask, Pixels, SegmentPrompt, Segmenter, Vlm } from "./types.js";
@@ -25,25 +25,36 @@ export function attachVision(hub: Hub, tjs?: TjsProvider): void {
   }
 }
 
-async function withModel<T, R>(hub: Hub, what: string | { id: string }, fn: (v: T, l: Loaded<T>) => Promise<R>, signal?: AbortSignal): Promise<R> {
-  const l = await hub.use<T>(what, signal ? { signal } : {});
+export interface CallOptions {
+  /** A record id instead of routing by capability. */
+  model?: string;
+  /** Route to a smaller model: a size class, or a download cap in MB. */
+  size?: SizeClass;
+  maxMB?: number;
+  signal?: AbortSignal;
+  /** Scheduling around rendering: minimum interval, idle only, frame time budget, wait or skip (see the models hub). */
+  schedule?: RunOptions;
+}
+
+async function withModel<T, R>(hub: Hub, what: string | { id: string }, fn: (v: T, l: Loaded<T>) => Promise<R>, o: CallOptions = {}): Promise<R> {
+  const uo: UseOptions = {};
+  if (o.signal) uo.signal = o.signal;
+  if (o.size) uo.size = o.size;
+  if (o.maxMB !== undefined) uo.maxMB = o.maxMB;
+  const l = await hub.use<T>(what, uo);
   try {
-    return await hub.run(l, (v) => fn(v, l));
+    const ro: RunOptions = { ...(o.schedule ?? {}) };
+    if (o.signal && !ro.signal) ro.signal = o.signal;
+    return await hub.run(l, (v) => fn(v, l), ro);
   } finally {
     hub.release(l);
   }
 }
 
-export interface CallOptions {
-  /** A record id instead of routing by capability. */
-  model?: string;
-  signal?: AbortSignal;
-}
-
 const target = (cap: string, o: CallOptions) => (o.model ? { id: o.model } : cap);
 
 export function depth(hub: Hub, image: ImageInput, o: CallOptions = {}): Promise<DepthMap> {
-  return withModel<{ estimate(i: ImageInput): Promise<DepthMap> }, DepthMap>(hub, target("depth", o), (m) => m.estimate(image), o.signal);
+  return withModel<{ estimate(i: ImageInput): Promise<DepthMap> }, DepthMap>(hub, target("depth", o), (m) => m.estimate(image), o);
 }
 
 function asDetector(v: unknown, toPixels?: (img: unknown) => Pixels): Detector {
@@ -60,13 +71,13 @@ export function detect(
   if (o.scoreThreshold !== undefined) opts.scoreThreshold = o.scoreThreshold;
   if (o.maxResults !== undefined) opts.maxResults = o.maxResults;
   if (o.timestamp !== undefined) opts.timestamp = o.timestamp;
-  return withModel<unknown, Detection[]>(hub, target("detect", o), (v) => asDetector(v, o.toPixels).detect(image, opts), o.signal);
+  return withModel<unknown, Detection[]>(hub, target("detect", o), (v) => asDetector(v, o.toPixels).detect(image, opts), o);
 }
 
 /** Point prompted masks (SlimSAM), or a person mask without a prompt (selfie segmenter). Best first. */
 export function segment(hub: Hub, image: ImageInput, prompt?: SegmentPrompt, o: CallOptions = {}): Promise<Mask[]> {
   const cap = prompt?.points?.length ? "segment" : "segment.person";
-  return withModel<Segmenter, Mask[]>(hub, target(cap, o), (m) => m.segment(image, prompt), o.signal);
+  return withModel<Segmenter, Mask[]>(hub, target(cap, o), (m) => m.segment(image, prompt), o);
 }
 
 /** Records for a landmark kind in fallback order: the routed record first, then the rest. */
@@ -89,9 +100,10 @@ export async function landmarks(
   const targets: (string | { id: string })[] = chain.length ? chain.map((r) => ({ id: r.id })) : [`landmarks.${kind}`];
   for (const t of targets) {
     try {
-      const r = await withModel<Landmarker, Landmarks>(hub, t, (m) => m.detect(image, o.timestamp !== undefined ? { timestamp: o.timestamp } : {}), o.signal);
+      const r = await withModel<Landmarker, Landmarks>(hub, t, (m) => m.detect(image, o.timestamp !== undefined ? { timestamp: o.timestamp } : {}), o);
       return { ...r, failures };
     } catch (e) {
+      if ((e as { code?: string }).code === "skipped") throw e;
       failures.push({ id: typeof t === "string" ? t : t.id, error: e instanceof Error ? e.message : String(e) });
       if (o.signal?.aborted) break;
     }
@@ -101,9 +113,9 @@ export async function landmarks(
 
 /** Caption an image. VLM calls are serialized on one chain. */
 export function caption(hub: Hub, image: ImageInput, o: CallOptions & { maxTokens?: number } = {}): Promise<string> {
-  return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.caption", o), (m) => m.ask(image, undefined, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o.signal));
+  return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.caption", o), (m) => m.ask(image, undefined, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o));
 }
 
 export function ask(hub: Hub, image: ImageInput, question: string, o: CallOptions & { maxTokens?: number } = {}): Promise<string> {
-  return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.ask", o), (m) => m.ask(image, question, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o.signal));
+  return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.ask", o), (m) => m.ask(image, question, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o));
 }

@@ -60,6 +60,15 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
 - `exclusive(resource, fn, { priority })`: one job per resource, higher
   priority first, FIFO within a priority, waiters can abort.
 - `chain(name)`: a serial queue for one capability.
+- Scheduling around rendering (HACKLE: a webgpu model shares the GPU with
+  the scene and stutters it, and JS profiling does not show it):
+  `run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs, maxDeferMs, when })`
+  waits for the gap since the model's last start, an idle callback, and
+  frames under budget (fed by `hub.reportFrame(ms)` from the render loop,
+  mean of the last 30); `when: "skip"` rejects with code `skipped`
+  instead of waiting, and also when a run of that model is in flight.
+  `busy(id?)`, `onBusy(fn)` and `status()[i].busy` drive a busy
+  indicator; `use(cap, { size, maxMB })` picks a smaller model.
 
 ## Stubs
 
@@ -81,14 +90,17 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/models` passes 17 tests under Node
+- 2026-11-22: `npx vitest run packages/models` passes 20 tests under Node
   22.18.0: catalog licences and ladders, licence refusal, rung filtering
   for webgpu, shader-f16 and Prompt API, the ORT ladder order, error
   classification on the strings the builds logged, ladder walk and stop,
   routing by capability, device, size and budget, load reuse across
   concurrent `use`, budget eviction oldest idle first, refusal when busy
   models fill the budget, priority order with one job at a time, abort of
-  a waiter, the serial chain, gpu lock for webgpu models only, stub mode.
+  a waiter, the serial chain, gpu lock for webgpu models only, stub mode,
+  and run scheduling with a fake clock: minimum interval wait and skip,
+  idle wait, frame budget skip and defer limit, busy counts, listeners
+  and re-entry skip.
 
 ### Not verified by anything
 
