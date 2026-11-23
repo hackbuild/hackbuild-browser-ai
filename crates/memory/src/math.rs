@@ -123,7 +123,7 @@ fn dot_main(a: &[f32], b: &[f32]) -> [f32; 4] {
 #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
 fn dot_main(a: &[f32], b: &[f32]) -> [f32; 4] {
     let mut l = [0f32; 4];
-    for (ca, cb) in a.chunks_exact(4).zip(b.chunks_exact(4)) {
+    for (ca, cb) in a.as_chunks::<4>().0.iter().zip(b.as_chunks::<4>().0) {
         l[0] += ca[0] * cb[0];
         l[1] += ca[1] * cb[1];
         l[2] += ca[2] * cb[2];

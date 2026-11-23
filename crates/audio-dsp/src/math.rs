@@ -210,7 +210,7 @@ fn sum_sq_main(x: &[f32]) -> [f64; 2] {
 #[cfg(not(all(target_arch = "wasm32", target_feature = "simd128")))]
 fn sum_sq_main(x: &[f32]) -> [f64; 2] {
     let mut l = [0f64; 2];
-    for c in x.chunks_exact(2) {
+    for c in x.as_chunks::<2>().0 {
         let (a, b) = (c[0] as f64, c[1] as f64);
         l[0] += a * a;
         l[1] += b * b;
