@@ -75,3 +75,16 @@ describe("classifier", () => {
     expect(fair.every((a) => a >= 0 && a <= 1)).toBe(true);
   });
 });
+
+describe("input checks", () => {
+  it("refuses no epochs and a model whose sizes do not match its header", () => {
+    expect(() => bs.train([], [{ lo: 8, hi: 12 }], 128, { classes: 2 })).toThrow(/no epochs/);
+    const ep = bs.synth(3, C, 128, 128, 10, 8, 2);
+    const m = bs.train(ep, [{ lo: 8, hi: 12 }], 128, { classes: 2, epochs: 5 }).toJSON();
+    const bad = { ...m, values: [...m.values] };
+    bad.values[3] = bad.values[3]! + 1;
+    expect(() => bs.load(bad)).toThrow(/header/);
+    expect(() => bs.load(m)).not.toThrow();
+  });
+});
+

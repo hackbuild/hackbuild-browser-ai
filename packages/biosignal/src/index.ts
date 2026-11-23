@@ -75,6 +75,16 @@ function b64(s: string): Uint8Array {
   return new Uint8Array((globalThis as unknown as { Buffer: { from(s: string, e: string): Uint8Array } }).Buffer.from(s, "base64"));
 }
 
+function checkEpochs(what: string, epochs: readonly Epoch[], bands: readonly Band[], classes: number): void {
+  if (!epochs.length) throw new RangeError(`${what}: no epochs`);
+  if (!bands.length) throw new RangeError(`${what}: no bands`);
+  const c = epochs[0]!.channels;
+  for (const e of epochs) {
+    if (e.channels !== c || e.data.length !== e.channels * e.samples) throw new RangeError(`${what}: every epoch needs ${c} channels and channels times samples values`);
+    if (!(e.label >= 0 && e.label < classes)) throw new RangeError(`${what}: label ${e.label} is outside 0 to ${classes - 1}`);
+  }
+}
+
 export class Biosignal {
   readonly simd: boolean;
   constructor(private readonly x: Exports) {
@@ -132,6 +142,7 @@ export class Biosignal {
   }
 
   train(epochs: readonly Epoch[], bands: readonly Band[], fs: number, o: TrainOptions, shrink = 0.08, notch = 0): Classifier {
+    checkEpochs("train", epochs, bands, o.classes);
     const c = epochs[0]!.channels;
     const covs = this.features(epochs, bands, fs, shrink, notch);
     const y = Uint32Array.from(epochs, (e) => e.label);
@@ -145,6 +156,7 @@ export class Biosignal {
    * on the training fold only. `byTrial: false` shows the leaky number.
    */
   crossValidate(epochs: readonly Epoch[], bands: readonly Band[], fs: number, o: TrainOptions & { folds?: number; byTrial?: boolean; seed?: number }, shrink = 0.08, notch = 0): number[] {
+    checkEpochs("crossValidate", epochs, bands, o.classes);
     const c = epochs[0]!.channels;
     const covs = this.features(epochs, bands, fs, shrink, notch);
     const y = Uint32Array.from(epochs, (e) => e.label);
@@ -157,6 +169,9 @@ export class Biosignal {
   load(m: ModelJson): Classifier {
     if (m.kind !== "hackbuild-biosignal-riemann" || m.version !== 1) throw new Error("not a hackbuild biosignal model, or a newer version");
     const v = Float64Array.from(m.values);
+    // header c, bands, k, d; a tangent vector of d values needs d = bands * c(c+1)/2
+    const [c, nb, k, d] = [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0, v[3] ?? 0];
+    if (v.length < 4 || nb !== m.bands.length || d !== (nb * c * (c + 1)) / 2 || !(k >= 2)) throw new Error("model values do not match their header");
     const h = this.with([v], (p) => this.x.bs_import(p, v.length));
     if (h >>> 0 === 0xffffffff) throw new Error("model values do not match their header");
     return new Classifier(this, this.x, h, m.bands, m.fs, m.shrink, m.notch, v[0]!);

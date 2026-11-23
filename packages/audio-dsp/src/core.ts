@@ -129,6 +129,7 @@ export class Dsp {
   }
   /** Level per frame in dB; SCRIBE uses 400 sample frames on a 160 sample hop at 16 kHz. */
   frameDb(x: Float32Array, hop = 160, frame = 400): Float32Array {
+    if (!(Number.isInteger(hop) && hop >= 1 && Number.isInteger(frame) && frame >= 1)) throw new RangeError(`frameDb: hop ${hop} and frame ${frame} must be integers of at least 1`);
     const m = this.frameCount(x.length, frame, hop);
     return this.map(x, m, (a, b) => this.x.ad_frame_db(a, x.length, hop, frame, b));
   }
@@ -206,6 +207,8 @@ export class Dsp {
   }
   /** Hann windowed magnitude frames, row major, w / 2 + 1 bins per frame. */
   stftMag(x: Float32Array, w = 1024, hop = 256): { mag: Float32Array; frames: number; bins: number } {
+    if (!(Number.isInteger(w) && w >= 2 && (w & (w - 1)) === 0)) throw new RangeError(`stftMag: window ${w} must be a power of two`);
+    if (!(Number.isInteger(hop) && hop >= 1)) throw new RangeError(`stftMag: hop ${hop} must be an integer of at least 1`);
     const frames = this.x.ad_stft_frames(x.length, w, hop);
     const bins = (w >> 1) + 1;
     return { mag: this.map(x, frames * bins, (a, b) => this.x.ad_stft_mag(a, x.length, w, hop, b)), frames, bins };

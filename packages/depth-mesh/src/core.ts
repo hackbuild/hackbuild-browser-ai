@@ -100,6 +100,16 @@ function b64(s: string): Uint8Array {
 
 type Arr = Float32Array | Float64Array | Uint8Array;
 
+/**
+ * The core reads w * h (or dx * dy * dz) values from the pointer it is
+ * given; a shorter array would make it read unrelated wasm memory.
+ */
+function grid(what: string, have: number, ...dims: number[]): void {
+  for (const d of dims) if (!Number.isInteger(d) || d <= 0) throw new RangeError(`${what}: grid size ${dims.join(" x ")} must be positive integers`);
+  const need = dims.reduce((a, b) => a * b, 1);
+  if (have < need) throw new RangeError(`${what}: ${have} values for a ${dims.join(" x ")} grid, which needs ${need}`);
+}
+
 export class DepthMesh {
   readonly simd: boolean;
   constructor(private readonly x: Exports) {
@@ -133,11 +143,15 @@ export class DepthMesh {
 
   /** Depth (0 to 1, larger nearer) to a camera space cloud with normals facing the camera. */
   cloud(depth: Float32Array, w: number, h: number, o: CloudOptions): Cloud {
+    grid("cloud", depth.length, w, h);
+    // the core clamps depth, and a clamp keeps NaN; a NaN depth is treated as background
+    if (depth.some(Number.isNaN)) depth = depth.map((v) => (Number.isNaN(v) ? 0 : v));
     const n = this.with([depth], (p) => this.x.dm_cloud(p, w, h, o.near, o.far, o.focal, o.stride ?? 1, o.dmin ?? 0, o.dmax ?? 1));
     return { positions: this.f32(n * 3), normals: this.f32(n * 3, true), count: n };
   }
   /** Heights in mm, 0 where there is no relief (BAIL). */
   relief(values: Float32Array, o: ReliefOptions): Float32Array {
+    if (o.mask && o.mask.length !== values.length) throw new RangeError(`relief: mask has ${o.mask.length} cells, values have ${values.length}`);
     const args = [o.base, o.height, o.gamma ?? 1, o.bgcut ?? 0, o.invert ? 1 : 0] as const;
     const n = o.mask
       ? this.with([values, o.mask], (p, m) => this.x.dm_relief(p, values.length, m, ...args))
@@ -146,6 +160,7 @@ export class DepthMesh {
   }
   /** Fill corner to corner pinches in place; returns how many cells were filled. */
   healPinches(h: Float32Array, w: number, ht: number): number {
+    grid("healPinches", h.length, w, ht);
     return this.with([h], (p) => {
       const n = this.x.dm_heal(p, w, ht);
       h.set(new Float32Array(this.x.memory.buffer, p, h.length));
@@ -154,16 +169,20 @@ export class DepthMesh {
   }
   /** Closed heightfield solid: cell size px, origin (x0, y0), on the plane z0. */
   heightfieldMesh(h: Float32Array, w: number, ht: number, px: number, x0 = 0, y0 = 0, z0 = 0): Mesh {
+    grid("heightfieldMesh", h.length, w, ht);
     this.with([h], (p) => this.x.dm_heightfield(p, w, ht, px, x0, y0, z0));
     return this.mesh();
   }
   /** Surface nets over a field (inside above zero), after `smooth` box blurs. Vertices in grid units. */
   surfaceNets(field: Float32Array, dx: number, dy: number, dz: number, smooth = 0): Mesh {
+    grid("surfaceNets", field.length, dx, dy, dz);
     this.with([field], (p) => this.x.dm_surface_nets(p, dx, dy, dz, smooth));
     return this.mesh();
   }
   /** Space carving from turntable silhouettes (one mask per angle, nonzero inside). Vertices in object units. */
   carve(masks: readonly Uint8Array[], angles: readonly number[], t: Turntable, resolution = 64, smooth = 1): Mesh {
+    if (angles.length !== masks.length) throw new RangeError(`carve: ${masks.length} masks but ${angles.length} angles`);
+    for (const m of masks) grid("carve", m.length, t.width, t.height);
     const all = new Uint8Array(masks.length * t.width * t.height);
     masks.forEach((m, i) => all.set(m, i * t.width * t.height));
     this.with([all, Float64Array.from(angles)], (m, a) => this.x.dm_carve(m, a, masks.length, t.width, t.height, t.focal, t.dist, t.half, resolution, smooth));
@@ -171,6 +190,7 @@ export class DepthMesh {
   }
   /** Erode then dilate with a 3 by 3 square (CALIPER morphOpen). */
   morphOpen(mask: Uint8Array, w: number, h: number): Uint8Array {
+    grid("morphOpen", mask.length, w, h);
     this.with([mask], (p) => this.x.dm_morph_open(p, w, h));
     return Uint8Array.from(this.u32(w * h));
   }

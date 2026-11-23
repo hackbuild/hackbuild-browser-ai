@@ -30,6 +30,12 @@ describe("kernels", async () => {
   const dsp = await loadDsp({ base64: AUDIO_DSP_WASM_BASE64 });
   const sine = (f: number, sr: number, n: number, a = 0.5) => Float32Array.from({ length: n }, (_, i) => a * Math.sin((2 * Math.PI * f * i) / sr));
 
+  it("names bad parameters instead of trapping", () => {
+    const x = new Float32Array(4096);
+    expect(() => dsp.stftMag(x, 1000)).toThrow(/power of two/);
+    expect(() => dsp.frameDb(x, 0)).toThrow(RangeError);
+  });
+
   it("high pass removes dc, low pass keeps it", () => {
     const dc = new Float32Array(8000).fill(0.5);
     expect(Math.abs(dsp.biquad(dc, "highpass", 80, 16000)[7999]!)).toBeLessThan(1e-3);

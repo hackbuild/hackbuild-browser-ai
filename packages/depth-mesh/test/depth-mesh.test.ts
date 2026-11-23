@@ -116,3 +116,18 @@ describe("geometry", () => {
     expect(ply.length).toBe(head.indexOf("end_header\n") + 11 + c.count * 24);
   });
 });
+
+describe("input checks", () => {
+  it("refuses a grid shorter than its size instead of reading other memory", () => {
+    expect(() => dm.cloud(new Float32Array(16), 64, 64, { near: 0.5, far: 3, focal: 60 })).toThrow(RangeError);
+    expect(() => dm.heightfieldMesh(new Float32Array(10), 4, 4, 1)).toThrow(RangeError);
+    expect(() => dm.surfaceNets(new Float32Array(10), 4, 4, 4)).toThrow(RangeError);
+    expect(() => dm.relief(new Float32Array(4), { base: 1, height: 2, mask: new Uint8Array(3) })).toThrow(RangeError);
+  });
+  it("treats a NaN depth as background", () => {
+    const d = new Float32Array(16).fill(0.5);
+    d[5] = NaN;
+    const c = dm.cloud(d, 4, 4, { near: 0.5, far: 3, focal: 60 });
+    expect(c.positions.every(Number.isFinite)).toBe(true);
+  });
+});
