@@ -34,3 +34,5 @@ README).
 | 24 | devices | `loadTransformers()` and `loadOrt()` import transformers.js 4.3.2 and onnxruntime-web 1.27.0 from the pinned URLs over https and from file:// | Chrome, Safari, network | not run |
 | 25 | devices | the ort ladder from webgpu basic to wasm on a graph that fails to partition (htdemucs, MIT) with one download | WebGPU machine, network | not run |
 | 26 | audio-dsp | the inlined wasm core from a file:// page, and kernel speed on 10 minutes of 16 kHz audio (measured) | Chrome, Safari, file:// page | not run |
+| 27 | transcribe | whisper-large-v3-turbo (MIT) on webgpu and whisper-base.en (MIT) on wasm over a 10 minute file, against a SCRIBE run of the same file | WebGPU machine, network, a test recording | not run |
+| 28 | transcribe | the live segmenter on a microphone and the Web Speech adapter in Chrome | Chrome, microphone | not run |

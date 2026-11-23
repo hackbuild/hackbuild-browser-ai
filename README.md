@@ -15,6 +15,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
 | [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 10 vitest |
 | [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 16 vitest, 11 cargo |
+| [@hackbuild/transcribe](packages/transcribe) | scribe front end, silence reels with a source map, whisper and moonshine records, phantom filter, live segmenter, web speech adapter | 10 vitest |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music

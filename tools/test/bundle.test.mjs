@@ -15,6 +15,7 @@ const expected = {
   memory: ["open", "loadCore"],
   devices: ["tjsProvider", "ortProvider", "LADDERS"],
   "audio-dsp": ["loadDsp", "gate", "toSrt", "writeMidi"],
+  transcribe: ["transcribe", "attachTranscribe", "LiveSegmenter"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {
