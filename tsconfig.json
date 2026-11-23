@@ -60,6 +60,9 @@
     },
     {
       "path": "packages/act"
+    },
+    {
+      "path": "packages/agent"
     }
   ]
 }
