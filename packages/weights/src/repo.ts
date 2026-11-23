@@ -52,7 +52,9 @@ export async function getRepo(
   for (let i = 0; i < repo.files.length; i++) {
     const f = repo.files[i]!;
     const ref = { url: repo.base + f.path, key: prefix + f.path, licence: repo.licence, ...(f.sha256 ? { sha256: f.sha256 } : {}) };
-    const o: GetOptions = { ...opts };
+    const o: GetOptions = {};
+    if (opts.signal) o.signal = opts.signal;
+    if (opts.resume !== undefined) o.resume = opts.resume;
     o.onProgress = (p) => {
       totals[i] = p.total;
       const known = totals.every((t) => t !== null) ? totals.reduce<number>((a, t) => a + (t ?? 0), 0) : null;
