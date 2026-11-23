@@ -64,8 +64,8 @@ async function run(pcm16k: Float32Array, model: string, which: "gpu" | "cpu"): P
 
 const KOKORO = runtimeLoader<never>(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]);
 async function speech(text: string): Promise<Float32Array> {
-  status("kokoro 82m on wasm q8, weights Apache-2.0, speaking the test sentence.");
-  const k = kokoroEngine({ runtime: KOKORO, device: "wasm" });
+  status("kokoro 82m on wasm q8, weights apache-2.0, phonemizer espeak ng gpl-3.0-or-later, speaking the test sentence.");
+  const k = kokoroEngine({ runtime: KOKORO, device: "wasm", allowGplPhonemizer: true });
   await k.load({});
   const parts: Float32Array[] = [];
   let rate = 24000;

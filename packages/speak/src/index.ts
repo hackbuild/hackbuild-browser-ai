@@ -9,7 +9,7 @@ export {
   type PlayerOptions,
 } from "./player.js";
 export type { Engine, PcmEngine, NativeEngine, PcmChunk, Timed, VoiceConfig, EngineStatus, LoadContext } from "./types.js";
-export { stubEngine, kokoroEngine, webSpeechEngine, type KokoroModule, type KokoroOptions, type SynthLike, type UtteranceLike } from "./engines.js";
+export { stubEngine, kokoroEngine, KOKORO_GPL_NOTICE, webSpeechEngine, type KokoroModule, type KokoroOptions, type SynthLike, type UtteranceLike } from "./engines.js";
 export { bellowsEngine, renderSpeechFrom, seedFrom, spansToPhonemes, BELLOWS_VOICES, type BellowsOptions, type BellowsVoiceModule, type BellowsRender, type BellowsRenderOptions, type BellowsSpan, type BellowsParts } from "./bellows.js";
 export { pocketEngine, pocketPrelude, pocketRewrites, POCKET_SPACE_BASE, type PocketEngine, type PocketOptions } from "./pocket.js";
 export { prepareClone, toMono, type CloneOptions } from "./clone.js";

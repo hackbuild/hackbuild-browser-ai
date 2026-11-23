@@ -20,7 +20,8 @@ references ship here.
       ctx,
       engines: [
         pocketEngine({ base: POCKET_BASE }),                                  // Pocket TTS, weights CC-BY-4.0
-        kokoroEngine({ runtime: runtimeLoader(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]) }), // Kokoro 82M, weights Apache-2.0
+        // Kokoro 82M, weights Apache-2.0; opt in, its phonemizer is GPL (below)
+        kokoroEngine({ runtime: runtimeLoader(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]), allowGplPhonemizer: true }),
         webSpeechEngine(),                                                    // system voice
       ],
       onProgress: (p) => director.reached(p.offset),   // action cues, same offsets as the tag parser
@@ -67,6 +68,18 @@ references ship here.
   minutes of 24 kHz samples (computed), so a replay does no synthesis.
 - `tick()` fires due cues; it runs every 25 ms while speaking, or pass
   `tickMs: 0` and call it per frame.
+
+## Kokoro and the GPL phonemizer
+
+kokoro-js turns text into phonemes with the `phonemizer` package, whose
+npm metadata says Apache-2.0 but whose code is eSpeak NG compiled to
+wasm, which is GPL-3.0-or-later. This package stays MIT because it never
+bundles kokoro-js: the caller passes a loader for it. Kokoro is opt in:
+`kokoroEngine` refuses to load unless `allowGplPhonemizer: true` is
+passed, and `KOKORO_GPL_NOTICE` holds the text to show. No non-GPL
+phonemizer for kokoro-js was found on 2026-11-23, so there is no non-GPL
+Kokoro path; the MIT defaults are the bellows voice and the system voice.
+An app that ships kokoro-js takes on the GPL terms.
 
 ## Pocket TTS
 

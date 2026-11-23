@@ -14,11 +14,12 @@ const rng = () => {
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
+// kokoro is opt in: picking it in the list is the opt in, and the label names the GPL phonemizer
 const ENGINES: Record<string, { label: string; make: () => Engine }> = {
-  "kokoro-wasm": { label: "kokoro 82m on wasm q8, weights Apache-2.0, about 92 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "wasm" }) },
-  "kokoro-webgpu": { label: "kokoro 82m on webgpu fp32, weights Apache-2.0, about 326 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "webgpu" }) },
-  bellows: { label: "bellows voice, a physical model of the vocal tract, no weights, code MIT, renders on this thread", make: () => bellowsEngine({ runtime: BELLOWS, rng }) },
   system: { label: "the system voice (web speech)", make: () => webSpeechEngine() },
+  bellows: { label: "bellows voice, a physical model of the vocal tract, no weights, code MIT, renders on this thread", make: () => bellowsEngine({ runtime: BELLOWS, rng }) },
+  "kokoro-wasm": { label: "kokoro 82m on wasm q8, weights Apache-2.0, phonemizer eSpeak NG GPL-3.0-or-later, about 92 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "wasm", allowGplPhonemizer: true }) },
+  "kokoro-webgpu": { label: "kokoro 82m on webgpu fp32, weights Apache-2.0, phonemizer eSpeak NG GPL-3.0-or-later, about 326 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "webgpu", allowGplPhonemizer: true }) },
 };
 $("#controls").innerHTML = `
 <label>engine <select id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join("")}</select></label>

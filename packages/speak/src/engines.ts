@@ -64,10 +64,21 @@ export interface KokoroOptions {
   /** "webgpu" runs fp32, "wasm" runs q8 (webgpu with q8 gave garbled audio in the source build). Default wasm. */
   device?: "webgpu" | "wasm";
   voice?: string;
+  /**
+   * kokoro-js phonemizes through eSpeak NG, which is GPL-3.0-or-later. The
+   * engine refuses to load until the caller sets this, after reading
+   * KOKORO_GPL_NOTICE. No non-GPL phonemizer for kokoro-js is known on
+   * 2026-11-23.
+   */
+  allowGplPhonemizer?: boolean;
 }
 
+/** What loading kokoro-js brings in, stated before it loads. */
+export const KOKORO_GPL_NOTICE =
+  "kokoro-js phonemizes with the phonemizer package, which is eSpeak NG compiled to wasm under GPL-3.0-or-later. it loads from your url at run time and is never bundled into this MIT package; an app that ships kokoro-js takes on the GPL terms.";
+
 /**
- * Kokoro 82M. Whole segments are generated at once; word times are
+ * Kokoro 82M, opt in: see KOKORO_GPL_NOTICE. Whole segments are generated at once; word times are
  * estimated from the segment length by the speaker, since kokoro-js
  * reports none.
  */
@@ -78,10 +89,11 @@ export function kokoroEngine(o: KokoroOptions): PcmEngine {
   return {
     kind: "pcm",
     id: "kokoro",
-    licence: "Kokoro-82M weights Apache-2.0",
+    licence: "Kokoro-82M weights Apache-2.0; kokoro-js phonemizer (eSpeak NG) GPL-3.0-or-later",
     async load(ctx: LoadContext) {
       if (tts) return;
-      ctx.onStatus?.({ engine: "kokoro", kind: "licence", text: "kokoro 82m weights, apache-2.0" });
+      if (!o.allowGplPhonemizer) throw new Error(`${KOKORO_GPL_NOTICE} pass allowGplPhonemizer: true to load it.`);
+      ctx.onStatus?.({ engine: "kokoro", kind: "licence", text: "kokoro 82m weights apache-2.0; its phonemizer, espeak ng, is gpl-3.0-or-later" });
       const m = await o.runtime();
       tts = await m.KokoroTTS.from_pretrained(o.model ?? "onnx-community/Kokoro-82M-v1.0-ONNX", {
         dtype: device === "webgpu" ? "fp32" : "q8",

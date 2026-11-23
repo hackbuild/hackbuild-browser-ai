@@ -186,7 +186,7 @@ export const CATALOG: readonly ModelRecord[] = [
       { device: "wasm", dtype: "q8" },
     ],
     quirks: { warnings: ["q8 on webgpu gives garbled audio; webgpu runs fp32."] },
-    licence: "Apache-2.0",
+    licence: "Apache-2.0 (weights); the kokoro-js runtime phonemizes with eSpeak NG, GPL-3.0-or-later, loaded at run time and opt in",
     commercial: true,
     runtime: "kokoro-js@1.2.1",
   },

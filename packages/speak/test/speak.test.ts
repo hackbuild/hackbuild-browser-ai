@@ -278,14 +278,17 @@ describe("engines", () => {
       },
     });
     const st: EngineStatus[] = [];
-    const k = kokoroEngine({ runtime, device: "webgpu" });
+    await expect(kokoroEngine({ runtime }).load({})).rejects.toThrow(/GPL-3.0-or-later/);
+    expect(seen).toEqual([]);
+    const k = kokoroEngine({ runtime, device: "webgpu", allowGplPhonemizer: true });
     await k.load({ onStatus: (s) => st.push(s) });
-    await kokoroEngine({ runtime }).load({});
+    await kokoroEngine({ runtime, allowGplPhonemizer: true }).load({});
     expect(seen).toEqual([
       ["onnx-community/Kokoro-82M-v1.0-ONNX", "fp32", "webgpu"],
       ["onnx-community/Kokoro-82M-v1.0-ONNX", "q8", "wasm"],
     ]);
     expect(st[0]).toMatchObject({ kind: "licence" });
+    expect(st[0]!.text).toMatch(/gpl/);
     const out = [];
     for await (const c of k.synth("abc", {}, new AbortController().signal)) out.push(c);
     expect(out[0]!.samples.length).toBe(3);

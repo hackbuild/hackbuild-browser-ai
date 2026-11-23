@@ -18,7 +18,7 @@ export const SPEAK_RECORDS: ModelRecord[] = [
       { device: "webgpu", dtype: "fp32", needs: ["http"] },
       { device: "wasm", dtype: "q8" },
     ],
-    licence: "Apache-2.0",
+    licence: "Apache-2.0 (weights); the kokoro-js runtime phonemizes with eSpeak NG, GPL-3.0-or-later, loaded at run time and opt in",
     commercial: true,
     place: "cpu-worker",
     runtime: "kokoro-js@1.2.1",
