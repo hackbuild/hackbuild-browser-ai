@@ -20,10 +20,12 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/depth-mesh](packages/depth-mesh) | rust wasm core (simd128): depth to point cloud, relief heightfield solids, surface nets, point to plane icp, silhouette carving; stl, obj and ply export | 4 vitest, 8 cargo |
 | [@hackbuild/stems](packages/stems) | htdemucs tiers on onnxruntime-web, own overlap add, realtime factor | 3 vitest |
 | [@hackbuild/notes](packages/notes) | basic pitch runner, note decoding and refinement, drum onsets, tempo and grid fit, midi out | 6 vitest |
+| [@hackbuild/biosignal](packages/biosignal) | rust wasm core (simd128): eeg filters, shrunk covariances, riemannian tangent space classifier, cross validation folded by trial, model json | 3 vitest, 4 cargo |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
-DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes), each built natively and for wasm32 with SIMD128.
+DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes;
+`crates/biosignal`: the riemannian eeg classifier), each built natively and for wasm32 with SIMD128.
 Every package entry also builds to one self contained ESM file with
 `npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
 file://.

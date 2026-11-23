@@ -20,6 +20,7 @@ const expected = {
   "depth-mesh": ["loadDepthMesh", "toStl", "fitToPrint"],
   stems: ["separate", "attachStems"],
   notes: ["runPitch", "decodeNotes", "drumNotes"],
+  biosignal: ["loadBiosignal", "epochsFromEvents"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {
