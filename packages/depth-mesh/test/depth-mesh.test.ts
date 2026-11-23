@@ -76,7 +76,7 @@ describe("geometry", () => {
     const b = bounds(m.positions);
     expect(b.max[1]).toBeGreaterThan(0.38);
     expect(b.max[1]).toBeLessThan(0.52);
-    const v = Math.abs(volume(m));
+    const v = volume(m);
     expect(v).toBeGreaterThan(0.6 * 0.9 * 0.4 * 0.6);
     expect(v).toBeLessThan(0.6 * 0.9 * 0.4 * 1.3);
     const p = fitToPrint(m, 40);

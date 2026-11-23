@@ -149,10 +149,11 @@ pub fn surface_nets(field: &[f32], dx: usize, dy: usize, dz: usize) -> (Vec<f32>
                         continue;
                     }
                     let (v0, v1, v2, v3) = (v0 as u32, v1 as u32, v2 as u32, v3 as u32);
+                    // counter clockwise seen from outside, so the signed volume is positive
                     if f0 {
-                        tris.extend_from_slice(&[v0, v3, v1, v0, v2, v3]);
-                    } else {
                         tris.extend_from_slice(&[v0, v3, v2, v0, v1, v3]);
+                    } else {
+                        tris.extend_from_slice(&[v0, v3, v1, v0, v2, v3]);
                     }
                 }
             }
@@ -179,8 +180,25 @@ mod tests {
             }
         }
         blur_pass(&mut f, d, d, d);
-        let (_, t) = surface_nets(&f, d, d, d);
+        let (v, t) = surface_nets(&f, d, d, d);
         assert!(t.len() > 300);
+        // signed volume by the divergence theorem: positive when faces point out
+        let p = |i: u32| {
+            let i = i as usize * 3;
+            [v[i] as f64, v[i + 1] as f64, v[i + 2] as f64]
+        };
+        let mut vol = 0.0;
+        for c in t.chunks(3) {
+            let (a, b, e) = (p(c[0]), p(c[1]), p(c[2]));
+            vol += (a[0] * (b[1] * e[2] - b[2] * e[1]) - a[1] * (b[0] * e[2] - b[2] * e[0])
+                + a[2] * (b[0] * e[1] - b[1] * e[0]))
+                / 6.0;
+        }
+        let ball = 4.0 / 3.0 * core::f64::consts::PI * 216.0;
+        assert!(
+            vol > 0.8 * ball && vol < 1.2 * ball,
+            "signed volume {vol} against {ball}"
+        );
         let mut edges: HashMap<(u32, u32), i32> = HashMap::new();
         for c in t.chunks(3) {
             for k in 0..3 {
