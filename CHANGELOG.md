@@ -14,4 +14,5 @@ Versions follow semver per package. Nothing is published to npm yet.
 - devices: rung builders and one hub factory each for onnxruntime-web and transformers.js, pinned runtime loading, progress merging.
 - audio-dsp: rust wasm dsp core with native and wasm parity, the scribe gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers that reproduce scribe exports byte for byte.
 - transcribe: scribe front end, reels and source map, whisper and moonshine records, phantom filter matching scribe's drops, kerf live segmenter, web speech adapter.
+- vision: depth, detection, segmentation, landmarks with a fallback chain, captions and questions through the hub; mediapipe and face-api providers, an external yolo decoder, a perception loop and result cache.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.

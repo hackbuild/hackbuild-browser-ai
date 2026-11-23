@@ -16,6 +16,7 @@ const expected = {
   devices: ["tjsProvider", "ortProvider", "LADDERS"],
   "audio-dsp": ["loadDsp", "gate", "toSrt", "writeMidi"],
   transcribe: ["transcribe", "attachTranscribe", "LiveSegmenter"],
+  vision: ["attachVision", "depth", "detect", "landmarks", "mediapipeProvider"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {

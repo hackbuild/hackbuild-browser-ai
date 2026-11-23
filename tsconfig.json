@@ -27,6 +27,9 @@
     },
     {
       "path": "packages/transcribe"
+    },
+    {
+      "path": "packages/vision"
     }
   ]
 }

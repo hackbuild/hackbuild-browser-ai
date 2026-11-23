@@ -36,3 +36,7 @@ README).
 | 26 | audio-dsp | the inlined wasm core from a file:// page, and kernel speed on 10 minutes of 16 kHz audio (measured) | Chrome, Safari, file:// page | not run |
 | 27 | transcribe | whisper-large-v3-turbo (MIT) on webgpu and whisper-base.en (MIT) on wasm over a 10 minute file, against a SCRIBE run of the same file | WebGPU machine, network, a test recording | not run |
 | 28 | transcribe | the live segmenter on a microphone and the Web Speech adapter in Chrome | Chrome, microphone | not run |
+| 29 | vision | depth-anything-v2-small (Apache-2.0) on webgpu fp16 and wasm q8, against BAIL's output for the same photo | WebGPU machine, network | not run |
+| 30 | vision | tasks-vision 1.2.3 detector, segmenter and face, hand and pose landmarkers (Apache-2.0) on a webcam, GPU and CPU delegates | Chrome, Safari, webcam | not run |
+| 31 | vision | SmolVLM 256M (Apache-2.0) and LFM2-VL 450M (LFM Open License) captions; SlimSAM (Apache-2.0) point masks | WebGPU machine, network | not run |
+| 32 | vision | an external YOLOv8n export (AGPL-3.0, owner supplied) through the ort provider | browser, the onnx file | not run |
