@@ -1,0 +1,33 @@
+{
+  "name": "@hackbuild/imagegen",
+  "version": "0.1.0",
+  "description": "Text to image in a tab: SD-Turbo text encoder, UNet and VAE on onnxruntime-web with a seeded Euler scheduler on trailing timesteps, run under the models hub gpu lock.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/imagegen"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/models": "0.1.0"
+  }
+}

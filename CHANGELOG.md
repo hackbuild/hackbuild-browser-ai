@@ -28,3 +28,4 @@ Versions follow semver per package. Nothing is published to npm yet.
 - listen: vad state machine with silero and energy sources, a transcribe adapter and barge in by a threshold swap while speaking.
 - act: speech timeline cues with names constrained per avatar, a strict resolver, a gbnf and json schema grammar, hybrid sentence inference and replay.
 - agent: perceive, recall, decide, act, reflect turn with a forced json tool loop, escalation, a reflex brain, persistent goals, budgeted context and a plan cache.
+- imagegen: sd-turbo on onnxruntime-web with a seeded euler scheduler on trailing timesteps.

@@ -28,9 +28,9 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/character](packages/character) | rust wasm core: character card v2 and v3 as json, png text chunks and charx, upgrade, downgrade, validate; a versioned profile extension for avatar, voice and actions with migration; native cli; macros and lorebook matching | 46 vitest, 27 cargo |
 | [@hackbuild/act](packages/act) | speech timeline action grammar: mood, gesture and posture tags fire when the voice reaches them; per avatar vocabulary, strict resolver, gbnf and json schema, hybrid inference, replay | 22 vitest |
 | [@hackbuild/agent](packages/agent) | perceive, recall, decide, act, reflect; forced json tool loop with fallbacks, guards, escalation, reflex brain, persistent goals, budgeted context, plan cache | 23 vitest |
+| [@hackbuild/imagegen](packages/imagegen) | sd-turbo text encoder, unet and vae on onnxruntime-web with a seeded euler scheduler on trailing timesteps | 10 vitest |
 
-Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
-components).
+Phase P not built yet: `ai-elements` (web components).
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
