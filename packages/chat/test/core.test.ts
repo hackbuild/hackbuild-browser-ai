@@ -142,3 +142,17 @@ describe("engine", () => {
     await expect(chat.complete([{ role: "user", content: "x" }], { schema: { type: "object" } })).rejects.toThrow("device lost");
   });
 });
+
+describe("loose schema fallback", () => {
+  it("tries the loose schema before free text", async () => {
+    const strict = { anyOf: [{ type: "object", properties: { a: { const: 1 } } }] };
+    const loose = { type: "object" };
+    const chat = scripted({ replies: (req) => (req.schema === strict ? "" : "{}") });
+    const refuse = scripted({ replies: ["{}"], refuseSchema: "grammar compile failed" });
+    const r = await refuse.complete([{ role: "user", content: "x" }], { schema: strict, fallbackSchemas: [loose] });
+    expect(refuse.calls.map((c) => c.schema)).toEqual([strict, loose, undefined]);
+    expect(r.schemaIndex).toBe(-1);
+    const ok = await chat.complete([{ role: "user", content: "x" }], { schema: strict, fallbackSchemas: [loose] });
+    expect(ok.schemaIndex).toBe(0);
+  });
+});

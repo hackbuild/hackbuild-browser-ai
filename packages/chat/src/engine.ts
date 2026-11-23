@@ -52,10 +52,12 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
     const systemRole = (quirks.systemRole ?? true) && driver.caps.systemRole;
     const base = normalizeMessages(messages, { systemRole: true, toolAsUser: !driver.caps.tools });
     let schemaFallback = false;
+    const schemas = o.schema ? [o.schema, ...(o.fallbackSchemas ?? [])] : [];
+    let si = 0;
     let useSchema = !!o.schema && !noSchema;
     if (o.schema && !useSchema) schemaFallback = true;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt <= schemas.length + 1; attempt++) {
       let msgs = base;
       if (o.schema && !useSchema) msgs = withInstruction(msgs, schemaInstruction(o.schema));
       msgs = normalizeMessages(msgs, { systemRole, strictAlternation: quirks.strictAlternation ?? false, toolAsUser: !driver.caps.tools });
@@ -67,7 +69,7 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
       const rp = o.repetitionPenalty ?? quirks.repetitionPenalty;
       if (rp !== undefined) req.repetitionPenalty = rp;
       if (o.stop?.length) req.stop = o.stop;
-      if (useSchema && o.schema) req.schema = o.schema;
+      if (useSchema) req.schema = schemas[si]!;
       if (o.tools?.length && driver.caps.tools) req.tools = o.tools;
       if (o.signal) req.signal = o.signal;
 
@@ -148,10 +150,13 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
         await it.return?.(undefined);
         if (o.signal?.aborted || (e instanceof Error && e.name === "AbortError")) {
           finish = "abort";
-        } else if (!emitted && attempt === 0 && isSchemaError(e, useSchema)) {
-          noSchema = true;
-          useSchema = false;
-          schemaFallback = true;
+        } else if (!emitted && isSchemaError(e, useSchema)) {
+          si++;
+          if (si >= schemas.length) {
+            noSchema = true;
+            useSchema = false;
+            schemaFallback = true;
+          }
           continue;
         } else throw e;
       }
@@ -164,7 +169,7 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
         }
         yield* visible(end.text, true);
       }
-      const result: ChatResult = { text, think, finish: calls.length && finish === "stop" ? "tool" : finish, toolCalls: calls, schemaFallback };
+      const result: ChatResult = { text, think, finish: calls.length && finish === "stop" ? "tool" : finish, toolCalls: calls, schemaFallback, schemaIndex: useSchema ? si : -1 };
       if (usage) result.usage = usage;
       yield { type: "done", result };
       return result;

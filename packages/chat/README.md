@@ -75,10 +75,10 @@ remote engine never loads WebLLM.
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/chat` passes 29 tests under Node
+- 2026-11-22: `npx vitest run packages/chat` passes 30 tests under Node
   22.18.0 with fakes for every runtime: role normalization, think
   splitting one character at a time with no half tag shown, marker
-  stripping, key masking, stop strings across chunks, the schema fallback
+  stripping, key masking, stop strings across chunks, the loose schema then free text fallback
   and its memory, abort, OpenAI compatible SSE with reasoning, tool call
   deltas and usage, retry after a 400, Anthropic SSE with thinking, text,
   tool input deltas and stop reasons, the WebLLM request shape and context

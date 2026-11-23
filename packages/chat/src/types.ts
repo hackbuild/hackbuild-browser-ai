@@ -36,6 +36,8 @@ export interface StreamOptions {
   stop?: string[];
   /** Ask for JSON matching this schema. Falls back to free text with the schema in the prompt when the runtime refuses it. */
   schema?: JsonSchema;
+  /** Looser schemas tried in order when the runtime refuses `schema` (satchel loose agent schema), before free text. */
+  fallbackSchemas?: JsonSchema[];
   /** Native tools; only engines with caps.tools use them. */
   tools?: ToolSpec[];
   signal?: AbortSignal;
@@ -99,6 +101,8 @@ export interface ChatResult {
   toolCalls: ToolCall[];
   /** The schema was refused and the reply came as free text with the schema in the prompt. */
   schemaFallback: boolean;
+  /** Index of the schema the runtime took: 0 for `schema`, 1 and up for `fallbackSchemas`, -1 for none. */
+  schemaIndex: number;
   usage?: { input?: number; output?: number };
 }
 
