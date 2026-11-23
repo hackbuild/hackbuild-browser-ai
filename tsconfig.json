@@ -51,6 +51,9 @@
     },
     {
       "path": "packages/speak"
+    },
+    {
+      "path": "packages/listen"
     }
   ]
 }

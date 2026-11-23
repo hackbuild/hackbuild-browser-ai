@@ -24,6 +24,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/media](packages/media) | decode audio to a target rate, keyframes by scene change, canvas and stream recording | 3 vitest |
 | [@hackbuild/embed](packages/embed) | model2vec static embedder in plain ts (wordpiece, safetensors) and a transformers.js minilm adapter, both with a fingerprint id; hub records | 16 vitest |
 | [@hackbuild/speak](packages/speak) | engine chain over kokoro, pocket tts and web speech; first clause streaming, gapless playback, one analyser, watchdog, offsets for cues and lip sync | 17 vitest |
+| [@hackbuild/listen](packages/listen) | vad state machine with silero and energy sources, transcribe adapter with the phantom filter, barge in by threshold swap, mic helpers | 11 vitest |
 
 Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
 components).

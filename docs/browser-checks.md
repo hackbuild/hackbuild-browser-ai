@@ -52,3 +52,6 @@ README).
 | 42 | speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 on webgpu fp32 and wasm q8: time to first audio measured, joins listened to | browser, network | not run |
 | 43 | speak | Pocket TTS (weights CC-BY-4.0) worker patches against the current upstream source, from file:// and https, with a clone from an owner supplied reference kept out of git | Chrome, network | not run |
 | 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | not run |
+| 45 | listen | Silero VAD v5 (MIT) on onnxruntime-web 1.27.0: tensor names, probabilities on a recorded voice, single thread from file:// | Chrome, network | not run |
+| 46 | listen | barge in through laptop speakers with echo cancellation on, while speak plays Kokoro or the system voice: false triggers counted | Chrome, microphone, speakers | not run |
+| 47 | listen | capture worklet from a Blob and a data: URL, end of speech to text latency with whisper-base.en (MIT) measured | Chrome, Safari, microphone | not run |

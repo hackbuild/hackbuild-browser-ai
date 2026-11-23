@@ -24,3 +24,4 @@ Versions follow semver per package. Nothing is published to npm yet.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.
 - embed: model2vec static embedder in plain typescript and a transformers.js minilm adapter, both with a fingerprint id, and hub records.
 - speak: engine chain over kokoro, pocket tts and web speech with first clause streaming, gapless playback, a watchdog and text offsets for cues and lip sync.
+- listen: vad state machine with silero and energy sources, a transcribe adapter and barge in by a threshold swap while speaking.

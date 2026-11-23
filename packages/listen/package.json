@@ -1,0 +1,34 @@
+{
+  "name": "@hackbuild/listen",
+  "version": "0.1.0",
+  "description": "Speech in for a talking character: a VAD state machine with Silero and energy sources, a transcribe adapter, and barge in by a threshold swap while the character speaks.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/listen"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/models": "0.1.0",
+    "@hackbuild/transcribe": "0.1.0"
+  }
+}
