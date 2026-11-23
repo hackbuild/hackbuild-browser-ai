@@ -5,7 +5,7 @@
 //! build and asserts the same hashes and bits. Regenerate with
 //! UPDATE_PARITY=1 cargo test -p hackbuild-audio-dsp --test parity.
 
-use hackbuild_audio_dsp::{denoise, fft, filters, levels, math, onset, resample, synth};
+use hackbuild_audio_dsp::{denoise, fft, filters, formants, levels, math, onset, resample, synth};
 use std::fmt::Write;
 
 fn fnv(x: &[f32]) -> String {
@@ -17,6 +17,16 @@ fn fnv(x: &[f32]) -> String {
         }
     }
     format!("{h:016x}")
+}
+
+fn step_hash(s: &mut String, name: &str, x: &[f32]) {
+    writeln!(
+        s,
+        "\"{name}\":{{\"len\":{},\"hash\":\"{}\"}},",
+        x.len(),
+        fnv(x)
+    )
+    .unwrap();
 }
 
 fn build() -> String {
@@ -118,7 +128,23 @@ fn build() -> String {
             )
         })
         .collect();
-    writeln!(s, "\"math\":[{}]", mathv.join(",")).unwrap();
+    writeln!(s, "\"math\":[{}],", mathv.join(",")).unwrap();
+    let mut vw = vec![0f32; 9600];
+    let fm = [
+        (730.0, 80.0 + 730.0 * 0.02),
+        (1090.0, 90.0 + 1090.0 * 0.03),
+        (2440.0, 120.0 + 2440.0 * 0.02),
+    ];
+    formants::vowel(9600, 48000.0, 120.0, &fm, &mut vw);
+    step_hash(&mut s, "vowel", &vw);
+    let mut fe = formants::Formants::new();
+    fe.estimate(&vw, 48000.0, 4800, 0.04, 4, 14);
+    let fl: Vec<String> = fe
+        .out
+        .iter()
+        .map(|p| format!("[{:?},{:?}]", p.f, p.bw))
+        .collect();
+    writeln!(s, "\"formants\":[{}]", fl.join(",")).unwrap();
     s.push_str("}\n");
     s
 }

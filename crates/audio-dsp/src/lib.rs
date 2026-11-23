@@ -1,7 +1,8 @@
 //! hackbuild-audio-dsp: the speech front end of SCRIBE July (dc block,
 //! cascaded high pass, a speech band copy, frame levels, minimum statistics
 //! noise floor, spectral subtraction, lookahead limiter), resampling, STFT
-//! magnitudes, onsets, tempo and grid fit (SCRIBE August). Builds natively
+//! magnitudes, onsets, tempo and grid fit (SCRIBE August), and LPC
+//! formants (ported from bellowsjs, MIT, same owner). Builds natively
 //! and for wasm32-unknown-unknown with simd128; the two give the same bits
 //! for the same input (tests/parity.rs and the TS parity test).
 //!
@@ -16,6 +17,7 @@
 pub mod denoise;
 pub mod fft;
 pub mod filters;
+pub mod formants;
 pub mod levels;
 pub mod math;
 pub mod onset;
@@ -377,4 +379,53 @@ pub extern "C" fn ad_ln(x: f64) -> f64 {
 #[unsafe(no_mangle)]
 pub extern "C" fn ad_atan2(y: f64, x: f64) -> f64 {
     math::atan2(y, x)
+}
+
+thread_local! {
+    static FORMANTS: RefCell<formants::Formants> = RefCell::new(formants::Formants::new());
+}
+
+/// LPC formants of x around sample `center`: (f, bw) pairs in Hz in the out
+/// buffer, ascending; returns the count.
+///
+/// # Safety
+/// x holds n values.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ad_formants(
+    x: *const f32,
+    n: usize,
+    sr: f64,
+    center: usize,
+    win_sec: f64,
+    decim: usize,
+    order: usize,
+) -> usize {
+    let xs = unsafe { rd(x, n) };
+    FORMANTS.with(|f| {
+        let f = &mut *f.borrow_mut();
+        let k = f.estimate(xs, sr, center, win_sec, decim, order);
+        let flat: Vec<f64> = f.out.iter().flat_map(|p| [p.f, p.bw]).collect();
+        set_out(&flat);
+        k
+    })
+}
+
+/// # Safety
+/// out holds n values.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ad_vowel(
+    n: usize,
+    sr: f64,
+    f0: f64,
+    f1: f64,
+    f2: f64,
+    f3: f64,
+    out: *mut f32,
+) {
+    let fm = [
+        (f1, 80.0 + f1 * 0.02),
+        (f2, 90.0 + f2 * 0.03),
+        (f3, 120.0 + f3 * 0.02),
+    ];
+    unsafe { formants::vowel(n, sr, f0, &fm, wr(out, n)) }
 }

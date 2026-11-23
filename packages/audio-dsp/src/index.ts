@@ -1,4 +1,4 @@
-export { loadDsp, Dsp, type CoreSource, type FilterKind, type Onset } from "./core.js";
+export { loadDsp, Dsp, type CoreSource, type FilterKind, type Formant, type Onset } from "./core.js";
 export { gate, gateThreshold, coverage, type GateOptions, type Region } from "./gate.js";
 export { planSegments, fadeWeight, OverlapAdd, type Segment as OlaSegment } from "./ola.js";
 export {

@@ -38,10 +38,18 @@ interface Exports {
   ad_exp(x: number): number;
   ad_ln(x: number): number;
   ad_atan2(y: number, x: number): number;
+  ad_formants(x: Ptr, n: number, sr: number, center: number, winSec: number, decim: number, order: number): number;
+  ad_vowel(n: number, sr: number, f0: number, f1: number, f2: number, f3: number, out: Ptr): void;
 }
 
 export type FilterKind = "highpass" | "lowpass" | "bandpass";
 const KIND: Record<FilterKind, number> = { highpass: 0, lowpass: 1, bandpass: 2 };
+
+/** One resonance: centre frequency and bandwidth, Hz. */
+export interface Formant {
+  f: number;
+  bw: number;
+}
 
 export interface Onset {
   /** Frame of the attack foot. */
@@ -247,6 +255,31 @@ export class Dsp {
     } finally {
       this.free(po, n * 4);
     }
+  }
+  /**
+   * Formants of x around sample index `center` by LPC, ported from
+   * bellowsjs estimateFormants (MIT, same owner): decimate, pre-emphasis,
+   * Hamming window, Levinson-Durbin, Durand-Kerner roots. Ascending by
+   * frequency; poles wider than 700 Hz dropped. Defaults suit an adult
+   * voice at 44.1 or 48 kHz.
+   */
+  formants(x: Float32Array, sr: number, center: number, winSec = 0.04, decim = 4, order = 14): Formant[] {
+    const p = this.put(x);
+    try {
+      const k = this.x.ad_formants(p, x.length, sr, Math.max(0, Math.floor(center)), winSec, decim, order);
+      const o = this.out(2 * k);
+      const out: Formant[] = [];
+      for (let i = 0; i < k; i++) out.push({ f: o[2 * i]!, bw: o[2 * i + 1]! });
+      return out;
+    } finally {
+      this.free(p, x.byteLength);
+    }
+  }
+  /** A test vowel: an impulse train at f0 through three resonators, n samples. */
+  vowel(n: number, sr: number, f0: number, f1: number, f2: number, f3: number): Float32Array {
+    const po = this.x.ad_alloc(n * 4);
+    this.x.ad_vowel(n, sr, f0, f1, f2, f3, po);
+    return this.take(po, n);
   }
   /** The core's deterministic math, for parity checks. */
   math(): { sin(x: number): number; cos(x: number): number; exp(x: number): number; ln(x: number): number; atan2(y: number, x: number): number } {

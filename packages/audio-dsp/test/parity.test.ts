@@ -12,6 +12,7 @@ const fx = JSON.parse(readFileSync(join(root, "crates/audio-dsp/tests/parity.jso
   onsets: [number, number, number][];
   scalars: { floor: number; p95: number; stftFrames: number; bpm: number; offset: number; grid: [number, number, number] };
   math: number[][];
+  formants: [number, number][];
 };
 
 function fnv(x: Float32Array): string {
@@ -77,6 +78,14 @@ describe("native and wasm parity", async () => {
       hits.map((h) => h.strength),
     )!;
     expect([g.bpm, g.offset, g.r]).toEqual(fx.scalars.grid);
+  });
+
+  test("lpc formants give the native bits", () => {
+    const v = dsp.vowel(9600, 48000, 120, 730, 1090, 2440);
+    check("vowel", v);
+    const f = dsp.formants(v, 48000, 4800);
+    expect(f.map((p) => [p.f, p.bw])).toEqual(fx.formants);
+    expect(fx.formants.length).toBe(3);
   });
 
   test("the deterministic math gives the native bits", () => {
