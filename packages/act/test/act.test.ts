@@ -86,6 +86,14 @@ describe("director", () => {
     d.reached(100);
     expect(fired).toEqual(["happy", "wave"]);
   });
+  test("prototype key names from a model are plain unknown words", () => {
+    const d = createDirector({ vocab: v, fire: () => {}, now: () => 0 });
+    expect(() => {
+      d.feed("[mood: constructor] a [gesture: __proto__] b [toString] c");
+      d.finish();
+    }).not.toThrow();
+    expect(() => d.json({ mood: "constructor", gesture: "hasOwnProperty", say: "x" })).not.toThrow();
+  });
   test("keyed tags and stage directions", () => {
     const fired: string[] = [];
     const d = createDirector({ vocab: v, fire: (x) => fired.push(`${x.kind}:${x.name}`), now: () => 0 });

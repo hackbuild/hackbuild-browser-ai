@@ -103,13 +103,13 @@ export function buildVocabulary(avatar: AvatarActs, opts: { aliases?: Record<str
   const postures = uniq(avatar.postures);
   const names = new Map<string, string>();
   for (const n of [...moods, ...gestures, ...postures]) names.set(n.toLowerCase(), n);
-  const aliases: Record<string, string> = {};
+  const aliases: Record<string, string> = Object.create(null) as Record<string, string>;
   const table: Record<string, string> = { ...(opts.defaults === false ? {} : { ...MOOD_RELATIVES, ...DEFAULT_ALIASES }), ...(opts.aliases ?? {}) };
   for (const [word, target] of Object.entries(table)) {
     const w = word.toLowerCase().trim();
     if (names.has(w)) continue; // a real name is never shadowed by an alias
     let t = target.toLowerCase();
-    if (!names.has(t) && MOOD_RELATIVES[t]) t = MOOD_RELATIVES[t]!;
+    if (!names.has(t) && Object.hasOwn(MOOD_RELATIVES, t)) t = MOOD_RELATIVES[t]!;
     const hit = names.get(t);
     if (hit) aliases[w] = hit;
   }

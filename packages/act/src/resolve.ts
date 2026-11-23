@@ -85,8 +85,9 @@ export function createResolver(v: ActVocabulary, o: ResolverOptions = {}): Resol
   const exactOrAlias = (n: string): Resolved | null => {
     const k = kindOf(v, n);
     if (k) return { kind: k, name: all.find((x) => x.name.toLowerCase() === n)!.name, via: "exact" };
-    const t = v.aliases[n];
-    if (t) {
+    // own keys only: "constructor" or "__proto__" from a model is a word, not a lookup
+    const t = Object.hasOwn(v.aliases, n) ? v.aliases[n] : undefined;
+    if (typeof t === "string") {
       const tk = kindOf(v, t);
       if (tk) return { kind: tk, name: t, via: "alias" };
     }
