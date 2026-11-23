@@ -2,8 +2,12 @@
 
 Run language, vision and speech models in a browser tab: one chat interface over local runtimes, a resumable weights cache, structured output for small models, memory, voice in and out, character cards and an agent loop.
 
-Status: scaffold, 2026-11-22. Packages land in `packages/` as they pass
-their tests; the table below grows with them.
+Status: phase A, 2026-11-22. Packages land in `packages/` as they pass
+their tests; the table below grows with them. Nothing is published to npm.
+
+| package | what | tests |
+|---|---|---|
+| [@hackbuild/ai-env](packages/ai-env) | capability probe, file:// safe ESM import and worker ladder | 16 vitest |
 
 ## Develop
 
@@ -16,9 +20,17 @@ in RULES.md and CONTRIBUTING.md.
 
 ## What is verified, and what is not
 
+Each package README carries its own dated list. In short:
+
+### Verified on this machine
+
+- Unit tests under Node 22.18.0 with fakes for every browser API and model
+  runtime; no network, no model weights.
+
 ### Not verified by anything
 
-- everything; nothing has landed yet.
+- Every package in a real browser with a real model. The list of what needs
+  one is in each package README.
 
 ## Licence
 
