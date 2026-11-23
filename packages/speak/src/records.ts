@@ -29,7 +29,7 @@ export const SPEAK_RECORDS: ModelRecord[] = [
     label: "pocket tts",
     provides: ["speak"],
     provider: "pocket-worker",
-    source: { url: "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/main/", repo: "kyutai/pocket-tts" },
+    source: { url: "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/d0c0c79b7712256a32d691c67f20b8ae2e020d00/", repo: "kyutai/pocket-tts", revision: "d0c0c79b7712256a32d691c67f20b8ae2e020d00" },
     sizeMB: null,
     sizeSource: "unknown",
     ladder: [{ device: "wasm" }],

@@ -1,6 +1,8 @@
 /**
- * Pocket TTS (Kyutai, code MIT, weights CC-BY-4.0) through a community
- * browser build's inference worker. The worker is fetched as text and
+ * Pocket TTS (Kyutai, weights CC-BY-4.0) through a community browser
+ * build's inference worker (its Space card says cc-by-4.0). The build is
+ * pinned to one commit, and its two scripts are checked against SHA-256
+ * values measured at that commit before they run. The worker is fetched as text and
  * rewritten so it runs from file:// and on one thread; every rewrite goes
  * through @hackbuild/ai-env, which reports the ones that matched nothing.
  * An upstream change that moves a patched string is reported as
@@ -14,19 +16,25 @@
  * `stream_ended`, `voice_encoded`, `error`.
  */
 
-import { spawnWorker, type Rewrite, type SpawnOptions, type WorkerLike } from "@hackbuild/ai-env";
+import { sha256Text, spawnWorker, type Rewrite, type SpawnOptions, type WorkerLike } from "@hackbuild/ai-env";
 import { prepareClone } from "./clone.js";
 import type { LoadContext, PcmChunk, PcmEngine, VoiceConfig } from "./types.js";
 
-/** The community build the source apps used. Caller may pass another base. */
-export const POCKET_SPACE_BASE = "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/main/";
+/** The community build's commit, pinned 2026-11-23 (the Space's head, modified 2026-04-21). */
+export const POCKET_SPACE_COMMIT = "d0c0c79b7712256a32d691c67f20b8ae2e020d00";
+/** The community build at that commit. A caller may pass another base, with its own hashes. */
+export const POCKET_SPACE_BASE = `https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/${POCKET_SPACE_COMMIT}/`;
+/** SHA-256 of the build's scripts at POCKET_SPACE_COMMIT (measured 2026-11-23: 33984 and 4020131 bytes). */
+export const POCKET_SHA256 = {
+  worker: "dace0a022e17dffcf60fdb7b86e49facf093f709b352fb306c1d6641ae0f5366",
+  sentencepiece: "fc802c6945931e685d82d0f601cda185bb43990870d712119caf5ea74e6e9c56",
+} as const;
 
-/** Prelude that loads sentencepiece.js from a Blob URL, falling back to a data: URL. */
-export function pocketPrelude(base: string): string {
-  const url = JSON.stringify(new URL("sentencepiece.js", base).href);
+/** Prelude that imports the checked sentencepiece.js text from a Blob URL, falling back to a data: URL. */
+export function pocketPrelude(sentencepieceSource: string): string {
   return [
     "self.__hbSentencepiece = async () => {",
-    `  const t = await (await fetch(${url})).text();`,
+    `  const t = ${JSON.stringify(sentencepieceSource)};`,
     "  try { return await import(URL.createObjectURL(new Blob([t], { type: 'text/javascript' }))); }",
     "  catch (e) { const u = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768));",
     "    return await import('data:text/javascript;base64,' + btoa(s)); }",
@@ -52,6 +60,12 @@ export interface PocketOptions {
   /** How long to wait for `loaded`. Default 420 s (the source builds' figure). */
   loadTimeoutMs?: number;
   voice?: string;
+  /**
+   * SHA-256 of inference-worker.js and sentencepiece.js. Default POCKET_SHA256
+   * for the default base. With another base and no hashes the scripts run
+   * unchecked, which the load reports.
+   */
+  sha256?: { worker: string; sentencepiece: string };
   /** Passed to spawnWorker: worker constructor, fetch, rung order (default classic-blob first). */
   spawn?: Omit<SpawnOptions, "rewrites" | "prelude" | "onMissed">;
   /** Timer for the load timeout. */
@@ -81,7 +95,7 @@ export function pocketEngine(o: PocketOptions = {}): PocketEngine {
   const engine: PocketEngine = {
     kind: "pcm",
     id: "pocket",
-    licence: "Pocket TTS weights CC-BY-4.0 (Kyutai), code MIT",
+    licence: "Pocket TTS weights CC-BY-4.0 (Kyutai); the browser build's scripts per its Space card, cc-by-4.0",
     get sampleRate() {
       return sr;
     },
@@ -90,13 +104,24 @@ export function pocketEngine(o: PocketOptions = {}): PocketEngine {
       const say = (kind: Parameters<NonNullable<LoadContext["onStatus"]>>[0]["kind"], text: string, progress?: number) =>
         ctx.onStatus?.({ engine: "pocket", kind, text, ...(progress !== undefined ? { progress } : {}) });
       say("licence", "pocket tts weights, cc-by-4.0, kyutai");
+      const sums = o.sha256 ?? (base === POCKET_SPACE_BASE ? POCKET_SHA256 : null);
+      if (!sums) say("loading", "pocket scripts from a custom base run unchecked; pass sha256 to pin them");
+      const f = o.spawn?.fetch ?? globalThis.fetch.bind(globalThis);
+      const spUrl = new URL("sentencepiece.js", base).href;
+      const spRes = await f(spUrl);
+      if (!spRes.ok) throw new Error(`sentencepiece.js http ${spRes.status}`);
+      const sp = await spRes.text();
+      if (sums) {
+        const got = await sha256Text(sp);
+        if (got !== sums.sentencepiece) throw new Error(`sentencepiece.js sha256 ${got}, expected ${sums.sentencepiece}`);
+      }
       let missed: { index: number; pattern: string }[] = [];
       const spawned = await spawnWorker(
-        { url: new URL("inference-worker.js", base).href },
+        { url: new URL("inference-worker.js", base).href, ...(sums ? { sha256: sums.worker } : {}) },
         {
           prefer: ["classic-blob", "module-blob"],
           ...o.spawn,
-          prelude: pocketPrelude(base),
+          prelude: pocketPrelude(sp),
           rewrites: pocketRewrites(base, o.chunkGapSec),
           onMissed: (m) => (missed = m),
         },
@@ -109,12 +134,16 @@ export function pocketEngine(o: PocketOptions = {}): PocketEngine {
         }
       }
       const worker = spawned.worker;
+      // a load that times out or errors terminates its worker, so a retry does not leave one downloading
+      const fail = (err: Error, reject: (e: Error) => void) => {
+        worker.removeEventListener("message", on);
+        worker.terminate();
+        reject(err);
+      };
+      let on: (ev: { data?: unknown }) => void = () => {};
       await new Promise<void>((resolve, reject) => {
-        const to = st(() => {
-          worker.removeEventListener("message", on);
-          reject(new Error(`pocket did not load in ${(o.loadTimeoutMs ?? 420000) / 1000} s`));
-        }, o.loadTimeoutMs ?? 420000);
-        const on = (ev: { data?: unknown }) => {
+        const to = st(() => fail(new Error(`pocket did not load in ${(o.loadTimeoutMs ?? 420000) / 1000} s`), reject), o.loadTimeoutMs ?? 420000);
+        on = (ev: { data?: unknown }) => {
           const m = (ev.data ?? {}) as Msg;
           if (m.type === "model_status" || m.type === "status") say("loading", String(m.text ?? m.status ?? "loading").slice(0, 40));
           else if (m.type === "voices_loaded") {
@@ -123,10 +152,11 @@ export function pocketEngine(o: PocketOptions = {}): PocketEngine {
           } else if (m.type === "bundle_loaded" && m.sampleRate) sr = m.sampleRate;
           else if (m.type === "loaded") {
             ct(to);
+            worker.removeEventListener("message", on);
             resolve();
           } else if (m.type === "error") {
             ct(to);
-            reject(new Error(m.error ?? "pocket worker error"));
+            fail(new Error(m.error ?? "pocket worker error"), reject);
           }
         };
         worker.addEventListener("message", on);
@@ -185,14 +215,23 @@ export function pocketEngine(o: PocketOptions = {}): PocketEngine {
       const worker = w;
       if (!worker) throw new Error("pocket is not loaded");
       const audio = prepareClone(samples, rate, { rate: 24000 });
-      await new Promise<void>((resolve, reject) => {
-        sink = (m) => {
-          if (m.type === "voice_encoded") resolve();
-          else if (m.type === "error") reject(new Error(m.error ?? "voice encode error"));
-        };
-        worker.postMessage({ type: "encode_voice", data: { audio } });
-      });
-      sink = null;
+      // the worker has one message sink; wait for a running generate to finish first
+      let release!: () => void;
+      const prev = busy;
+      busy = new Promise<void>((r) => (release = r));
+      await prev;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          sink = (m) => {
+            if (m.type === "voice_encoded") resolve();
+            else if (m.type === "error") reject(new Error(m.error ?? "voice encode error"));
+          };
+          worker.postMessage({ type: "encode_voice", data: { audio } });
+        });
+      } finally {
+        sink = null;
+        release();
+      }
       voice = "custom";
       worker.postMessage({ type: "set_voice", data: { voiceName: "custom" } });
     },

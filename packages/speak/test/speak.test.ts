@@ -1,4 +1,5 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+import { sha256Text } from "@hackbuild/ai-env";
 import {
   GaplessPlayer,
   SegmentCutter,
@@ -300,7 +301,8 @@ describe("engines", () => {
     "ort.env.wasm.wasmPaths = './ort/';",
   ].join("\n");
 
-  function fakeWorkerEnv(src: string) {
+  function fakeWorkerEnv(src: string, mode: "ok" | "error" | "silent" = "ok") {
+    let terminated = 0;
     const posted: { type: string; data?: { audio?: Float32Array; text?: string; voiceName?: string } }[] = [];
     let blobText = "";
     class W {
@@ -314,7 +316,9 @@ describe("engines", () => {
       postMessage(m: (typeof posted)[number]) {
         posted.push(m);
         setTimeout(() => {
-          if (m.type === "load") {
+          if (m.type === "load" && mode === "error") this.emit({ type: "error", error: "bundle 404" });
+          else if (m.type === "load" && mode === "silent") return;
+          else if (m.type === "load") {
             this.emit({ type: "voices_loaded", voices: ["alba", { name: "marius" }], defaultVoice: "alba" });
             this.emit({ type: "bundle_loaded", sampleRate: 24000 });
             this.emit({ type: "loaded" });
@@ -326,7 +330,9 @@ describe("engines", () => {
           } else if (m.type === "encode_voice") this.emit({ type: "voice_encoded" });
         }, 0);
       }
-      terminate() {}
+      terminate() {
+        terminated++;
+      }
       addEventListener(_t: string, f: (ev: { data?: unknown }) => void) {
         this.fns.push(f);
       }
@@ -339,7 +345,7 @@ describe("engines", () => {
       void b.text().then((t) => (blobText = t));
       return "blob:x";
     };
-    return { posted, spawn: { Worker: W, fetch, createObjectURL }, text: () => blobText };
+    return { posted, spawn: { Worker: W, fetch, createObjectURL }, text: () => blobText, terminated: () => terminated };
   }
 
   test("pocket patches its worker, streams chunks and clones from a caller reference", async () => {
@@ -361,6 +367,23 @@ describe("engines", () => {
     expect(enc.data!.audio![100]).toBeCloseTo(0.9);
     expect(env.posted.at(-1)).toEqual({ type: "set_voice", data: { voiceName: "custom" } });
     expect(st.some((s) => s.kind === "licence" && /cc-by-4.0/.test(s.text))).toBe(true);
+  });
+
+  test("pocket checks its scripts' sha256 and terminates the worker when a load fails", async () => {
+    const bad = fakeWorkerEnv(WORKER_SRC);
+    await expect(pocketEngine({ spawn: bad.spawn }).load({})).rejects.toThrow(/sha256/);
+    const sums = { worker: await sha256Text(WORKER_SRC), sentencepiece: await sha256Text(WORKER_SRC) };
+    const err = fakeWorkerEnv(WORKER_SRC, "error");
+    await expect(pocketEngine({ base: "https://example.test/p/", sha256: sums, spawn: err.spawn }).load({})).rejects.toThrow(/bundle 404/);
+    expect(err.terminated()).toBe(1);
+    const slow = fakeWorkerEnv(WORKER_SRC, "silent");
+    let fire: () => void = () => {};
+    const p = pocketEngine({ base: "https://example.test/p/", sha256: sums, spawn: slow.spawn, setTimeout: (fn) => ((fire = fn), 1), clearTimeout: () => {} });
+    const loading = p.load({});
+    await vi.waitFor(() => expect(slow.posted.some((m) => m.type === "load")).toBe(true));
+    fire();
+    await expect(loading).rejects.toThrow(/did not load/);
+    expect(slow.terminated()).toBe(1);
   });
 
   test("pocket reports a patch that matched nothing and refuses to load", async () => {

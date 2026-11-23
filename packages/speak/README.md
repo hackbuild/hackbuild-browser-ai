@@ -19,7 +19,7 @@ references ship here.
     const speaker = createSpeaker({
       ctx,
       engines: [
-        pocketEngine({ base: POCKET_BASE }),                                  // Pocket TTS, weights CC-BY-4.0
+        pocketEngine(),                                                       // Pocket TTS, weights CC-BY-4.0, pinned build
         // Kokoro 82M, weights Apache-2.0; opt in, its phonemizer is GPL (below)
         kokoroEngine({ runtime: runtimeLoader(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]), allowGplPhonemizer: true }),
         webSpeechEngine(),                                                    // system voice
@@ -82,6 +82,15 @@ Kokoro path; the MIT defaults are the bellows voice and the system voice.
 An app that ships kokoro-js takes on the GPL terms.
 
 ## Pocket TTS
+
+The browser build is a community Space pinned to commit `d0c0c79`
+(`POCKET_SPACE_COMMIT`); its weights load from that commit too.
+`inference-worker.js` and `sentencepiece.js` are checked against SHA-256
+values measured at that commit (`POCKET_SHA256`) before they run, since
+they run with the page's origin. Another `base` takes its own `sha256`;
+without one its scripts run unchecked and the load says so. A load that
+times out or errors terminates its worker. `cloneVoice` waits for a
+running generate. The Space card names cc-by-4.0 for the build.
 
 The community browser build's `inference-worker.js` is fetched as text and
 four rewrites run through @hackbuild/ai-env: sentencepiece loaded from a
