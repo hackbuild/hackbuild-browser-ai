@@ -1,0 +1,37 @@
+{
+  "name": "@hackbuild/depth-mesh",
+  "version": "0.1.0",
+  "description": "Depth to geometry in a Rust wasm core (simd128): point clouds with normals, relief heightfields and closed meshes, surface nets, point to plane ICP against a voxel model, silhouette space carving; STL, OBJ and PLY export in TS.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/depth-mesh"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./inline": {
+      "types": "./dist/inline.d.ts",
+      "import": "./dist/inline.js"
+    },
+    "./depth-mesh.wasm": "./wasm/depth-mesh.wasm"
+  },
+  "files": [
+    "dist",
+    "wasm/depth-mesh.wasm",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "build:wasm": "node ../../tools/build-wasm.mjs depth-mesh depth-mesh DEPTH_MESH_WASM_BASE64"
+  }
+}

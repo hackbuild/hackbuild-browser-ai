@@ -1,0 +1,11 @@
+[package]
+name = "hackbuild-depth-mesh"
+version = "0.1.0"
+description = "Depth to point cloud, relief heightfield meshes, surface nets, point to plane ICP against a voxel model, and silhouette space carving, for native and wasm32."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]

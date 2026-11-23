@@ -7,5 +7,9 @@ name = "hackbuild-audio-dsp"
 version = "0.1.0"
 
 [[package]]
+name = "hackbuild-depth-mesh"
+version = "0.1.0"
+
+[[package]]
 name = "hackbuild-memory"
 version = "0.1.0"

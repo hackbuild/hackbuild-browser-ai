@@ -40,3 +40,5 @@ README).
 | 30 | vision | tasks-vision 1.2.3 detector, segmenter and face, hand and pose landmarkers (Apache-2.0) on a webcam, GPU and CPU delegates | Chrome, Safari, webcam | not run |
 | 31 | vision | SmolVLM 256M (Apache-2.0) and LFM2-VL 450M (LFM Open License) captions; SlimSAM (Apache-2.0) point masks | WebGPU machine, network | not run |
 | 32 | vision | an external YOLOv8n export (AGPL-3.0, owner supplied) through the ort provider | browser, the onnx file | not run |
+| 33 | depth-mesh | a BAIL style relief from a Depth Anything map (Apache-2.0), sliced in Flash Studio and printed | browser, slicer, printer | not run |
+| 34 | depth-mesh | a CALIPER turntable carve from a webcam and an ICP scan, at real frame rate, looked at by a person | Chrome, webcam, turntable | not run |

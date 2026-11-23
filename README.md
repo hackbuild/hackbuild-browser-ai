@@ -17,10 +17,11 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 16 vitest, 11 cargo |
 | [@hackbuild/transcribe](packages/transcribe) | scribe front end, silence reels with a source map, whisper and moonshine records, phantom filter, live segmenter, web speech adapter | 10 vitest |
 | [@hackbuild/vision](packages/vision) | depth anything v2, mediapipe detection, segmentation and landmarks with fallback, optional external yolo, slimsam, smolvlm and lfm2-vl captions, loop and cache | 13 vitest |
+| [@hackbuild/depth-mesh](packages/depth-mesh) | rust wasm core (simd128): depth to point cloud, relief heightfield solids, surface nets, point to plane icp, silhouette carving; stl, obj and ply export | 4 vitest, 8 cargo |
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
-DSP kernels), each built natively and for wasm32 with SIMD128.
+DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes), each built natively and for wasm32 with SIMD128.
 Every package entry also builds to one self contained ESM file with
 `npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
 file://.
