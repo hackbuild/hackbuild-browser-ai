@@ -46,3 +46,4 @@ README).
 | 36 | stems | htdemucs fast and slow (MIT) on webgpu and wasm over a 3 minute song: realtime factor measured, stems listened to | WebGPU machine, network, a CC0 song | not run |
 | 37 | notes | Basic Pitch (Apache-2.0) on tfjs 3.21.0 webgl and cpu over a separated bass stem; notes compared with the basic-pitch library's decoder | browser, network | not run |
 | 38 | biosignal | training and cross validation on a real headset recording or a public motor imagery set, in the tab | browser, EEG data | not run |
+| 39 | media | decodeAudio on mp4, mov, webm and mkv, and record() of a canvas, in Chrome, Safari and Firefox | browsers, CC0 test files | not run |

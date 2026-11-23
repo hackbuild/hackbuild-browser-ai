@@ -42,6 +42,9 @@
     },
     {
       "path": "packages/biosignal"
+    },
+    {
+      "path": "packages/media"
     }
   ]
 }

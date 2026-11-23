@@ -21,6 +21,7 @@ const expected = {
   stems: ["separate", "attachStems"],
   notes: ["runPitch", "decodeNotes", "drumNotes"],
   biosignal: ["loadBiosignal", "epochsFromEvents"],
+  media: ["decodeAudio", "pickKeyframes", "record"],
 };
 
 for (const [pkg, names] of Object.entries(expected)) {

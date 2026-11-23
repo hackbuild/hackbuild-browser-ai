@@ -20,4 +20,5 @@ Versions follow semver per package. Nothing is published to npm yet.
 - stems: htdemucs fast and slow tiers through the hub with an own overlap add runner.
 - notes: basic pitch runner on tfjs with a webgl to cpu ladder, note decoding and refinement, drums, tempo and grid fit.
 - biosignal: rust wasm riemannian tangent space classifier with zero phase filters, leak free cross validation and json export, with native and wasm parity.
+- media: audio decode at a target rate, keyframes by scene change, recording with a mime ladder.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.
