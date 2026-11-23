@@ -5,7 +5,8 @@
  * FERRULE and ARBOR use) with a meta record updated after each part. An
  * interrupted download keeps what it has; the next `get` asks the server
  * for the rest with a Range request guarded by If-Range, and starts over
- * when the server answers 200 instead of 206. The SHA-256 is computed as
+ * when the server answers 200 instead of 206 or when the 206 carries a
+ * different ETag or Last-Modified than the stored parts. The SHA-256 is computed as
  * the bytes stream in, and checked when the reference carries one.
  */
 
@@ -108,6 +109,22 @@ function parseContentRange(h: string | null): { start: number; total: number | n
   return { start: Number(m[1]), total: m[2] === "*" ? null : Number(m[2]) };
 }
 
+const bareTag = (t: string | null): string | null => (t ? t.replace(/^W\//, "").replace(/^"|"$/g, "") : null);
+
+/**
+ * True when a 206 comes from the file the stored parts came from: its ETag,
+ * or else its Last-Modified, equals the stored one. With neither validator
+ * on both sides the splice is allowed only when a known SHA-256 will check
+ * the result.
+ */
+function sameFile(meta: Meta, res: Response, hashKnown: boolean): boolean {
+  const tag = bareTag(res.headers.get("etag"));
+  if (meta.etag && tag) return bareTag(meta.etag) === tag;
+  const lm = res.headers.get("last-modified");
+  if (meta.lastModified && lm) return meta.lastModified === lm;
+  return hashKnown;
+}
+
 async function assemble(b: Backend, meta: Meta): Promise<Blob | null> {
   const parts: Blob[] = [];
   for (let n = 0; n < meta.parts.length; n++) {
@@ -140,7 +157,13 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
   if (!backend) backend = memoryBackend();
   const be = backend;
   const noticed = new Set<string>();
-  const inflight = new Map<string, Promise<Blob>>();
+  interface Flight {
+    p: Promise<Blob>;
+    ac: AbortController;
+    waiters: number;
+    progress: Set<(p: Progress) => void>;
+  }
+  const inflight = new Map<string, Flight>();
   const onceMap = new Map<string, Promise<Uint8Array>>();
 
   const tellLicence = (key: string, licence: string) => {
@@ -212,6 +235,15 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
     }
     if (offset > 0 && res.status === 416 && meta.total !== null && offset >= meta.total) {
       // the stored parts already hold the whole file
+    } else if (offset > 0 && res.status === 416 && meta.total === null) {
+      // no length was ever sent and the server has nothing past the stored bytes
+      meta.total = offset;
+    } else if (offset > 0 && res.status === 206 && !sameFile(meta, res, !!ref.sha256)) {
+      // Hugging Face's CDN answers 206 even to a stale If-Range, so the
+      // validator on the 206 is compared here; a changed file starts over
+      await res.body?.cancel().catch(() => undefined);
+      await be.remove(key);
+      return download(ref, key, { ...o, resume: false });
     } else if (offset > 0 && res.status === 206) {
       const cr = parseContentRange(res.headers.get("content-range"));
       if (!cr || cr.start !== offset) throw new WeightError("range", `server resumed ${key} at ${cr?.start ?? "unknown"}, expected ${offset}`);
@@ -259,6 +291,7 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
+          if (o.signal?.aborted) throw new Error("aborted");
           hash.update(value);
           loaded += value.byteLength;
           // split at part boundaries so every part but the last is exactly partBytes
@@ -302,12 +335,50 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
     get(ref, o = {}) {
       const key = ref.key ?? ref.url;
       tellLicence(key, ref.licence);
-      let p = inflight.get(key);
-      if (!p) {
-        p = download(ref, key, o).finally(() => inflight.delete(key));
-        inflight.set(key, p);
+      // one fetch per key; it runs on its own controller, aborts only when
+      // every waiter has aborted, and sends progress to every waiter
+      let f = inflight.get(key);
+      if (!f) {
+        const ac = new AbortController();
+        const progress = new Set<(p: Progress) => void>();
+        const dl: GetOptions = { signal: ac.signal, onProgress: (x) => progress.forEach((cb) => cb(x)) };
+        if (o.resume !== undefined) dl.resume = o.resume;
+        const p = download(ref, key, dl).finally(() => inflight.delete(key));
+        f = { p, ac, waiters: 0, progress };
+        inflight.set(key, f);
       }
-      return p;
+      const fl = f;
+      fl.waiters++;
+      if (o.onProgress) fl.progress.add(o.onProgress);
+      return new Promise<Blob>((resolve, reject) => {
+        let settled = false;
+        const leave = () => {
+          settled = true;
+          o.signal?.removeEventListener("abort", onAbort);
+          if (o.onProgress) fl.progress.delete(o.onProgress);
+          fl.waiters--;
+        };
+        const onAbort = () => {
+          if (settled) return;
+          leave();
+          if (fl.waiters <= 0) fl.ac.abort();
+          reject(new WeightError("abort", `download of ${key} aborted; parts kept for resume`));
+        };
+        if (o.signal?.aborted) return onAbort();
+        o.signal?.addEventListener("abort", onAbort, { once: true });
+        fl.p.then(
+          (b) => {
+            if (settled) return;
+            leave();
+            resolve(b);
+          },
+          (e: unknown) => {
+            if (settled) return;
+            leave();
+            reject(e);
+          },
+        );
+      });
     },
     once(ref, o = {}) {
       const key = ref.key ?? ref.url;

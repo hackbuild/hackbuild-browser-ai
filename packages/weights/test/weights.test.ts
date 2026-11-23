@@ -33,20 +33,29 @@ interface ServerOpts {
   breakAt?: number;
   etag?: string;
   chunk?: number;
+  /** Answer 206 whatever If-Range says, as the Hugging Face CDN does. */
+  ignoreIfRange?: boolean;
+  /** Serve this file and ETag from the second request on: the file changed between stop and resume. */
+  later?: { data: Uint8Array; etag: string };
 }
 
-function server(data: Uint8Array, o: ServerOpts = {}) {
+function server(first0: Uint8Array, o: ServerOpts = {}) {
   const calls: { range: string | null; ifRange: string | null }[] = [];
   const f = async (_url: string, init?: RequestInit) => {
     const h = new Headers(init?.headers);
     calls.push({ range: h.get("range"), ifRange: h.get("if-range") });
     const first = calls.length === 1;
+    const data = !first && o.later ? o.later.data : first0;
+    const etag = !first && o.later ? o.later.etag : o.etag;
     let start = 0;
     let status = 200;
     const headers = new Headers();
-    if (o.etag) headers.set("etag", o.etag);
+    if (etag) headers.set("etag", etag);
     const m = /bytes=(\d+)-/.exec(h.get("range") ?? "");
-    if (m && o.ranges !== false && (!h.get("if-range") || h.get("if-range") === o.etag)) {
+    if (m && Number(m[1]) >= data.length && o.ranges !== false) {
+      return new Response(null, { status: 416 });
+    }
+    if (m && o.ranges !== false && (o.ignoreIfRange || !h.get("if-range") || h.get("if-range") === etag)) {
       start = Number(m[1]);
       status = 206;
       headers.set("content-range", `bytes ${start}-${data.length - 1}/${data.length}`);
@@ -122,6 +131,59 @@ describe("download", () => {
     expect(s.calls[1]).toEqual({ range: `bytes=${kept}-`, ifRange: '"v1"' });
     expect(progress[0]).toBe(true);
     expect(nodeSha(new Uint8Array(await blob.arrayBuffer()))).toBe(nodeSha(data));
+  });
+
+  it("starts over when a 206 carries another etag, as the hugging face cdn sends", async () => {
+    const v1 = file(20_000);
+    const v2 = file(20_001).subarray(1);
+    const s = server(v1, { breakAt: 9_500, etag: '"v1"', ignoreIfRange: true, later: { data: v2, etag: '"v2"' } });
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 4096, fetch: s.fetch, ...quiet });
+    const ref = { url: "https://h.test/changed.bin", licence: "MIT" };
+    await store.get(ref).catch(() => undefined);
+    const blob = await store.get(ref);
+    // a resume that answered 206 from the new file, then a fresh download
+    expect(s.calls.map((c) => c.range)).toEqual([null, "bytes=9500-", null]);
+    expect(nodeSha(new Uint8Array(await blob.arrayBuffer()))).toBe(nodeSha(v2));
+  });
+
+  it("completes when the server sent no length and every byte is stored", async () => {
+    const data = file(6_000);
+    let n = 0;
+    const s = server(data, { length: false, etag: '"z"' });
+    const f = (async (u: string, i?: RequestInit) => {
+      n++;
+      const r = await s.fetch(u, i);
+      // the first response breaks after the last byte, before the stream closes
+      if (n > 1) return r;
+      const rd = r.body!.getReader();
+      const body = new ReadableStream<Uint8Array>({
+        async pull(c) {
+          const { done, value } = await rd.read();
+          if (done) c.error(new Error("connection reset"));
+          else c.enqueue(value);
+        },
+      });
+      return new Response(body, { status: r.status, headers: r.headers });
+    }) as typeof fetch;
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 2048, fetch: f, ...quiet });
+    const ref = { url: "https://h.test/nolen", licence: "MIT" };
+    await store.get(ref).catch(() => undefined);
+    const blob = await store.get(ref);
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(data);
+  });
+
+  it("one caller's abort leaves a shared download running for the others", async () => {
+    const data = file(40_000);
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 4096, fetch: server(data, { chunk: 500 }).fetch, ...quiet });
+    const ref = { url: "https://h.test/shared", licence: "MIT" };
+    const ac = new AbortController();
+    const seenB: number[] = [];
+    const a = store.get(ref, { signal: ac.signal, onProgress: (p) => p.loaded >= 2_000 && ac.abort() }).catch((e: WeightError) => e.code);
+    const b = store.get(ref, { onProgress: (p) => seenB.push(p.loaded) });
+    expect(await a).toBe("abort");
+    const blob = await b;
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(data);
+    expect(seenB.at(-1)).toBe(40_000);
   });
 
   it("starts over when the server ignores the Range", async () => {
