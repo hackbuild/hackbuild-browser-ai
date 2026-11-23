@@ -10,6 +10,7 @@ import {
   StreamDecimator,
   TRANSCRIBE_RECORDS,
   analyze,
+  finishReel,
   attachTranscribe,
   cleanup,
   lowpassTaps,
@@ -90,6 +91,28 @@ describe("front end", () => {
     expect(a.noise?.length).toBe(257);
     const quiet = analyze(dsp, new Float32Array(16000 * 3));
     expect(quiet.stats.forced).toBe(true);
+  });
+
+  it("per reel agc trims around the global gain instead of applying it twice", () => {
+    // 0.75 s tone bursts at -41, -40 and -39 dBFS rms with 0.25 s gaps, already lifted 20 dB by the global gain
+    const reel = new Float32Array(16000 * 6);
+    const on = (i: number) => i % 16000 < 12000;
+    for (let i = 0; i < reel.length; i++) {
+      const lvl = -40 + ((Math.floor(i / 16000) % 3) - 1);
+      if (on(i)) reel[i] = Math.pow(10, lvl / 20) * Math.SQRT2 * Math.sin((2 * Math.PI * 300 * i) / 16000);
+    }
+    const y = finishReel(dsp, reel, { noise: null, gain: 10 }, { denoise: 0, perReelAgc: true });
+    let e = 0;
+    let c = 0;
+    for (let i = 0; i < y.length; i++)
+      if (on(i)) {
+        e += y[i]! * y[i]!;
+        c++;
+      }
+    const db = 10 * Math.log10(e / c);
+    // the trim measures the loudest 40 percent of frames, so the whole reel lands a little under -20
+    expect(db).toBeGreaterThan(-22);
+    expect(db).toBeLessThan(-19);
   });
 
   it("picks one live mic or mixes close channels", () => {

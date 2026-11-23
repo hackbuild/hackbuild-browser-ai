@@ -110,7 +110,9 @@ export function finishReel(dsp: Dsp, audio: Float32Array, a: Pick<Analysis, "noi
         sc++;
       }
     if (sc) {
-      let rg = Math.pow(10, (o.targetDb - 10 * Math.log10(se / sc)) / 20);
+      // the reel's speech level once the global gain is on it; the trim is relative to that
+      const after = 10 * Math.log10(se / sc) + 20 * Math.log10(a.gain);
+      let rg = Math.pow(10, (o.targetDb - after) / 20);
       rg = Math.min(Math.pow(10, 9 / 20), Math.max(Math.pow(10, -9 / 20), rg));
       g = Math.min(Math.pow(10, o.maxGainDb / 20), a.gain * rg);
     }
