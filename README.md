@@ -75,8 +75,8 @@ Each package README carries its own dated list. In short:
   runtime; no network, no model weights.
 
 - 2026-11-23: the first real browser pass, Chrome 150 on an Apple M1 with
-  WebGPU, through the example pages: 16 of the 56 browser checks pass, 1
-  fails, 39 not run (counted). Numbers and reasons are in
+  WebGPU, through the example pages: 18 of the 57 browser checks pass, 0
+  fail, 39 not run (counted). Numbers and reasons are in
   [docs/browser-checks.md](docs/browser-checks.md). The owner has not
   looked at the pages yet.
 

@@ -15,17 +15,19 @@ Counted over the 57 rows: 18 pass, 0 fail, 39 not run (a row counts as
 pass when the part that ran passed; the cell says what did not run).
 Rerun on 2026-11-23 after the fixes below, same machine and browser:
 the speak, audio-dsp and vision pages (rows 26, 29, 31, 35, 42, 44 and
-the new 57); the other rows are from the first pass.
+the new 57); the other rows are from the first pass. Rerun again after
+the audit fixes on 2026-11-23: the devices and speak pages (rows 1, 5,
+7, 24, 42, 44 and 57).
 
 | # | package | check | needs | status |
 |---|---|---|---|---|
-| 1 | ai-env | `probe()` fields in Chrome, Safari and Firefox over https and from file:// | browsers | pass in Chrome over http; Safari, Firefox and file:// not run |
+| 1 | ai-env | `probe()` fields in Chrome, Safari and Firefox over https and from file:// | browsers | pass in Chrome over http and on the https site (the check accepted http only until 2026-11-23); Safari, Firefox and file:// not run |
 | 2 | ai-env | a module blob worker refused on file:// in Chrome, and the ladder landing on classic-blob | Chrome, file:// page | not run: no page for it in this pass |
 | 3 | ai-env | `importEsm` of the wllama 4.0.0 and 3.8.1 ESM builds from file:// through Blob and `data:` URLs | Chrome, network | not run: no page for it in this pass |
 | 4 | weights | OPFS, Cache Storage and IndexedDB part stores with a file over 2 GB | Chrome, Safari, disk space | not run: needs a file over 2 GB |
-| 5 | weights | resume against Hugging Face's CDN: does it answer `Range` plus `If-Range` with 206 | browser, network | pass: Hugging Face answered 206 to `Range` plus `If-Range` after a stop at 5.0 MB |
+| 5 | weights | resume against Hugging Face's CDN: does it answer `Range` plus `If-Range` with 206 | browser, network | pass: 206 for `bytes=5015811-` after a stop (rerun 2026-11-23). The CDN also answers 206 to a stale If-Range, so a 206 proves only that ranges work; the store now compares the 206 ETag and starts over when it differs (unit tests) |
 | 6 | weights | `transformersCache` as transformers.js 4.3.2 `env.customCache` | browser, transformers.js | not run: the pages use transformers.js's own cache |
-| 7 | weights | SHA-256 throughput on the main thread and in a worker | browser | pass on the main thread, 88 MB/s (measured); the worker half not run |
+| 7 | weights | SHA-256 throughput on the main thread and in a worker | browser | pass on the main thread, 149 MB/s (measured, rerun 2026-11-23; first pass 88), digest equal to Web Crypto's; the check could not fail before 2026-11-23; the worker half not run |
 | 8 | models | each `CATALOG` ladder loads on its first rung, or falls to the next with a named error | WebGPU and non WebGPU machines, every catalog model (licences in the record) | not run for the whole catalog; the rungs taken by the pages are listed below |
 | 9 | models | `classifyError` patterns against current WebLLM 0.2.89, onnxruntime-web 1.31 and transformers.js 4.3.2 messages | browsers, models | not run |
 | 10 | models | two webgpu models under the hub's gpu lock with no device lost | WebGPU machine, two models | not run: the vision page runs its models one after another, not two at once |
@@ -42,7 +44,7 @@ the new 57); the other rows are from the first pass.
 | 21 | memory | recall quality with MiniLM (Apache-2.0) and bge-small (MIT) embedders | browser, transformers.js, embedder weights | not run |
 | 22 | memory | prefix stable injection keeping a wllama or WebLLM KV prefix warm (time to first token, measured) | browser, model | not run |
 | 23 | all | every `dist/single/*.js` file loaded from a file:// page | Chrome, Safari | pass after a fix: the ESM files failed (33 of 33 refused from file://); the new iife builds load 33 of 33 in Chrome 150; Safari not run |
-| 24 | devices | `loadTransformers()` and `loadOrt()` import transformers.js 4.3.2 and onnxruntime-web 1.27.0 from the pinned URLs over https and from file:// | Chrome, Safari, network | pass in Chrome over http; Safari and file:// not run |
+| 24 | devices | `loadTransformers()` and `loadOrt()` import transformers.js 4.3.2 and onnxruntime-web 1.27.0 from the pinned URLs over https and from file:// | Chrome, Safari, network | pass in Chrome over http; from file:// both import through the devices IIFE (audit run, 2026-11-23); Safari not run |
 | 25 | devices | the ort ladder from webgpu basic to wasm on a graph that fails to partition (htdemucs, MIT) with one download | WebGPU machine, network | not run: no page for htdemucs in this pass |
 | 26 | audio-dsp | the inlined wasm core from a file:// page, and kernel speed on 10 minutes of 16 kHz audio (measured) | Chrome, Safari, file:// page | pass over http and from file:// (iife); kernel times below; Safari not run |
 | 27 | transcribe | whisper-large-v3-turbo (MIT) on webgpu and whisper-base.en (MIT) on wasm over a 10 minute file, against an earlier transcription tool run of the same file | WebGPU machine, network, a test recording | not run: large v3 turbo is about 900 MB (inferred) and no 10 minute recording or the earlier transcription tool run is here; a base.en round trip passed (below) |
@@ -60,9 +62,9 @@ the new 57); the other rows are from the first pass.
 | 39 | media | decodeAudio on mp4, mov, webm and mkv, and record() of a canvas, in Chrome, Safari and Firefox | browsers, CC0 test files | not run: no page for it in this pass |
 | 40 | embed | potion-base-8M (MIT) loaded from its repo, vectors compared with the Python model2vec package on 20 sentences | browser or Node, network, Python | pass: 20 sentences, max abs difference 5.1e-7 against model2vec 0.10.0 in Python (measured) |
 | 41 | embed | all-MiniLM-L6-v2 (Apache-2.0) and bge-small-en-v1.5 (MIT) through transformers.js 4.3.2 on wasm q8 and webgpu fp32, with speed measured | browser, network | pass on wasm q8 and webgpu fp32 for both models |
-| 42 | speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 on webgpu fp32 and wasm q8: time to first audio measured, joins listened to | browser, network | pass, times below; joins not listened to by a person |
+| 42 | speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 on webgpu fp32 and wasm q8: time to first audio measured, joins listened to | browser, network | pass, rerun 2026-11-23 with speaking timed at the audio clock: wasm q8 first audio 38,888 ms cold (download included) and 14,661 ms warm; webgpu fp32 47,355 ms cold and 990 ms warm (measured); Kokoro is now opt in for its GPL phonemizer; joins not listened to by a person. Earlier first audio numbers measured scheduling time |
 | 43 | speak | Pocket TTS (weights CC-BY-4.0) worker patches against the current upstream source, from file:// and https, with a clone from an owner supplied reference kept out of git | Chrome, network | not run: needs the community build's base URL |
-| 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | pass in Chrome: 48 voices, 17 word boundaries, time to first audio 76 ms from the onstart event (measured; it read 0 on the first pass); Safari and Firefox not run; the fall through is covered by unit tests only |
+| 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | pass in Chrome: 48 voices, 17 word boundaries, time to first audio 14 ms (measured, rerun 2026-11-23); Safari and Firefox not run; the fall through is covered by unit tests only |
 | 45 | listen | Silero VAD v5 (MIT) on onnxruntime-web 1.27.0: tensor names, probabilities on a recorded voice, single thread from file:// | Chrome, network | not run: needs a microphone |
 | 46 | listen | barge in through laptop speakers with echo cancellation on, while speak plays Kokoro or the system voice: false triggers counted | Chrome, microphone, speakers | not run: needs a microphone and speakers |
 | 47 | listen | capture worklet from a Blob and a data: URL, end of speech to text latency with whisper-base.en (MIT) measured | Chrome, Safari, microphone | not run: needs a microphone |
@@ -75,7 +77,7 @@ the new 57); the other rows are from the first pass.
 | 54 | imagegen | SD-Turbo (Stability AI Community License) from schmuell/sd-turbo-ort-web on onnxruntime-web 1.27.0 webgpu: graph names, one and four step images looked at by a person, time per step measured | WebGPU machine, network | not run: the three graphs are 2,513 MB (vendor, repo listing 2026-11-23); the listing has the three graph paths the record names |
 | 55 | ai-elements | a person looks at each element (model picker, download bar, status pills, chat panel, memory inspector) in Chrome and Safari, light and dark, and tabs through them with a screen reader on | Chrome, Safari | not run: needs a person, Safari and a screen reader; screenshots in `.local/shots` |
 | 56 | ai-elements | the chat panel streaming a real engine (Qwen2.5 0.5B, Apache-2.0) for 500 tokens: repaint cost per token measured | browser, model | pass: 500 tokens, frame ms p95 17.4 while streaming and 17.4 idle (measured) |
-| 57 | speak | the bellows voice (bellows-voice 0.7.3 on bellowsjs 0.5.0, MIT, no weights) through the speaker: time to first audio, phoneme times, listened to by a person | browser, network | pass: first audio 798 ms cold and 263 ms warm, 67 phoneme events (measured); rendered on the main thread; not listened to by a person |
+| 57 | speak | the bellows voice (bellows-voice 0.8.0 on bellowsjs 0.5.x, MIT, no weights) through the speaker: time to first audio, phoneme times, listened to by a person | browser, network | pass, rerun 2026-11-23 on bellows-voice 0.8.0 from npm: first audio 495 ms cold and 433 ms warm on a second line, at the audio clock, 67 phoneme events (measured); earlier numbers measured scheduling time; not listened to by a person |
 
 ## Measured on the first pass
 
