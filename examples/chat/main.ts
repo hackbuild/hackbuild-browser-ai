@@ -21,18 +21,24 @@ const ENGINES: Record<string, string> = {
   anthropic: "anthropic messages api with your key",
 };
 $("#controls").innerHTML = `
-<label>engine <select id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
-<input id="url" type="url" placeholder="server url, for openai compatible" value="http://localhost:11434/v1" aria-label="server url">
-<input id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms" style="flex:0 1 12em">
-<input id="key" type="password" placeholder="api key: stays in this tab, never stored" aria-label="api key" autocomplete="off">
-<span id="keyv"></span>
-<button id="load">load</button>
-<input id="msg" type="text" value="Name three things to pack for a rainy hike, one line each." aria-label="message">
-<button id="send" disabled>send</button>
-<button id="stop" disabled>stop</button>`;
-const out = document.createElement("pre");
-out.style.cssText = "white-space:pre-wrap;margin:0 0 16px;min-height:6em";
-$("main").append(out);
+<label class="hb-ctl">engine <select class="hb-select" id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
+<input class="hb-input" id="url" type="url" placeholder="server url, for openai compatible" value="http://localhost:11434/v1" aria-label="server url">
+<input class="hb-input" id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms" style="flex:0 1 12em">
+<input class="hb-input" id="key" type="password" placeholder="api key: stays in this tab, never stored" aria-label="api key" autocomplete="off">
+<span class="pg-note" id="keyv"></span>
+<button class="hb-btn" type="button" id="load">load</button>
+<input class="hb-input" id="msg" type="text" value="Name three things to pack for a rainy hike, one line each." aria-label="message">
+<button class="hb-btn hb-btn-2" type="button" id="send" disabled>send</button>
+<button class="hb-btn hb-btn-2" type="button" id="stop" disabled>stop</button>`;
+// the reply streams into one model turn of a hackbuild-ui chat log
+const box = document.createElement("section");
+box.className = "hb-chat pg-out";
+box.setAttribute("aria-label", "reply");
+box.innerHTML = `<div class="hb-chat-log" role="log" aria-live="polite"><div class="hb-msg pg-reply"><span class="hb-msg-who">reply</span></div></div>`;
+const out = document.createElement("div");
+out.className = "hb-msg-text";
+box.querySelector(".hb-msg")!.append(out);
+$("#status").before(box);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 $("#key").addEventListener("input", () => ($("#keyv").textContent = ($("#key") as HTMLInputElement).value ? maskKey(($("#key") as HTMLInputElement).value) : ""));

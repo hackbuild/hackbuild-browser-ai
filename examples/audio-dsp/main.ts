@@ -5,13 +5,16 @@ import { $, auto, check, finish, readout, result, status } from "../shared/ui.js
 const r = result("audio-dsp");
 const SR = 16000;
 $("#controls").innerHTML = `
-<label>bpm <input id="bpm" type="number" min="60" max="200" value="120" style="width:5em"></label>
-<label>noise <input id="noise" type="range" min="0" max="0.3" step="0.01" value="0.08"></label>
-<button id="make">make a click track</button>
-<button id="play">play it</button>
-<button id="bench">time the kernels on 10 minutes</button>`;
+<label class="hb-ctl">bpm <input class="hb-input" id="bpm" inputmode="numeric" type="number" min="60" max="200" value="120" style="width:5em"></label>
+<label class="hb-ctl">noise <input class="hb-range" id="noise" type="range" min="0" max="0.3" step="0.01" value="0.08"></label>
+<button class="hb-btn" type="button" id="make">make a click track</button>
+<button class="hb-btn hb-btn-2" type="button" id="play">play it</button>
+<button class="hb-btn hb-btn-2" type="button" id="bench">time the kernels on 10 minutes</button>`;
 const canvas = document.createElement("canvas");
 $("#stage").append(canvas);
+// redraw the last spectrogram at the new size on a resize or a rotation, so it never stretches
+let last: [Float32Array, number, number] | null = null;
+new ResizeObserver(() => last && draw(...last)).observe(canvas);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -52,8 +55,10 @@ function analyse(): { bpm: number; ms: number } {
 }
 
 function draw(mag: Float32Array, frames: number, bins: number): void {
-  const w = (canvas.width = canvas.clientWidth || 960);
-  const h = (canvas.height = canvas.clientHeight || 540);
+  last = [mag, frames, bins];
+  const dpr = Math.min(devicePixelRatio, 2);
+  const w = (canvas.width = Math.round((canvas.clientWidth || 960) * dpr));
+  const h = (canvas.height = Math.round((canvas.clientHeight || 540) * dpr));
   const g = canvas.getContext("2d")!;
   const img = g.createImageData(w, h);
   let peak = 1e-9;

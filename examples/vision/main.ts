@@ -8,19 +8,22 @@ import { $, FrameTimer, auto, check, finish, quantile, readout, result, sleep, s
 
 const r = result("vision");
 $("#controls").innerHTML = `
-<button id="depth">depth</button>
-<label>device <select id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
-<button id="loop">depth every frame it can</button>
-<button id="loopb">depth with a 20 ms frame budget</button>
-<button id="loopw">depth in a worker</button>
-<button id="stop">stop the loop</button>
-<button id="detect">detect objects</button>
-<button id="sam">mask at the centre</button>
-<select id="vlm"><option value="smolvlm-256m-instruct">smolvlm 256m, weights Apache-2.0, about 260 MB (inferred)</option><option value="lfm2-vl-450m">lfm2-vl 450m, weights LFM Open License v1.0, about 320 MB (inferred), webgpu only</option></select>
-<button id="cap">caption</button>`;
+<button class="hb-btn" type="button" id="depth">depth</button>
+<label class="hb-ctl">device <select class="hb-select" id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
+<button class="hb-btn hb-btn-2" type="button" id="loop">depth every frame it can</button>
+<button class="hb-btn hb-btn-2" type="button" id="loopb">depth with a 20 ms frame budget</button>
+<button class="hb-btn hb-btn-2" type="button" id="loopw">depth in a worker</button>
+<button class="hb-btn hb-btn-2" type="button" id="stop">stop the loop</button>
+<button class="hb-btn hb-btn-2" type="button" id="detect">detect objects</button>
+<button class="hb-btn hb-btn-2" type="button" id="sam">mask at the centre</button>
+<select class="hb-select" id="vlm"><option value="smolvlm-256m-instruct">smolvlm 256m, weights Apache-2.0, about 260 MB (inferred)</option><option value="lfm2-vl-450m">lfm2-vl 450m, weights LFM Open License v1.0, about 320 MB (inferred), webgpu only</option></select>
+<button class="hb-btn hb-btn-2" type="button" id="cap">caption</button>`;
 const side = document.createElement("canvas");
-side.style.cssText = "position:absolute;right:8px;bottom:8px;width:28%;height:auto;border:1px solid var(--line);border-radius:4px;background:#000";
-$("#stage").append(side);
+const corner = document.createElement("div");
+corner.className = "hb-ov hb-ov-br";
+corner.innerHTML = `<figure class="hb-inset"><div class="hb-inset-hd"><span>side</span><span class="hb-hd-aux">depth, mask</span></div><div class="hb-inset-media"></div></figure>`;
+corner.querySelector(".hb-inset-media")!.append(side);
+$("#stage").append(corner);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 

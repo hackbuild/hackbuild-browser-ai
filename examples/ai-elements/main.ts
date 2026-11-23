@@ -14,25 +14,20 @@ import { $, FrameTimer, auto, check, finish, frames, readout, result, status } f
 const r = result("ai-elements");
 define();
 $("#controls").innerHTML = `
-<label>theme <select id="theme"><option value="">system</option><option value="light">light</option><option value="dark">dark</option></select></label>
-<button id="dl">download a 23 MB file into the bar</button>
-<button id="stream">stream 500 scripted tokens into the chat panel</button>
-<button id="real">stream from qwen2.5 0.5b on webllm</button>`;
+<button class="hb-btn" type="button" id="dl">download a 23 MB file into the bar</button>
+<button class="hb-btn hb-btn-2" type="button" id="stream">stream 500 scripted tokens into the chat panel</button>
+<button class="hb-btn hb-btn-2" type="button" id="real">stream from qwen2.5 0.5b on webllm</button>`;
 const main = $("main");
 const wrap = document.createElement("div");
-wrap.style.cssText = "display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));margin-bottom:16px";
+wrap.className = "pg-grid";
+// the theme select went with the dark palette: hackbuild-ui defines none
 wrap.innerHTML = `
-<section><h2 style="font-size:14px">model picker</h2><div style="max-height:420px;overflow:auto"><hb-model-picker id="picker"></hb-model-picker></div></section>
-<section><h2 style="font-size:14px">download bar</h2><hb-download-bar id="bar"></hb-download-bar>
-<h2 style="font-size:14px">status pills</h2><hb-status-pills id="pills"></hb-status-pills>
-<h2 style="font-size:14px">memory inspector</h2><hb-memory-inspector id="insp"></hb-memory-inspector></section>
-<section style="grid-column:1/-1"><h2 style="font-size:14px">chat panel</h2><hb-chat-panel id="chat"></hb-chat-panel></section>`;
-main.insertBefore(wrap, $("#controls"));
-const els = ["#picker", "#bar", "#pills", "#insp", "#chat"].map((s) => $(s));
-$("#theme").addEventListener("change", () => {
-  const v = ($("#theme") as HTMLSelectElement).value;
-  for (const e of els) v ? e.setAttribute("data-theme", v) : e.removeAttribute("data-theme");
-});
+<section class="hb-panel"><h2 class="hb-panel-hd-inst">model picker</h2><div class="pg-scroll"><hb-model-picker id="picker"></hb-model-picker></div></section>
+<section class="hb-panel"><h2 class="hb-panel-hd-inst">download bar</h2><hb-download-bar id="bar"></hb-download-bar>
+<h2 class="hb-panel-hd-inst pg-sub">status pills</h2><hb-status-pills id="pills"></hb-status-pills></section>
+<section class="hb-panel pg-wide"><h2 class="hb-panel-hd-inst">memory inspector</h2><hb-memory-inspector id="insp"></hb-memory-inspector></section>
+<section class="hb-panel pg-wide"><h2 class="hb-panel-hd-inst">chat panel</h2><hb-chat-panel id="chat"></hb-chat-panel></section>`;
+main.insertBefore(wrap, $("#status"));
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 type El = HTMLElement & Record<string, unknown> & { update?(s: unknown): void; streamText(src: AsyncIterable<string>): Promise<void> };

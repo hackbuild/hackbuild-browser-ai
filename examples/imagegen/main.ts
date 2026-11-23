@@ -13,15 +13,18 @@ const FILES = [
   { path: "vae_decoder/model.onnx", mb: 99 },
 ];
 $("#controls").innerHTML = `
-<input id="base" type="url" value="https://huggingface.co/${rec.source.repo}/resolve/main/" aria-label="weights base url">
-<button id="load">download and load, ${FILES.reduce((a, f) => a + f.mb, 0)} MB (vendor)</button>
-<input id="prompt" type="text" value="a ceramic mug on a wooden shelf, soft light" aria-label="prompt">
-<label>steps <select id="steps"><option>1</option><option>2</option><option>4</option></select></label>
-<label>seed <input id="seed" type="number" value="42" style="width:6em"></label>
-<button id="go" disabled>generate</button>`;
+<input class="hb-input" id="base" type="url" value="https://huggingface.co/${rec.source.repo}/resolve/main/" aria-label="weights base url">
+<button class="hb-btn" type="button" id="load">download and load, ${FILES.reduce((a, f) => a + f.mb, 0)} MB (vendor)</button>
+<input class="hb-input" id="prompt" type="text" value="a ceramic mug on a wooden shelf, soft light" aria-label="prompt">
+<label class="hb-ctl">steps <select class="hb-select" id="steps"><option>1</option><option>2</option><option>4</option></select></label>
+<label class="hb-ctl">seed <input class="hb-input" id="seed" inputmode="numeric" type="number" value="42" style="width:6em"></label>
+<button class="hb-btn hb-btn-2" type="button" id="go" disabled>generate</button>
+<span class="pg-note" id="phone" hidden>this model needs about ${(FILES.reduce((a, f) => a + f.mb, 0) / 1000).toFixed(1)} gb. phones usually cannot hold it.</span>`;
+// a touch screen or a small memory figure (vendor, navigator.deviceMemory) reads as a phone
+if (matchMedia("(pointer: coarse)").matches || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4) $("#phone").hidden = false;
 const canvas = document.createElement("canvas");
 canvas.width = canvas.height = 512;
-canvas.style.cssText = "height:100%;width:auto;display:block;margin:0 auto";
+canvas.style.objectFit = "contain";
 $("#stage").append(canvas);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));

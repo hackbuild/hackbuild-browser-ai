@@ -120,3 +120,29 @@ polyphase table now, 3.3 s); the depth frame budget did not remove the
 in a worker holds frame p95 at 18.3 ms); the system voice reported no
 audio start, so its time to first audio read 0 (it now starts at the
 onstart event or the first boundary, and reads unknown without either).
+
+## Layout and mobile, 2026-11-23
+
+The example pages and the ai-elements moved onto the hackbuild-ui 0.4.3
+class layer, mobile first. Chrome 150 on the Apple M1, puppeteer-core,
+every page of `_site` (index and the ten pages) at 320 px (touch, scale
+2), 360 px (Galaxy S9+ profile, touch), 390 px (iPhone 13 profile,
+touch), 768 px (touch), 1024, 1280 and 1440 px, full page screenshots
+in `.local/layout/` (gitignored). At every width: no sideways scroll
+against the device width; on the phone and touch profiles every button,
+link, select, input and summary in the page and inside the ai-elements
+shadow roots is at least 44 px tall, and fields are 16 px (measured by
+the layout script). On the phone profiles the viewport sits above the
+controls, so the scene shows above the fold; from 641 px the controls
+go back under the header. Looked at in the screenshots by the builder;
+the owner has not looked, and no real phone has opened the pages.
+
+The `?auto` checks after the restyle: chat, transcribe, speak,
+depth-mesh, embed, audio-dsp, devices and ai-elements pass; imagegen not
+run (download over the limit); vision passes its depth, frame budget and
+detector rows but timed out at 900 s downloading SmolVLM for row 31 on
+three runs this afternoon. Transcribe and speak each timed out once the
+same way and passed on a rerun, and the unchanged pages from before the
+restyle timed out on the same transcribe download, so the stalls are
+the network to the model hosts, not the pages. Detector counts on the
+still frame moved between runs (2, 1, 1) with the same code.

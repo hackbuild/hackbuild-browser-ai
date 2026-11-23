@@ -15,11 +15,11 @@ const MODELS: Record<string, string> = {
   "whisper-large-v3-turbo": "whisper large v3 turbo, weights MIT, about 900 MB (inferred), webgpu",
 };
 $("#controls").innerHTML = `
-<label>model <select id="model">${Object.entries(MODELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
-<label>device <select id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
-<span class="drop" id="drop">drop an audio file <input id="file" type="file" accept="audio/*,video/*"></span>
-<button id="rt">speak a sentence with kokoro and transcribe it</button>
-<button id="mic" disabled title="the live microphone path is in @hackbuild/listen; this page does not open the microphone">microphone: not on this page</button>`;
+<label class="hb-ctl">model <select class="hb-select" id="model">${Object.entries(MODELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
+<label class="hb-ctl">device <select class="hb-select" id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
+<span class="hb-dropzone" id="drop">drop an audio file <input id="file" type="file" accept="audio/*,video/*"></span>
+<button class="hb-btn" type="button" id="rt">speak a sentence with kokoro and transcribe it</button>
+<button class="hb-btn hb-btn-2" type="button" id="mic" disabled title="the live microphone path is in @hackbuild/listen; this page does not open the microphone">microphone: not on this page</button>`;
 const out = document.createElement("pre");
 out.style.cssText = "white-space:pre-wrap;margin:0 0 16px";
 $("main").append(out);

@@ -8,9 +8,9 @@ const RESUME_URL = "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/
 
 const r = result("devices");
 $("#controls").innerHTML = `
-<button id="rt">import the runtimes</button>
-<button id="resume">test a resumed download</button>
-<button id="sha">time sha-256</button>`;
+<button class="hb-btn" type="button" id="rt">import the runtimes</button>
+<button class="hb-btn hb-btn-2" type="button" id="resume">test a resumed download</button>
+<button class="hb-btn hb-btn-2" type="button" id="sha">time sha-256</button>`;
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => {
   Object.assign(rows, o);

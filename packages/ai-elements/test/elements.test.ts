@@ -4,6 +4,8 @@ import type { ModelRecord } from "@hackbuild/models";
 import {
   ELEMENT_NAMES,
   TOKENS,
+  HB_CSS,
+  HOST_CSS,
   appendDelta,
   define,
   disableReason,
@@ -129,8 +131,17 @@ test("define registers each element once under a prefix and nothing on import", 
   expect(() => define("hb", undefined, undefined)).toThrow(/no custom elements/);
 });
 
-test("theme tokens cover light, dark by preference and a forced theme", () => {
-  expect(TOKENS).toContain("prefers-color-scheme: dark");
-  expect(TOKENS).toContain(':host([data-theme="dark"])');
-  expect(TOKENS).toContain(':host(:not([data-theme="light"]))');
+test("tokens default to hackbuild-ui values and never shadow a page's tokens", () => {
+  // --hb-ok and --hb-warn once held other values on :host and shadowed the design system inside the elements
+  expect(TOKENS["--hb-ok"]).toBe("#1f9d55");
+  expect(TOKENS["--hb-warn"]).toBe("#c77700");
+  expect(TOKENS["--hb-pink"]).toBe("#FE0386");
+  // no token is declared in the sheet, so a page's value on the element or an ancestor reaches in
+  expect(`${HB_CSS}\n${HOST_CSS}`).not.toMatch(/(^|[{;\s])--hb-[a-z0-9-]+\s*:/);
+  // every token use carries its hackbuild-ui fallback
+  expect(HB_CSS).not.toMatch(/var\(--hb-(?!at\b)[a-z0-9-]+\)/);
+  expect(HB_CSS).toContain("var(--hb-ok, #1f9d55)");
+  expect(HB_CSS).toContain("var(--hb-shadow, 3px 3px 0 var(--hb-ink, #1a1a1a))");
+  // page level rules are gone: no import, no grain overlay, no dark palette
+  expect(HB_CSS).not.toMatch(/@import|body\.hb|prefers-color-scheme/);
 });

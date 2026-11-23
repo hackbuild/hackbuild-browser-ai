@@ -55,18 +55,23 @@ export function status(text: string, kind: Kind = "info"): void {
   if (!el) return;
   el.textContent = text;
   el.dataset.kind = kind;
+  el.className = `hb-status is-${kind === "bad" ? "err" : kind}`;
 }
 
-/** Writes label: value rows into #readout. */
+/** Writes label and value rows into #readout, as hackbuild-ui kv rows. */
 export function readout(rows: Record<string, string | number>): void {
   const el = document.querySelector<HTMLElement>("#readout");
   if (!el) return;
   el.replaceChildren(
     ...Object.entries(rows).map(([k, v]) => {
       const d = document.createElement("div");
-      const b = document.createElement("b");
+      d.className = "hb-kv";
+      const label = document.createElement("span");
+      label.textContent = k;
+      const b = document.createElement("span");
+      b.className = "hb-readout";
       b.textContent = typeof v === "number" ? fmt(v) : v;
-      d.append(`${k}: `, b);
+      d.append(label, b);
       return d;
     }),
   );
@@ -239,12 +244,12 @@ export async function loadWeight(
 export function onDrop(zone: HTMLElement, cb: (files: File[]) => void, input?: HTMLInputElement): void {
   zone.addEventListener("dragover", (e) => {
     e.preventDefault();
-    zone.classList.add("over");
+    zone.classList.add("is-over");
   });
-  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("dragleave", () => zone.classList.remove("is-over"));
   zone.addEventListener("drop", (e) => {
     e.preventDefault();
-    zone.classList.remove("over");
+    zone.classList.remove("is-over");
     const files = [...(e.dataTransfer?.files ?? [])];
     if (files.length) cb(files);
   });

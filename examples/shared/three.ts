@@ -12,18 +12,19 @@ export interface Stage {
 
 export function stage(target: [number, number, number] = [0, 0, 0], distance = 2): Stage {
   const host = $("#stage");
+  host.classList.add("is-orbit");
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   host.append(renderer.domElement);
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(dark ? 0x1b1d20 : 0xffffff);
+  // the light scene the checks were measured on; the dark branch went with the dark palette
+  scene.background = new THREE.Color(0xffffff);
   const camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.01, 500);
   camera.position.set(target[0] + distance * 0.6, target[1] + distance * 0.5, target[2] + distance);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(...target);
   controls.update();
-  scene.add(new THREE.HemisphereLight(0xffffff, dark ? 0x30343a : 0xb0aca0, 2));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb0aca0, 2));
   const sun = new THREE.DirectionalLight(0xffffff, 1.8);
   sun.position.set(2, 4, 3);
   scene.add(sun);

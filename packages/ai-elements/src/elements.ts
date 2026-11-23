@@ -10,36 +10,53 @@ import type { ChatEngine, ChatMessage } from "@hackbuild/chat";
 import type { Recall } from "@hackbuild/memory";
 import type { ModelRecord } from "@hackbuild/models";
 import type { Progress } from "@hackbuild/weights";
+import { HB_CSS } from "./hb-sheet.js";
 import { appendDelta, escapeHtml as e, finishLine, maskKey, modelRows, pillFor, progressText, traceRows, type ChatLine, type Pill } from "./view.js";
 
-/** Theme tokens. Pages override any of them on the element or an ancestor. */
-export const TOKENS = `
-:host {
-  --hb-bg: #ffffff; --hb-fg: #1b1d21; --hb-muted: #5d6470; --hb-line: #d9dde3;
-  --hb-accent: #2463eb; --hb-ok: #1a7f4b; --hb-warn: #a35c00; --hb-bad: #c0352b;
-  --hb-radius: 6px; --hb-font: system-ui, sans-serif; --hb-mono: ui-monospace, monospace;
-  display: block; font: 13px/1.4 var(--hb-font); color: var(--hb-fg); background: var(--hb-bg);
-}
-@media (prefers-color-scheme: dark) {
-  :host(:not([data-theme="light"])) {
-    --hb-bg: #15171b; --hb-fg: #e6e8eb; --hb-muted: #9aa3ae; --hb-line: #2c3038;
-    --hb-accent: #6d9bff; --hb-ok: #4cc38a; --hb-warn: #e0a440; --hb-bad: #ff6b5e;
-  }
-}
-:host([data-theme="dark"]) {
-  --hb-bg: #15171b; --hb-fg: #e6e8eb; --hb-muted: #9aa3ae; --hb-line: #2c3038;
-  --hb-accent: #6d9bff; --hb-ok: #4cc38a; --hb-warn: #e0a440; --hb-bad: #ff6b5e;
-}
-button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--hb-line); border-radius: var(--hb-radius); padding: 3px 9px; cursor: pointer; }
-button:disabled { opacity: .5; cursor: not-allowed; }
-.muted { color: var(--hb-muted); }
+/**
+ * Styling. Each shadow root adopts the hackbuild-ui class layer (hb-sheet.ts,
+ * generated from the vendored package) as one constructable stylesheet
+ * shared by every element; no fetch, so it works from file://. Every token
+ * in it falls back to its hackbuild-ui value, so a page themes the elements
+ * by setting `--hb-*` tokens on an element or any ancestor, and a page
+ * without hackbuild-ui still gets its look. Fonts come from the page: an
+ * `@font-face` inside a shadow root does not load, so a page links
+ * hackbuild-ui `fonts-inline.css` or gets the fallback faces.
+ */
+export const HOST_CSS = `
+:host { display: block; background: transparent; font-family: var(--hb-body, 'Special Elite', 'Courier New', monospace); font-size: 14px; line-height: 1.6; color: var(--hb-ink, #1a1a1a); }
+:host([hidden]) { display: none; }
+.hb-sum { font-family: var(--hb-utility, 'IBM Plex Mono', ui-monospace, monospace); font-size: 11.5px; color: var(--hb-ink-3, #6b6459); margin: 0 0 var(--hb-s2, 8px); }
+.hb-pills { display: flex; flex-wrap: wrap; gap: var(--hb-s1, 4px) var(--hb-s2, 8px); }
+.hb-table td.t { font-family: var(--hb-body, 'Special Elite', 'Courier New', monospace); min-width: 18ch; }
+.hb-table td.n { white-space: nowrap; }
+.hb-composer-acts .hb-btn { display: inline-flex; align-items: center; gap: var(--hb-s1, 4px); }
 `;
+
+let sheet: CSSStyleSheet | null | undefined;
+function adopted(root: ShadowRoot): boolean {
+  if (sheet === undefined) {
+    try {
+      sheet = new CSSStyleSheet();
+      sheet.replaceSync(`${HB_CSS}\n${HOST_CSS}`);
+    } catch {
+      sheet = null;
+    }
+  }
+  if (!sheet || !("adoptedStyleSheets" in root)) return false;
+  if (root.adoptedStyleSheets[0] !== sheet) root.adoptedStyleSheets = [sheet];
+  return true;
+}
+
+/** Writes markup into the root; without constructable sheets the CSS goes in a style element. */
+function paint(root: ShadowRoot, html: string): void {
+  root.innerHTML = adopted(root) ? html : `<style>${HB_CSS}\n${HOST_CSS}</style>${html}`;
+}
 
 /** Inline SVG icons, 14 px, stroked in currentColor. */
 export const ICONS = {
   stop: `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="3" width="8" height="8" fill="currentColor"/></svg>`,
   send: `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7h9M7 3l4 4-4 4" stroke="currentColor" fill="none" stroke-width="1.6"/></svg>`,
-  dot: `<svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="3.2" fill="currentColor"/></svg>`,
 } as const;
 
 export interface ModelPickerElement extends HTMLElement {
@@ -117,26 +134,21 @@ export function modelPickerClass(B: Base): new () => ModelPickerElement {
     render() {
       const rows = modelRows(this.#records_, this.#env_);
       const r = shadow(this);
-      r.innerHTML = `<style>${TOKENS}
-ul { list-style: none; margin: 0; padding: 0; }
-li { border: 1px solid var(--hb-line); border-radius: var(--hb-radius); padding: 6px 8px; margin: 0 0 6px; }
-li[aria-selected="true"] { border-color: var(--hb-accent); }
-li[aria-disabled="true"] { opacity: .6; }
-.top { display: flex; justify-content: space-between; gap: 8px; }
-.why { color: var(--hb-warn); }
-</style>
-<ul role="listbox" aria-label="models">${
+      paint(
+        r,
+        `<ul class="hb-models" role="listbox" aria-label="models">${
         rows.length
           ? rows
               .map(
-                (m) => `<li role="option" data-id="${e(m.id)}" aria-selected="${m.id === this.#selected_}" aria-disabled="${m.disabled !== null}">
-<div class="top"><b>${e(m.label)}</b><button data-id="${e(m.id)}" ${m.disabled ? "disabled" : ""}>${m.id === this.#selected_ ? "in use" : "use"}</button></div>
-<div class="muted">${e(m.size)}. ${e(m.devices)}${m.first ? `, first try ${e(m.first)}` : ""}</div>
-<div class="muted">${e(m.licence)}</div>${m.disabled ? `<div class="why">${e(m.disabled)}</div>` : ""}</li>`,
-              )
-              .join("")
-          : `<li class="muted">no models registered.</li>`
-      }</ul>`;
+                  (m) => `<li class="hb-model" role="option" data-id="${e(m.id)}" aria-selected="${m.id === this.#selected_}" aria-disabled="${m.disabled !== null}">
+<span class="hb-model-name">${e(m.label)}</span><button class="hb-btn hb-btn-2 hb-btn-sm" type="button" data-id="${e(m.id)}" ${m.disabled ? "disabled" : ""}>${m.id === this.#selected_ ? "in use" : "use"}</button>
+<span class="hb-model-meta">${e(m.size)}. ${e(m.devices)}${m.first ? `, first try ${e(m.first)}` : ""}</span>
+<span class="hb-model-lic">${e(m.licence)}</span>${m.disabled ? `<span class="hb-model-why">${e(m.disabled)}</span>` : ""}</li>`,
+                )
+                .join("")
+            : `<li class="hb-model"><span class="hb-model-meta">no models registered.</span></li>`
+        }</ul>`,
+      );
       r.querySelectorAll<HTMLButtonElement>("button[data-id]").forEach((b) =>
         b.addEventListener("click", () => {
           this.#selected_ = b.dataset.id ?? null;
@@ -179,21 +191,22 @@ export function downloadBarClass(B: Base): new () => DownloadBarElement {
       const v = this.#p ? progressText(this.#p) : { text: "waiting to start", fraction: 0 };
       const label = this.#state_ === "failed" ? `download failed. ${this.#error_}`.trim() : this.#state_ === "paused" ? `paused. ${v.text}` : this.#state_ === "done" ? "downloaded." : v.text;
       const r = shadow(this);
-      r.innerHTML = `<style>${TOKENS}
-.track { height: 6px; border-radius: 3px; background: var(--hb-line); overflow: hidden; margin: 4px 0; }
-.fill { height: 100%; background: var(--hb-accent); }
-.ind .fill { width: 30%; animation: slide 1.2s linear infinite; }
-@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
-@media (prefers-reduced-motion: reduce) { .ind .fill { animation: none; width: 100%; opacity: .4; } }
-.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.failed { color: var(--hb-bad); }
-</style>
-<div class="row"><span class="${this.#state_ === "failed" ? "failed" : "muted"}" role="status">${e(label)}</span><span>${
-        this.#state_ === "running" ? `<button data-a="cancel">cancel</button>` : this.#state_ === "paused" || this.#state_ === "failed" ? `<button data-a="resume">resume</button>` : ""
-      }</span></div>
-<div class="track ${v.fraction === null && this.#state_ === "running" ? "ind" : ""}" role="progressbar" aria-valuemin="0" aria-valuemax="100" ${
-        v.fraction !== null ? `aria-valuenow="${Math.round(v.fraction * 100)}"` : ""
-      }><div class="fill" style="width:${v.fraction === null ? 30 : Math.round(v.fraction * 100)}%"></div></div>`;
+      // the running download is the one pink of the view; stopped states take the meter states of the class layer
+      const state = this.#state_ === "running" ? (v.fraction === null ? " is-busy" : "") : this.#state_ === "paused" ? " is-paused" : this.#state_ === "done" ? " is-done" : " is-failed";
+      const pct = this.#state_ === "done" ? 100 : v.fraction === null ? null : Math.round(v.fraction * 100);
+      const act =
+        this.#state_ === "running"
+          ? `<button class="hb-btn hb-btn-2 hb-btn-sm" type="button" data-a="cancel">cancel</button>`
+          : this.#state_ === "paused" || this.#state_ === "failed"
+            ? `<button class="hb-btn hb-btn-2 hb-btn-sm" type="button" data-a="resume">resume</button>`
+            : "";
+      paint(
+        r,
+        `<div class="hb-progress${state}"><div class="hb-progress-hd"><span class="hb-progress-text" role="status">${e(label)}</span>${
+          pct === null ? "" : `<span class="hb-progress-pct">${pct}%</span>`
+        }${act}</div>
+<div class="hb-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" ${pct === null ? "" : `aria-valuenow="${pct}"`}><i style="width:${pct ?? 30}%"></i></div></div>`,
+      );
       r.querySelector<HTMLButtonElement>("button[data-a]")?.addEventListener("click", (ev) => {
         const a = (ev.currentTarget as HTMLButtonElement).dataset.a!;
         this.#state_ = a === "cancel" ? "paused" : "running";
@@ -204,7 +217,10 @@ export function downloadBarClass(B: Base): new () => DownloadBarElement {
   };
 }
 
-/** hb-status-pills: set `pills` with engine or hub status objects; each shows a coloured dot and its line. */
+/** Pill kind to the class layer state: busy and loading never spend the pink. */
+const PILL_CLASS: Record<Pill["kind"], string> = { loading: " is-busy", busy: " is-busy", ready: " is-ok", failed: " is-err", "patch-missed": " is-warn", idle: "" };
+
+/** hb-status-pills: set `pills` with engine or hub status objects; each shows its state dot and its line. */
 export function statusPillsClass(B: Base): new () => StatusPillsElement {
   return class StatusPills extends B {
     #pills_: Pill[] = [];
@@ -229,12 +245,7 @@ export function statusPillsClass(B: Base): new () => StatusPillsElement {
     }
     render() {
       const r = shadow(this);
-      r.innerHTML = `<style>${TOKENS}
-:host { background: transparent; }
-span.p { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--hb-line); border-radius: 999px; padding: 1px 8px; margin: 0 4px 4px 0; }
-.loading, .busy { color: var(--hb-accent); } .ready { color: var(--hb-ok); } .failed { color: var(--hb-bad); } .patch-missed { color: var(--hb-warn); } .idle { color: var(--hb-muted); }
-.t { color: var(--hb-fg); }
-</style>${this.#pills_.map((p) => `<span class="p ${p.kind}" title="${e(p.kind)}">${ICONS.dot}<span class="t">${e(p.text)}</span></span>`).join("")}`;
+      paint(r, `<div class="hb-pills">${this.#pills_.map((p) => `<span class="hb-pill${PILL_CLASS[p.kind]}" data-kind="${p.kind}" title="${e(p.kind)}">${e(p.text)}</span>`).join("")}</div>`);
     }
   };
 }
@@ -333,12 +344,16 @@ export function chatPanelClass(B: Base): new () => ChatPanelElement {
       this.render();
     }
     #lineHtml(l: ChatLine): string {
-      return `<div class="m ${l.role}">${l.think ? `<details><summary>thinking</summary><pre>${e(l.think)}</pre></details>` : ""}<div class="t">${e(l.text)}${
-        l.done ? "" : `<span class="cursor" aria-hidden="true"></span>`
-      }</div>${l.note ? `<div class="note">${e(l.note)}</div>` : ""}</div>`;
+      const cls = l.role === "user" ? " is-user" : l.role === "system" ? " is-system" : l.done ? "" : " is-streaming";
+      const who = l.role === "user" ? "you" : l.role === "system" ? "note" : "model";
+      // a stop the person asked for is plain; every other note names a failure
+      const note = l.note ? `<span class="hb-msg-note${l.note === "stopped." ? "" : " is-err"}">${e(l.note)}</span>` : "";
+      return `<div class="hb-msg${cls}" data-role="${l.role}"><span class="hb-msg-who">${who}</span>${
+        l.think ? `<details class="hb-think"><summary>thinking</summary><pre>${e(l.think)}</pre></details>` : ""
+      }<div class="hb-msg-text">${e(l.text)}</div>${note}</div>`;
     }
     #renderLast(): void {
-      const box = this.shadowRoot?.querySelector(".log");
+      const box = this.shadowRoot?.querySelector(".hb-chat-log");
       const last = this.#lines[this.#lines.length - 1];
       const node = box?.lastElementChild;
       if (!box || !last || !node) return this.render();
@@ -351,26 +366,20 @@ export function chatPanelClass(B: Base): new () => ChatPanelElement {
       // keep what the user is typing across a re-render
       const was = r.querySelector("textarea");
       const draft = was ? { v: was.value, a: was.selectionStart, b: was.selectionEnd, focus: r.activeElement === was } : null;
-      r.innerHTML = `<style>${TOKENS}
-.log { max-height: var(--hb-chat-height, 360px); overflow-y: auto; padding: 4px 0; }
-.m { margin: 0 0 8px; padding: 6px 8px; border-radius: var(--hb-radius); white-space: pre-wrap; }
-.user { background: color-mix(in srgb, var(--hb-accent) 12%, transparent); }
-.assistant { border: 1px solid var(--hb-line); }
-details { color: var(--hb-muted); margin-bottom: 4px; } pre { white-space: pre-wrap; font: 12px/1.4 var(--hb-mono); margin: 4px 0 0; }
-.note { color: var(--hb-warn); font-size: 12px; margin-top: 4px; }
-.cursor { display: inline-block; width: 6px; height: 1em; background: var(--hb-muted); vertical-align: text-bottom; }
-form { display: flex; gap: 6px; } textarea, input { flex: 1; font: inherit; color: inherit; background: var(--hb-bg); border: 1px solid var(--hb-line); border-radius: var(--hb-radius); padding: 5px 7px; }
-.key { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-</style>${
-        this.#showKey
-          ? `<div class="key"><input type="password" autocomplete="off" placeholder="api key" aria-label="api key"><span class="muted">${
-              this.#key_ ? `key ${e(maskKey(this.#key_))}. it stays in this browser.` : "your key stays in this browser."
-            }</span></div>`
-          : ""
-      }<div class="log" role="log" aria-live="polite">${this.#lines.map((l) => this.#lineHtml(l)).join("")}</div>
-<form><textarea rows="2" aria-label="message" placeholder="${this.engine ? "type a message" : "no model loaded"}"></textarea>${
-        busy ? `<button type="button" data-a="stop" aria-label="stop">${ICONS.stop}</button>` : `<button type="submit" aria-label="send">${ICONS.send}</button>`
-      }</form>`;
+      const keyRow = this.#showKey
+        ? `<div class="hb-chat-key"><label class="hb-ctl">api key <input class="hb-input" type="password" autocomplete="off" placeholder="api key" aria-label="api key"></label><span class="hb-msg-note">${
+            this.#key_ ? `key ${e(maskKey(this.#key_))}. it stays in this browser.` : "your key stays in this browser."
+          }</span></div>`
+        : "";
+      paint(
+        r,
+        `<section class="hb-chat" aria-label="chat">${keyRow}<div class="hb-chat-log" role="log" aria-live="polite">${this.#lines.map((l) => this.#lineHtml(l)).join("")}</div>
+<form class="hb-composer"><textarea class="hb-textarea" rows="2" aria-label="message" placeholder="${this.engine ? "type a message" : "no model loaded"}"></textarea><div class="hb-composer-acts">${
+          busy
+            ? `<button class="hb-btn hb-btn-2" type="button" data-a="stop" aria-label="stop">${ICONS.stop} stop</button>`
+            : `<button class="hb-btn" type="submit" aria-label="send">${ICONS.send} send</button>`
+        }</div></form></section>`,
+      );
       const ta = r.querySelector("textarea")!;
       if (draft) {
         ta.value = draft.v;
@@ -392,7 +401,7 @@ form { display: flex; gap: 6px; } textarea, input { flex: 1; font: inherit; colo
         }
       });
       r.querySelector('button[data-a="stop"]')?.addEventListener("click", () => this.stop());
-      const key = r.querySelector<HTMLInputElement>(".key input");
+      const key = r.querySelector<HTMLInputElement>(".hb-chat-key input");
       key?.addEventListener("change", () => {
         this.#key_ = key.value.trim();
         key.value = "";
@@ -418,25 +427,20 @@ export function memoryInspectorClass(B: Base): new () => MemoryInspectorElement 
       const r = shadow(this);
       const rec = this.#recall_;
       const rows = rec ? traceRows(rec) : [];
-      r.innerHTML = `<style>${TOKENS}
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--hb-line); vertical-align: top; }
-th { color: var(--hb-muted); font-weight: 500; }
-tr.used td:first-child { box-shadow: inset 3px 0 0 var(--hb-accent); }
-td.n { font-family: var(--hb-mono); font-size: 12px; white-space: nowrap; }
-</style>${
+      paint(
+        r,
         rec
-          ? `<div class="muted">query "${e(rec.query)}", ${rec.mode} recall, ${rows.length} candidates, ${rows.filter((x) => x.used).length} used (computed).</div>
-<table><thead><tr><th>#</th><th>kind</th><th>text</th><th>bm25</th><th>cosine</th><th>rrf</th><th>score</th></tr></thead><tbody>${rows
+          ? `<div class="hb-sum" role="status">query "${e(rec.query)}", ${rec.mode} recall, ${rows.length} candidates, ${rows.filter((x) => x.used).length} used (computed).</div>
+<div class="hb-scroll-x"><table class="hb-table"><thead><tr><th class="num">#</th><th>kind</th><th>text</th><th>bm25</th><th>cosine</th><th class="num">rrf</th><th class="num">score</th></tr></thead><tbody>${rows
               .map(
                 (x) =>
-                  `<tr class="${x.used ? "used" : ""}"><td class="n">${x.rank}</td><td>${e(x.kind)}</td><td>${e(x.text)}</td><td class="n">${e(x.bm25)}</td><td class="n">${e(
+                  `<tr class="${x.used ? "is-mark" : ""}" data-used="${x.used}"><td class="num">${x.rank}</td><td>${e(x.kind)}</td><td class="t">${e(x.text)}</td><td class="n">${e(x.bm25)}</td><td class="n">${e(
                     x.cos,
-                  )}</td><td class="n">${x.rrf}</td><td class="n">${x.score}</td></tr>`,
+                  )}</td><td class="num">${x.rrf}</td><td class="num">${x.score}</td></tr>`,
               )
-              .join("")}</tbody></table>`
-          : `<div class="muted">no recall yet. ask something to see what memory finds.</div>`
-      }`;
+              .join("")}</tbody></table></div>`
+          : `<div class="hb-empty">no recall yet. ask something to see what memory finds.</div>`,
+      );
     }
   };
 }

@@ -22,10 +22,10 @@ const ENGINES: Record<string, { label: string; make: () => Engine }> = {
   "kokoro-webgpu": { label: "kokoro 82m on webgpu fp32, weights Apache-2.0, phonemizer eSpeak NG GPL-3.0-or-later, about 326 MB (inferred)", make: () => kokoroEngine({ runtime: KOKORO, device: "webgpu", allowGplPhonemizer: true }) },
 };
 $("#controls").innerHTML = `
-<label>engine <select id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join("")}</select></label>
-<input id="text" type="text" value="The kettle is on. Pour the water when it clicks, then wait three minutes." aria-label="text">
-<button id="say">say it</button>
-<button id="stop">stop</button>`;
+<label class="hb-ctl">engine <select class="hb-select" id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join("")}</select></label>
+<input class="hb-input" id="text" type="text" value="The kettle is on. Pour the water when it clicks, then wait three minutes." aria-label="text">
+<button class="hb-btn" type="button" id="say">say it</button>
+<button class="hb-btn hb-btn-2" type="button" id="stop">stop</button>`;
 const canvas = document.createElement("canvas");
 $("#stage").append(canvas);
 const words = document.createElement("p");
@@ -90,12 +90,17 @@ async function say(key: string, text: string): Promise<{ ttfa: number; total: nu
 
 function meter() {
   const g = canvas.getContext("2d")!;
-  const w = (canvas.width = canvas.clientWidth);
-  const h = (canvas.height = canvas.clientHeight);
+  const dpr = Math.min(devicePixelRatio, 2);
+  const w = Math.round(canvas.clientWidth * dpr);
+  const h = Math.round(canvas.clientHeight * dpr);
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
   const s = speakers.get(($("#engine") as HTMLSelectElement).value);
   const lv = s ? s.level() : 0;
   g.clearRect(0, 0, w, h);
-  g.fillStyle = getComputedStyle(document.body).getPropertyValue("--accent");
+  g.fillStyle = getComputedStyle(document.body).getPropertyValue("--hb-pink");
   g.fillRect(0, h * (1 - Math.min(1, lv * 3)), w, h);
   requestAnimationFrame(meter);
 }

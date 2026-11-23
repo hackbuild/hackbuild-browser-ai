@@ -13,6 +13,7 @@
     {
       "name": "transcribe",
       "what": "whisper through the quiet speech front end: drop a file, or speak a sentence with kokoro and read it back.",
+      "stage": false,
       "timeoutS": 600
     },
     {

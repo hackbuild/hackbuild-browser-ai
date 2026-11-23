@@ -33,14 +33,14 @@ const MODELS = {
   bge: { label: "bge-small-en-v1.5, transformers.js, weights MIT", id: "Xenova/bge-small-en-v1.5" },
 };
 $("#controls").innerHTML = `
-<label>model <select id="model">
+<label class="hb-ctl">model <select class="hb-select" id="model">
 <option value="potion">${MODELS.potion.label}</option>
 <option value="minilm">${MODELS.minilm.label}</option>
 <option value="bge">${MODELS.bge.label}</option></select></label>
-<label>device <select id="device"><option value="wasm:q8">wasm q8</option><option value="webgpu:fp32">webgpu fp32</option></select></label>
-<button id="load">load</button>
-<input id="q" type="text" value="where do cups go" aria-label="query">
-<button id="search" disabled>search</button>`;
+<label class="hb-ctl">device <select class="hb-select" id="device"><option value="wasm:q8">wasm q8</option><option value="webgpu:fp32">webgpu fp32</option></select></label>
+<button class="hb-btn" type="button" id="load">load</button>
+<input class="hb-input" id="q" type="text" value="where do cups go" aria-label="query">
+<button class="hb-btn hb-btn-2" type="button" id="search" disabled>search</button>`;
 const pre = document.createElement("pre");
 pre.style.cssText = "white-space:pre-wrap;margin:0 0 16px";
 $("main").append(pre);

@@ -6,14 +6,14 @@ import { $, FrameTimer, auto, check, finish, frames, onDrop, readout, result, st
 
 const r = result("depth-mesh");
 $("#controls").innerHTML = `
-<label>base mm <input id="base" type="number" step="0.1" value="0.4" style="width:5em"></label>
-<label>height mm <input id="height" type="number" step="0.1" value="2.4" style="width:5em"></label>
-<label>gamma <input id="gamma" type="number" step="0.1" value="1.2" style="width:5em"></label>
-<label>background cut <input id="bgcut" type="number" step="0.02" value="0.1" style="width:5em"></label>
-<button id="relief">relief</button>
-<button id="carve">carve a box on a turntable</button>
-<button id="stl" disabled>download stl</button>
-<span class="drop" id="drop">drop a grayscale depth map (white is near) <input id="file" type="file" accept="image/*"></span>`;
+<label class="hb-ctl">base mm <input class="hb-input" id="base" inputmode="decimal" type="number" step="0.1" value="0.4" style="width:5em"></label>
+<label class="hb-ctl">height mm <input class="hb-input" id="height" inputmode="decimal" type="number" step="0.1" value="2.4" style="width:5em"></label>
+<label class="hb-ctl">gamma <input class="hb-input" id="gamma" inputmode="decimal" type="number" step="0.1" value="1.2" style="width:5em"></label>
+<label class="hb-ctl">background cut <input class="hb-input" id="bgcut" inputmode="decimal" type="number" step="0.02" value="0.1" style="width:5em"></label>
+<button class="hb-btn" type="button" id="relief">relief</button>
+<button class="hb-btn hb-btn-2" type="button" id="carve">carve a box on a turntable</button>
+<button class="hb-btn hb-btn-2" type="button" id="stl" disabled>download stl</button>
+<span class="hb-dropzone" id="drop">drop a grayscale depth map (white is near) <input id="file" type="file" accept="image/*"></span>`;
 const num = (id: string) => Number(($(id) as HTMLInputElement).value);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));

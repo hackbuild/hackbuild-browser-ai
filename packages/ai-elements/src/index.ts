@@ -18,8 +18,9 @@ export {
   type TraceRow,
   type ChatLine,
 } from "./view.js";
+export { TOKENS, HB_CSS } from "./hb-sheet.js";
 export {
-  TOKENS,
+  HOST_CSS,
   ICONS,
   modelPickerClass,
   downloadBarClass,
