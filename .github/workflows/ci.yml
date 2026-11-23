@@ -19,6 +19,7 @@ jobs:
       - run: npm ci
       - run: node --test tools/test/*.test.mjs
       - run: git ls-files -z | grep -zEv '\.(png|jpe?g|gif|webp|glb|gltf|bin|wasm|onnx|wav|ico|woff2?|ttf)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock' | xargs -0 node tools/lint-voice.mjs
+      - run: node tools/lint-authors.mjs
       - run: node tools/lint-commits.mjs
         env:
           BEFORE: ${{ github.event.before }}
@@ -33,13 +34,26 @@ jobs:
       - run: npm install -g npm@11.21.0
       - run: npm ci
       - run: npm run build --if-present
+      - run: npm run typecheck
       - run: npm test
   rust:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - run: test -f Cargo.toml || exit 0
-      - run: rustup target add wasm32-unknown-unknown
-        if: hashFiles('Cargo.toml') != ''
-      - run: cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
-        if: hashFiles('Cargo.toml') != ''
+      # rust-toolchain.toml pins 1.95.0 with the wasm32 target; rustup installs it on first use
+      - run: rustup toolchain install
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo test --workspace
+  wasm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: rustup toolchain install
+      # the committed wasm and its base64 must be what this source builds to under the pinned rustc
+      - run: node tools/build-wasm.mjs --all
+      - run: git diff --stat --exit-code -- 'packages/*/wasm/*.wasm' 'packages/*/src/inline.ts'

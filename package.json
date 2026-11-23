@@ -13,12 +13,13 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "build": "npm run build --workspaces --if-present",
-    "test": "vitest run --passWithNoTests && node --test tools/test/*.test.mjs",
+    "test": "vitest run && node --test tools/test/*.test.mjs",
     "typecheck": "tsc -b && tsc -p examples",
     "lint:voice": "git ls-files | grep -Ev '\\.(png|jpe?g|glb|bin|wasm|wav)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock' | xargs node tools/lint-voice.mjs",
     "bundle": "node tools/bundle.mjs",
     "examples": "node tools/build-examples.mjs",
-    "examples:check": "node tools/check-examples.mjs"
+    "examples:check": "node tools/check-examples.mjs",
+    "build:wasm": "node tools/build-wasm.mjs --all"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

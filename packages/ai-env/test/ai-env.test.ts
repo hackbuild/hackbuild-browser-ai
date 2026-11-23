@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   sha256Text,
   absolutizeImports,
@@ -324,7 +324,8 @@ describe("spawnWorker", () => {
     const got: unknown[] = [];
     w.addEventListener("message", (e) => got.push(e.data));
     w.postMessage(1);
-    await new Promise((r) => setTimeout(r, 10));
+    // the source is imported before it runs, so wait for the echo rather than a fixed time
+    await vi.waitFor(() => expect(got).toEqual([1]));
     w.terminate();
     w.postMessage(2);
     await new Promise((r) => setTimeout(r, 10));
