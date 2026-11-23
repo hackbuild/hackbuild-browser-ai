@@ -22,3 +22,4 @@ Versions follow semver per package. Nothing is published to npm yet.
 - biosignal: rust wasm riemannian tangent space classifier with zero phase filters, leak free cross validation and json export, with native and wasm parity.
 - media: audio decode at a target rate, keyframes by scene change, recording with a mime ladder.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.
+- embed: model2vec static embedder in plain typescript and a transformers.js minilm adapter, both with a fingerprint id, and hub records.

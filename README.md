@@ -22,6 +22,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/notes](packages/notes) | basic pitch runner, note decoding and refinement, drum onsets, tempo and grid fit, midi out | 6 vitest |
 | [@hackbuild/biosignal](packages/biosignal) | rust wasm core (simd128): eeg filters, shrunk covariances, riemannian tangent space classifier, cross validation folded by trial, model json | 3 vitest, 4 cargo |
 | [@hackbuild/media](packages/media) | decode audio to a target rate, keyframes by scene change, canvas and stream recording | 3 vitest |
+| [@hackbuild/embed](packages/embed) | model2vec static embedder in plain ts (wordpiece, safetensors) and a transformers.js minilm adapter, both with a fingerprint id; hub records | 16 vitest |
 
 Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
 components).
