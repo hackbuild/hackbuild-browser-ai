@@ -140,6 +140,8 @@ describe("transcribe through the hub", () => {
     await transcribe(hub, dsp, dsp.synth(3, 16000 * 6, 16000), { model: "whisper-base.en", language: "fr" });
     expect(models).toEqual(["onnx-community/whisper-base", "Xenova/whisper-base.en"]);
     expect(calls[1]!.language).toBeUndefined();
+    // transformers.js 4.3.2 throws "Cannot specify `task` or `language` for an English-only model" (measured in Chrome 150)
+    expect(calls[1]!.task).toBeUndefined();
     expect(TRANSCRIBE_RECORDS.every((r) => r.licence.length > 0)).toBe(true);
   });
 });

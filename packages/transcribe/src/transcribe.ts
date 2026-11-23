@@ -47,7 +47,8 @@ export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: Tr
   if (!reels.length) return { segments: [], dropped: [], stats: base };
   const model: Loaded<Asr> = await hub.use<Asr>(o.model ? { id: o.model } : "transcribe", o.signal ? { signal: o.signal } : {});
   const english = model.record.notes?.some((n) => /english only/.test(n)) ?? false;
-  const call: Record<string, unknown> = { return_timestamps: true, task: "transcribe" };
+  // transformers.js refuses task and language for an english only model, so both go only to multilingual ones
+  const call: Record<string, unknown> = english ? { return_timestamps: true } : { return_timestamps: true, task: "transcribe" };
   if (o.language && o.language !== "auto" && !english) call.language = o.language;
   const segs: Seg[] = [];
   let processed = 0;
