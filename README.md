@@ -9,6 +9,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 |---|---|---|
 | [@hackbuild/ai-env](packages/ai-env) | capability probe, file:// safe ESM import and worker ladder | 16 vitest |
 | [@hackbuild/weights](packages/weights) | weight store over opfs, cache storage, indexeddb parts; resumable range downloads, sha-256, multi file repos | 20 vitest |
+| [@hackbuild/models](packages/models) | registry records with device and dtype ladders, quirks and licences; hub with budget, gpu queue and stubs | 17 vitest |
 
 ## Develop
 
