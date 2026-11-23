@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type BellowsRenderOptions, type BellowsVoiceModule, bellowsEngine, seedFrom, spansToPhonemes } from "../src/index.js";
+import { type BellowsParts, type BellowsRenderOptions, type BellowsVoiceModule, bellowsEngine, renderSpeechFrom, seedFrom, spansToPhonemes } from "../src/index.js";
 
 // A seeded rng for the tests (mulberry32).
 const mulberry = (a: number) => () => {
@@ -74,7 +74,7 @@ describe("bellows engine", () => {
 
   it("refuses a bellows-voice without renderSpeech", async () => {
     const e = bellowsEngine({ runtime: async () => ({}) as BellowsVoiceModule, rng: mulberry(1) });
-    await expect(e.load({})).rejects.toThrow(/0\.8\.0/);
+    await expect(e.load({})).rejects.toThrow(/renderSpeechFrom/);
   });
 
   it("uses a caller render, for a worker, without loading the runtime", async () => {
@@ -88,5 +88,46 @@ describe("bellows engine", () => {
     const out = await collect(e.synth("x", {}, new AbortController().signal));
     expect(loaded).toBe(false);
     expect(out.length).toBe(1);
+  });
+});
+
+describe("renderSpeechFrom, bellows-voice 0.7.3 glue", () => {
+  it("lays phrases, posts the score once and returns mono samples with the spans", () => {
+    const setups: unknown[][] = [];
+    let registered = 0;
+    const parts: BellowsParts = {
+      bellows: {
+        internParam: (n) => ["phoneme", "bend", "nextPhoneme", "nextIn"].indexOf(n) + 10,
+        registerBuiltins: () => void registered++,
+        registerEngine: () => void registered++,
+        renderOffline: (setup, o) => {
+          setups.push(setup);
+          const n = Math.round(o.seconds * (o.sampleRate ?? 48000));
+          return { left: new Float32Array(n).fill(0.2), right: new Float32Array(n).fill(0.4), sampleRate: o.sampleRate ?? 48000 };
+        },
+      },
+      voice: {
+        lyricsToSyllables: (t) => t.split(/\s+/).filter((w) => /\w/.test(w)).map((w) => ({ w })),
+        speechPlan: (syl, _o, q) => ({ syllables: [...syl], notes: syl.map(() => ({ hz: 120, dur: 0.2 })).concat(q?.map(() => ({ hz: 0, dur: 0.1, rest: true })) ?? []) }),
+        planSung: (notes) => ({ phrases: [{ start: notes[0]!.time, end: notes[notes.length - 1]!.time + 0.2, spans: notes.map((n) => ({ ipa: "a", start: n.time, end: n.time + n.dur })) }] }),
+        sungEvents: () => ({ events: [{ e: 1 }], leadIn: 0 }),
+        resolveAccent: () => ({}),
+        spellOut: (t) => t,
+        voicePreset: (id) => (id === "narrator-female" ? { params: { body: 1 }, speechHz: 200 } : undefined),
+        VOCAL_PLAN_LEAD: 0.3,
+        vocalGlideLead: () => 0.05,
+      },
+      engine: { vocalEngine: {} },
+    };
+    const m = renderSpeechFrom(parts);
+    const r = m.renderSpeech("hello there. how are you?", { seed: "7", sampleRate: 1000, tail: 0 });
+    m.renderSpeech("again", { seed: "8", sampleRate: 1000 });
+    expect(registered).toBe(2);
+    expect(r.samples[0]).toBeCloseTo(0.3, 6);
+    expect(r.spans.length).toBe(5);
+    const setup = setups[0] as { type: string; seed?: string; params?: unknown }[];
+    expect(setup.map((x) => x.type)).toEqual(["internParam", "internParam", "internParam", "internParam", "createChannel", "events"]);
+    expect(setup[4]).toMatchObject({ seed: "7::ch0", params: { body: 1 }, engineId: "vocal" });
+    expect(() => m.renderSpeech("x", { seed: "1", voice: "nobody" })).toThrow(/no starter voice/);
   });
 });

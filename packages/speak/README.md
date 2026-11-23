@@ -88,7 +88,11 @@ owner's articulatory voice for the bellowsjs engine (MIT): a physical
 model of a vocal tract, so it has no weights and no weight licence; its
 code is MIT and is loaded by the caller, never bundled. `runtime` returns
 `bellows-voice/engine` from 0.8.0 (git ac30dc2, not on npm on
-2026-11-23), which imports bellowsjs 0.5.x. Each segment goes through its
+2026-11-23), which imports bellowsjs 0.5.x, or
+`renderSpeechFrom({ bellows, voice, engine })` over bellowsjs 0.5.0,
+bellows-voice 0.7.3 and its `/engine`, the versions on npm: the same
+call built from their public API as bellows' own `speak()` lays a line
+out. Each segment goes through its
 offline `renderSpeech`, and the chunk carries the exact phoneme spans the
 engine sang (no word times; the speaker estimates those).
 
@@ -117,7 +121,10 @@ engine sang (no word times; the speaker estimates those).
   the spans, a refusal without `renderSpeech`, a caller render. Then in
   Node 22.18.0 against a local build of bellows-voice at ac30dc2: a 2.30 s
   line rendered in 873 ms cold and 516 ms warm, byte identical for the
-  same rng seed and different for another, 25 phonemes (measured).
+  same rng seed and different for another, 25 phonemes (measured). The
+  0.7.3 path through `renderSpeechFrom` gave the same 2.30 s line in 916
+  ms cold and 489 ms warm, byte identical for one seed (measured), and a
+  unit test checks the score it posts.
 
 ### Not verified by anything
 

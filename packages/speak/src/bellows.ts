@@ -47,6 +47,91 @@ export interface BellowsVoiceModule {
   renderSpeech(text: string, opts: BellowsRenderOptions): BellowsRender;
 }
 
+/** The parts of bellowsjs 0.5 and bellows-voice 0.7 (index and /engine) `renderSpeechFrom` calls. */
+export interface BellowsParts {
+  bellows: {
+    internParam(name: string): number;
+    registerBuiltins(): void;
+    registerEngine(e: unknown): void;
+    renderOffline(setup: unknown[], o: { seconds: number; sampleRate?: number }): { left: Float32Array; right: Float32Array; sampleRate: number };
+  };
+  voice: {
+    lyricsToSyllables(text: string, o?: Record<string, unknown>): unknown[];
+    speechPlan(syllables: readonly unknown[], o?: Record<string, unknown>, questions?: readonly boolean[]): { syllables: unknown[]; notes: { hz: number; dur: number; rest?: boolean }[] };
+    planSung(notes: readonly { time: number; dur: number; hz: number }[], syllables: readonly unknown[], o?: Record<string, unknown>): { phrases: { start: number; end: number; spans: BellowsSpan[] }[] };
+    sungEvents(plan: unknown, o: Record<string, unknown>): { events: unknown[]; leadIn: number };
+    resolveAccent(a?: unknown): { prosody?: unknown };
+    spellOut(text: string): string;
+    voicePreset(id: string): { params: Record<string, number>; speechHz: number } | undefined;
+    VOCAL_PLAN_LEAD: number;
+    vocalGlideLead(): number;
+  };
+  engine: { vocalEngine: unknown };
+}
+
+/**
+ * A renderSpeech for bellows-voice 0.7.3, which has none, built from its
+ * public API as its own Singer.speak lays a line out: phrases at their
+ * marks, speechPlan timing, planSung spans, sungEvents for the kernel and
+ * renderOffline on this thread. Spoken consonants at full length, as in
+ * bellows-voice (SPOKEN_CONSONANT_SCALE 1).
+ */
+export function renderSpeechFrom(p: BellowsParts): BellowsVoiceModule {
+  let registered = false;
+  return {
+    renderSpeech(text, o) {
+      const { bellows: b, voice: v } = p;
+      if (!registered) {
+        b.registerBuiltins();
+        b.registerEngine(p.engine.vocalEngine);
+        registered = true;
+      }
+      const preset = v.voicePreset(o.voice ?? "narrator-female");
+      if (!preset) throw new Error(`bellows-voice: no starter voice "${o.voice}"`);
+      const accent = v.resolveAccent(o.accent);
+      const syllables: unknown[] = [];
+      const questions: boolean[] = [];
+      for (const m of v.spellOut(text).matchAll(/[^.!?;:,\n]+[.!?;:,\n]*/gu)) {
+        const part = v.lyricsToSyllables(m[0], { numbers: false, accent, reduce: true }) as { phraseEnd?: boolean }[];
+        if (!part.length) continue;
+        part[part.length - 1]!.phraseEnd = true;
+        syllables.push(...part);
+        questions.push(m[0].includes("?"));
+      }
+      const line = v.speechPlan(syllables, { hz: o.hz ?? preset.speechHz, rate: o.rate, prosody: accent.prosody }, questions);
+      const lay = (at: number) => {
+        const out: { time: number; dur: number; hz: number }[] = [];
+        let t = at;
+        for (const n of line.notes) {
+          const dur = Number.isFinite(n.dur) && n.dur > 0 ? n.dur : 0;
+          if (!n.rest) out.push({ time: t, dur, hz: n.hz });
+          t += dur;
+        }
+        return out;
+      };
+      const ids = { phonemeParam: b.internParam("phoneme"), bendParam: b.internParam("bend"), nextPhonemeParam: b.internParam("nextPhoneme"), nextInParam: b.internParam("nextIn") };
+      const plan1 = (at: number) => {
+        const plan = v.planSung(lay(at), line.syllables, { consonantScale: 1 });
+        const posted = v.sungEvents(plan, { channel: 0, ...ids, planLead: v.VOCAL_PLAN_LEAD, bendLead: v.vocalGlideLead(), firstNoteId: 1, busy: [], notBefore: 0 });
+        return { plan, posted };
+      };
+      let { plan, posted } = plan1(0);
+      if (posted.leadIn > 0) ({ plan, posted } = plan1(posted.leadIn));
+      const end = plan.phrases.reduce((e, ph) => Math.max(e, ph.end), 0);
+      const sampleRate = o.sampleRate ?? 48000;
+      const setup = [
+        ...Object.entries({ phoneme: ids.phonemeParam, bend: ids.bendParam, nextPhoneme: ids.nextPhonemeParam, nextIn: ids.nextInParam }).map(([name, index]) => ({ type: "internParam", name, index })),
+        { type: "createChannel", id: 0, engineId: "vocal", params: preset.params, seed: `${o.seed}::ch0` },
+        { type: "events", events: posted.events },
+      ];
+      const a = b.renderOffline(setup, { seconds: end + (o.tail ?? 0.4), sampleRate });
+      const samples = new Float32Array(a.left.length);
+      for (let i = 0; i < samples.length; i++) samples[i] = 0.5 * (a.left[i]! + a.right[i]!);
+      return { samples, sampleRate: a.sampleRate, spans: plan.phrases.flatMap((ph) => ph.spans) };
+    },
+  };
+}
+
 export interface BellowsOptions {
   /** Loads bellows-voice/engine (it imports bellowsjs 0.5.x itself), e.g. through runtimeLoader. */
   runtime: () => Promise<BellowsVoiceModule>;
@@ -95,7 +180,7 @@ export function bellowsEngine(o: BellowsOptions): PcmEngine {
       mod = await o.runtime();
       if (typeof mod.renderSpeech !== "function") {
         mod = null;
-        throw new Error("bellows-voice has no renderSpeech; it needs 0.8.0 or later");
+        throw new Error("bellows-voice has no renderSpeech; pass bellows-voice 0.8.0 /engine, or renderSpeechFrom(parts) for 0.7.3");
       }
       ctx.onStatus?.({ engine: "bellows", kind: "ready", text: "bellows voice ready, renders on this thread" });
     },
