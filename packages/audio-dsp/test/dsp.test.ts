@@ -36,6 +36,14 @@ describe("kernels", async () => {
     expect(() => dsp.frameDb(x, 0)).toThrow(RangeError);
   });
 
+  it("plans no segment that only reruns audio already covered", () => {
+    expect(planSegments(100, 60, 0.5).segments).toEqual([
+      { start: 0, len: 60 },
+      { start: 30, len: 60 },
+      { start: 60, len: 40 },
+    ]);
+  });
+
   it("high pass removes dc, low pass keeps it", () => {
     const dc = new Float32Array(8000).fill(0.5);
     expect(Math.abs(dsp.biquad(dc, "highpass", 80, 16000)[7999]!)).toBeLessThan(1e-3);

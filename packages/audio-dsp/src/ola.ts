@@ -16,7 +16,11 @@ export function planSegments(total: number, size: number, overlap: number): { se
   const stride = Math.max(1, Math.floor(size * (1 - ov)));
   const fade = Math.max(1, Math.min(size - stride, Math.floor(size * 0.25)));
   const segments: Segment[] = [];
-  for (let start = 0; start < total; start += stride) segments.push({ start, len: Math.min(size, total - start) });
+  // stop at the first segment that reaches the end; a later one would rerun covered audio
+  for (let start = 0; start < total; start += stride) {
+    segments.push({ start, len: Math.min(size, total - start) });
+    if (start + size >= total) break;
+  }
   if (!segments.length) segments.push({ start: 0, len: 0 });
   return { segments, stride, fade };
 }
