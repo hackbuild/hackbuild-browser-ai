@@ -44,7 +44,7 @@ pages served over http) and `<entry>.iife.js` (a classic script setting
 `Hackbuild<Pkg>`, for pages opened from file://, where Chrome 150 refuses
 module scripts and dynamic imports of file URLs, measured 2026-11-23).
 
-The checks that need a real browser or model, all not run so far, are
+The checks that need a real browser or model, with the first pass results (2026-11-23), are
 listed in [docs/browser-checks.md](docs/browser-checks.md).
 
 ## Examples
@@ -76,10 +76,16 @@ Each package README carries its own dated list. In short:
 - Unit tests under Node 22.18.0 with fakes for every browser API and model
   runtime; no network, no model weights.
 
+- 2026-11-23: the first real browser pass, Chrome 150 on an Apple M1 with
+  WebGPU, through the example pages: 16 of the 56 browser checks pass, 1
+  fails, 39 not run (counted). Numbers and reasons are in
+  [docs/browser-checks.md](docs/browser-checks.md). The owner has not
+  looked at the pages yet.
+
 ### Not verified by anything
 
-- Every package in a real browser with a real model. The list of what needs
-  one is in each package README.
+- Safari and Firefox, file:// pages other than the iife single builds,
+  microphone and camera paths, and every model over about 300 MB.
 
 ## Licence
 
