@@ -28,8 +28,9 @@ code samples also MIT. No weights ship here.
 
 ## Behaviour
 
-- Frames: input is decimated to 16 kHz (the transcribe package's FIR
-  decimator) and cut into 512 sample frames (32 ms, computed).
+- Frames: input is brought to 16 kHz (the transcribe package's FIR
+  decimator for 32 and 48 kHz, its windowed sinc resampler for 44.1, 24 and
+  22.05 kHz) and cut into 512 sample frames (32 ms, computed).
 - Machine: an utterance starts on a frame at or over the positive
   threshold, keeps 300 ms of audio from before the start, is confirmed
   after 250 ms of speech frames and ends after 600 ms under the negative

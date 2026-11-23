@@ -7,7 +7,7 @@ export { packReels, materialize, mapTime, type Reel, type Run, type MappedRun, t
 export { cleanup, HARD, SOFT, WEAK, type Seg, type Dropped, type DropReason } from "./cleanup.js";
 export { transcribe, toMono, type Asr, type AsrOutput, type TranscribeOptions, type Transcript } from "./transcribe.js";
 export { TRANSCRIBE_RECORDS, defaultTranscribeId } from "./records.js";
-export { LiveSegmenter, StreamDecimator, lowpassTaps, blockDb, type LiveOptions } from "./live.js";
+export { LiveSegmenter, StreamDecimator, StreamResampler, toSixteenK, lowpassTaps, blockDb, type LiveOptions } from "./live.js";
 export { webSpeech, webSpeechAvailable, type SpeechRecognitionLike, type WebSpeechOptions } from "./webspeech.js";
 
 /** A stub ASR: one chunk per reel reading "stub transcript, N s", with no weights. */

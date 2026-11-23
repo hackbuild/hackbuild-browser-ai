@@ -7,7 +7,7 @@
  */
 
 import type { Hub, RunOptions } from "@hackbuild/models";
-import { cleanup, lowpassTaps, StreamDecimator, type Asr } from "@hackbuild/transcribe";
+import { cleanup, toSixteenK, type Asr } from "@hackbuild/transcribe";
 import { VadMachine, type VadOptions, type VadSource } from "./vad.js";
 
 /** Turns 16 kHz mono speech into text. */
@@ -28,7 +28,7 @@ export interface Utterance {
 export interface ListenerOptions {
   vad: VadSource;
   transcribe?: Transcriber;
-  /** Microphone rate; 16000 skips decimation. Default 48000. */
+  /** Microphone rate; any rate is brought to 16 kHz. Default 48000. */
   inputRate?: number;
   machine?: VadOptions;
   /** Run the phantom filter on transcripts. Default true. */
@@ -44,7 +44,7 @@ export interface ListenerOptions {
 export class Listener {
   readonly machine: VadMachine;
   private readonly o: ListenerOptions;
-  private readonly dec: StreamDecimator | null;
+  private readonly dec: ReturnType<typeof toSixteenK>;
   private carry = new Float32Array(0);
   private chain: Promise<void> = Promise.resolve();
   private stateNow: ListenState = "idle";
@@ -54,9 +54,7 @@ export class Listener {
   constructor(o: ListenerOptions) {
     this.o = o;
     this.machine = new VadMachine(o.machine);
-    const rate = o.inputRate ?? 48000;
-    const f = Math.round(rate / 16000);
-    this.dec = f > 1 ? new StreamDecimator(lowpassTaps(7000 / rate, 41), f) : null;
+    this.dec = toSixteenK(o.inputRate ?? 48000);
   }
 
   get state(): ListenState {

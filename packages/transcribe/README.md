@@ -62,7 +62,8 @@ the audio to its service; tell the user).
   seeded signal, channel picking, the stub path, a whisper record loaded
   through the transformers.js provider with language passing and the
   english only rule, the live segmenter (tail, blips, queue cap, fixed
-  windows, 48 to 16 kHz streaming decimation), and the Web Speech adapter.
+  windows, 48 to 16 kHz streaming decimation, and 44.1, 32, 24, 22.05 and 8 kHz to 16 kHz
+  through the fractional resampler at the right speed, measured on a 440 Hz tone), and the Web Speech adapter.
 - 2026-11-22: parity with real SCRIBE exports: re-running the phantom
   filter over each transcript's kept plus dropped lines gives SCRIBE's
   split and reasons for all 19 transcripts of one batch zip. The files
