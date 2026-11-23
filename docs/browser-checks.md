@@ -62,3 +62,5 @@ README).
 | 52 | agent | plan validity per mode (schema, looser schema, free text) for Qwen2.5 0.5B and 1.5B Instruct (Apache-2.0) and Gemma 3 1B (Gemma terms) over a fixed request set | browser, models | not run |
 | 53 | agent | time from request to first spoken word with streamed say against a real voice (measured) | browser, model, voice engine | not run |
 | 54 | imagegen | SD-Turbo (Stability AI Community License) from schmuell/sd-turbo-ort-web on onnxruntime-web 1.27.0 webgpu: graph names, one and four step images looked at by a person, time per step measured | WebGPU machine, network | not run |
+| 55 | ai-elements | a person looks at each element (model picker, download bar, status pills, chat panel, memory inspector) in Chrome and Safari, light and dark, and tabs through them with a screen reader on | Chrome, Safari | not run |
+| 56 | ai-elements | the chat panel streaming a real engine (Qwen2.5 0.5B, Apache-2.0) for 500 tokens: repaint cost per token measured | browser, model | not run |

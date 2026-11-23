@@ -29,8 +29,9 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/act](packages/act) | speech timeline action grammar: mood, gesture and posture tags fire when the voice reaches them; per avatar vocabulary, strict resolver, gbnf and json schema, hybrid inference, replay | 22 vitest |
 | [@hackbuild/agent](packages/agent) | perceive, recall, decide, act, reflect; forced json tool loop with fallbacks, guards, escalation, reflex brain, persistent goals, budgeted context, plan cache | 23 vitest |
 | [@hackbuild/imagegen](packages/imagegen) | sd-turbo text encoder, unet and vae on onnxruntime-web with a seeded euler scheduler on trailing timesteps | 10 vitest |
+| [@hackbuild/ai-elements](packages/ai-elements) | web components: model picker with disable reasons, download bar, status pills, chat panel, memory inspector; themed, registered by define() | 12 vitest |
 
-Phase P not built yet: `ai-elements` (web components).
+Phase P: every planned package has landed.
 
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music

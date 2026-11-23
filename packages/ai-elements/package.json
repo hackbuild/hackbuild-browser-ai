@@ -1,0 +1,37 @@
+{
+  "name": "@hackbuild/ai-elements",
+  "version": "0.1.0",
+  "description": "Web components for in-tab AI pages: model picker, download bar, status pills, chat panel and memory inspector, themed by CSS custom properties, registered only when the page calls define().",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/ai-elements"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/ai-env": "0.1.0",
+    "@hackbuild/models": "0.1.0",
+    "@hackbuild/chat": "0.1.0",
+    "@hackbuild/memory": "0.1.0",
+    "@hackbuild/weights": "0.1.0"
+  }
+}

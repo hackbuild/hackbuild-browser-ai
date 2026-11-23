@@ -66,6 +66,9 @@
     },
     {
       "path": "packages/imagegen"
+    },
+    {
+      "path": "packages/ai-elements"
     }
   ]
 }
