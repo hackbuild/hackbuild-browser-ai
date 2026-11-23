@@ -8,7 +8,7 @@ with a visible window on an Apple M1 under macOS 12, the real GPU (WebGL
 renderer ANGLE Metal, Apple M1; WebGPU adapter vendor apple, architecture
 common-3, with shader-f16). The pages are the ones in `examples/`, run by
 `npm run examples:check`; each page under `?auto` records its result.
-Downloads over about 300 MB were not run. Who looked: the automated pass
+Downloads over about 300 MB were not run, except Kokoro on webgpu fp32 (about 326 MB, inferred; row 42). Who looked: the automated pass
 measured everything below; the owner has not looked at any page yet.
 
 Counted over the 57 rows: 18 pass, 0 fail, 39 not run (a row counts as

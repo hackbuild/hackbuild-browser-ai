@@ -81,7 +81,7 @@ computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/vision` passes 15 tests under Node
+- 2026-11-22: `npx vitest run packages/vision` passes 15 tests (19 on 2026-11-23) under Node
   22.18.0 with fake runtimes: licences on every record and YOLO kept
   external, every capability in stub mode, depth normalization from
   predicted_depth and from the 8 bit image, the depth record walking fp16

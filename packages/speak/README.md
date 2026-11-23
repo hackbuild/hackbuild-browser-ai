@@ -130,7 +130,7 @@ engine sang (no word times; the speaker estimates those).
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/speak` passes, 17 tests, in Node
+- 2026-11-22: `npx vitest run packages/speak` passes, 17 tests (28 on 2026-11-23, bellows included), in Node
   22.18.0 with a fake AudioContext, a fake Web Speech API, a fake
   kokoro-js module and a fake Pocket worker: speakable text and its
   offset map, segment cuts, gapless scheduling and fades, progress order

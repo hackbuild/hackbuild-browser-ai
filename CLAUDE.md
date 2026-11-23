@@ -23,9 +23,11 @@ How an agent works in hackbuild-browser-ai. RULES.md is absolute and wins over t
 
 ## What lives here
 
-    crates/      Rust cores: memory (BM25 plus vector, RRF), character (cards V2, V3, CHARX)
-    packages/    @hackbuild/ai-env, weights, models, chat, structured, memory, embed, speak,
-                 listen, character, act, agent
+    crates/      5 Rust cores: memory (BM25 plus vector, RRF), character (cards V2, V3, CHARX),
+                 audio-dsp, depth-mesh, biosignal
+    packages/    23 packages: @hackbuild/ai-env, weights, models, devices, chat, structured,
+                 memory, embed, speak, listen, transcribe, audio-dsp, notes, stems, media,
+                 vision, depth-mesh, biosignal, imagegen, character, act, agent, ai-elements
 
 The family plan and the research behind each package are kept outside this repository by the
 owner. Packages in the sibling repos (hackbuild-motion, hackbuild-browser-ai, hackbuild-agents,

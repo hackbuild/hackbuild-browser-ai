@@ -63,7 +63,7 @@ vendor stated).
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/weights` passes 20 tests under Node
+- 2026-11-22: `npx vitest run packages/weights` passes 20 tests (23 on 2026-11-23, after the audit fixes) under Node
   22.18.0 with a fake server built on `Response` and `ReadableStream`:
   SHA-256 equal to Node `crypto` at block edges and odd chunkings; parts
   exactly `partBytes` long; progress with a null total; resume after a

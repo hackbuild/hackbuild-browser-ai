@@ -12,7 +12,7 @@ Versions follow semver per package. Nothing is published to npm yet.
 - chat: one streaming engine over webllm, wllama, transformers.js, the prompt api and remote endpoints; role normalization, think stripping, schema fallback.
 - structured: constrained, prompt, native, tags and lines modes with schema sanitizer, loose fallback, json repair, guards and a streaming tag parser.
 - devices: rung builders and one hub factory each for onnxruntime-web and transformers.js, pinned runtime loading, progress merging.
-- audio-dsp: rust wasm dsp core with native and wasm parity, the earlier transcription tool gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers that reproduce the earlier transcription tool exports byte for byte.
+- audio-dsp: rust wasm dsp core with native and wasm parity, a hysteresis gate, overlap add, and txt, srt, vtt, json, lrc, wav, midi and zip writers. Verified: the writers reproduce an earlier transcription tool's exports byte for byte on the owner's local fixtures only; CI has no fixtures and skips that suite.
 - transcribe: the quiet speech front end, reels and source map, whisper and moonshine records, phantom filter matching the earlier tool's drops, live segmenter, web speech adapter.
 - vision: depth, detection, segmentation, landmarks with a fallback chain, captions and questions through the hub; mediapipe and face-api providers, an external yolo decoder, a perception loop and result cache.
 - depth-mesh: rust wasm core for point clouds, relief solids, surface nets, icp and silhouette carving with native and wasm parity; stl, obj and ply export.
@@ -22,7 +22,11 @@ Versions follow semver per package. Nothing is published to npm yet.
 - biosignal: rust wasm riemannian tangent space classifier with zero phase filters, leak free cross validation and json export, with native and wasm parity.
 - media: audio decode at a target rate, keyframes by scene change, recording with a mime ladder.
 - character: rust wasm core and native cli for character card v2 and v3 in json, png text chunks and charx, with upgrade, downgrade, validation and a versioned profile extension for avatar, voice and actions; native and wasm parity.
-- single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.
+- single file builds per package entry (`npm run bundle`): an ESM file for http pages and an IIFE file for file:// pages, and the list of browser and model checks. Verified: 33 of 33 IIFE files load from file:// in Chrome 150 (measured).
+- examples: ten pages published to GitHub Pages, each stating the weight licence before a model loads, with `npm run examples:check` driving them in Chrome. Verified: Chrome 150 on an Apple M1 only; Safari and Firefox not run.
+- speak: the bellows voice (bellows-voice 0.8.0 on bellowsjs 0.5.x, MIT, no weights). Verified: same samples for one seed through the npm package (test); not listened to by a person.
+- vision: Depth Anything in a worker for scenes, limited to registered depth records. Verified: a fake runtime in unit tests and one Chrome run; not looked at by a person.
+- fixes after the 2026-11-23 audit: 44.1 kHz input resampled to 16 kHz, memory vector reuse, resume validator and shared aborts, pinned model commits with SHA-256, Kokoro's GPL phonemizer opt in, the Pocket build pinned and hashed, the inline worker rung opt in, the wasm toolchain pinned and built in CI, and the rest listed in the audit's fixed section. Verified: unit tests and CI; browser rows as docs/browser-checks.md says.
 - embed: model2vec static embedder in plain typescript and a transformers.js minilm adapter, both with a fingerprint id, and hub records.
 - speak: engine chain over kokoro, pocket tts and web speech with first clause streaming, gapless playback, a watchdog and text offsets for cues and lip sync.
 - listen: vad state machine with silero and energy sources, a transcribe adapter and barge in by a threshold swap while speaking.

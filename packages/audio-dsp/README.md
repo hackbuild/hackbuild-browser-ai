@@ -72,7 +72,7 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   ran on 2026-11-23 under the rustup 1.95.0 toolchain and passes; the
   wasm32 claim made on 2026-11-22 could not have run, since the Homebrew
   rustc has no wasm32 standard library.
-- 2026-11-22: `npx vitest run packages/audio-dsp` passes 16 tests under
+- 2026-11-22: `npx vitest run packages/audio-dsp` passes 16 tests (19 on 2026-11-23, local fixture suite included) under
   Node 22.18.0, including native and wasm parity: the wasm build (simd128
   on) gives the same bits as the native build for 14 kernel outputs over
   a seeded 3 s signal (hashed), the onset list, tempo, grid fit, noise
@@ -84,7 +84,7 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   `.local/transcripts` (gitignored) or `TRANSCRIPT_FIXTURES` and is skipped
   without them.
 
-- 2026-11-23: `cargo test -p hackbuild-audio-dsp` passes 13 tests (12
+- 2026-11-23: `cargo test -p hackbuild-audio-dsp` passes 14 tests (13
   unit, 1 parity fixture); the parity fixture adds a test vowel and its
   three formants, and the wasm build gives the same bits (vitest, 17
   tests). Against bellowsjs 0.5.0's `estimateFormants` on 15 frames of

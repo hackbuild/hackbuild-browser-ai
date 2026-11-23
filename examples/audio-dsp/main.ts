@@ -124,6 +124,6 @@ if (auto) {
   const total = Object.values(b).reduce((s, v) => s + v, 0);
   r.numbers["all kernels ms on 10 min (measured)"] = total;
   const ok = Math.abs(a.bpm - 120) < 1 && total > 0;
-  check(r, "#26 audio-dsp: inlined wasm core and kernel speed on 10 minutes of 16 khz", ok ? "pass" : "fail", ok ? "chrome over http; file:// and safari not run" : `tempo ${a.bpm.toFixed(2)} for a 120 bpm track`);
+  check(r, "#26 audio-dsp: inlined wasm core and kernel speed on 10 minutes of 16 khz", ok ? "pass" : "fail", ok ? "kernel times over http in chrome; the iife wasm core loads from file:// (row 23), but these kernel times were not taken from file://; safari not run" : `tempo ${a.bpm.toFixed(2)} for a 120 bpm track`);
   finish(r, ok ? "pass" : "fail");
 }

@@ -57,7 +57,7 @@ the audio to its service; tell the user).
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/transcribe` passes 10 tests under
+- 2026-11-22: `npx vitest run packages/transcribe` passes 10 tests (18 on 2026-11-23, local fixture suites included) under
   Node 22.18.0 with the real audio-dsp wasm core and fake runtimes: reel
   cuts and the source map, the phantom filter rules, the front end on a
   seeded signal, channel picking, the stub path, a whisper record loaded
