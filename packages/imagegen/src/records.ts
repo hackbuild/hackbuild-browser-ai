@@ -18,8 +18,8 @@ export const IMAGEGEN_RECORDS: ModelRecord[] = [
     sizeMB: 2600,
     sizeSource: "inferred",
     ladder: [{ device: "webgpu", ort: { executionProviders: ["webgpu"] } }],
-    licence: "Stability AI Community License (stabilityai/sd-turbo model card)",
-    commercial: "unknown",
+    licence: "Stability AI Non-Commercial Research Community License (the LICENSE in schmuell/sd-turbo-ort-web; upstream stabilityai/sd-turbo moved to the Community License in July 2024, this export did not)",
+    commercial: false,
     place: "gpu",
     runtime: "onnxruntime-web@1.27.0",
     notes: [

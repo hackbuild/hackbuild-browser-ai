@@ -3,9 +3,12 @@
 Text to image in a tab with SD-Turbo on onnxruntime-web: CLIP ids into the
 text encoder, a seeded Euler loop over the UNet on trailing timesteps, and
 the VAE decoder to RGBA. Code MIT; this README CC-BY-4.0 with the code
-samples also MIT. No weights ship here; SD-Turbo weights are under the
-Stability AI Community License per its model card, which you check before
-use.
+samples also MIT. No weights ship here. The default ONNX export,
+`schmuell/sd-turbo-ort-web`, carries the Stability AI Non-Commercial
+Research Community License, so it allows no commercial use. Upstream
+`stabilityai/sd-turbo` moved to the Stability AI Community License in July
+2024; to use that licence, point the record at an export made from the
+current upstream weights and check its licence before use.
 
     npm install @hackbuild/imagegen
 
