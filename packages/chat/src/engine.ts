@@ -28,7 +28,7 @@ const SCHEMA_ERR = /grammar|schema|response_format|json_schema|xgrammar|response
 export function isSchemaError(e: unknown, sentSchema: boolean): boolean {
   if (!sentSchema) return false;
   if (e instanceof ChatError && e.code === "schema") return true;
-  if (e instanceof ChatError && e.code === "http" && e.status === 400) return true;
+  // a 400 counts only when its body names the schema; "context length exceeded" is not one
   return e instanceof Error && SCHEMA_ERR.test(e.message);
 }
 

@@ -50,6 +50,34 @@ export interface OpenAIOptions extends RemoteOptions {
   base: string;
   /** "json_schema" (default) or "json_object" for servers that only take the older form. */
   schemaMode?: "json_schema" | "json_object";
+  /** Send llama.cpp and Ollama sampling fields (`repeat_penalty`). OpenAI rejects them. Default false. */
+  llamaParams?: boolean;
+}
+
+/**
+ * Messages in the chat completions shape. A tool result goes out as a
+ * native `tool` message only when it carries the id of a call echoed on
+ * the assistant message before it; otherwise it is sent as user text, which
+ * every compatible server accepts.
+ */
+export function oaiMessages(ms: readonly ChatMessage[]): Record<string, unknown>[] {
+  const out: Record<string, unknown>[] = [];
+  const open = new Set<string>();
+  for (const m of ms) {
+    if (m.role === "assistant" && m.toolCalls?.length && m.toolCalls.every((c) => c.id)) {
+      for (const c of m.toolCalls) open.add(c.id!);
+      out.push({
+        role: "assistant",
+        content: m.content || null,
+        tool_calls: m.toolCalls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: c.arguments } })),
+      });
+    } else if (m.role === "tool" && m.toolCallId && open.has(m.toolCallId)) {
+      out.push({ role: "tool", tool_call_id: m.toolCallId, content: m.content });
+    } else if (m.role === "tool") {
+      out.push({ role: "user", content: `[${m.name ?? "tool"} result]\n${m.content}` });
+    } else out.push({ role: m.role, content: m.content });
+  }
+  return out;
 }
 
 export function openaiDriver(o: OpenAIOptions): Driver {
@@ -64,12 +92,12 @@ export function openaiDriver(o: OpenAIOptions): Driver {
         model: o.model,
         stream: true,
         max_tokens: req.maxTokens,
-        messages: req.messages.map((m) => (m.role === "tool" ? { role: "tool", content: m.content, name: m.name } : { role: m.role, content: m.content })),
+        messages: oaiMessages(req.messages),
       };
       if (req.temperature !== undefined) body.temperature = req.temperature;
       if (req.topP !== undefined) body.top_p = req.topP;
       if (req.stop?.length) body.stop = req.stop;
-      if (req.repetitionPenalty !== undefined) body.repeat_penalty = req.repetitionPenalty;
+      if (o.llamaParams && req.repetitionPenalty !== undefined) body.repeat_penalty = req.repetitionPenalty;
       if (req.schema) {
         body.response_format =
           o.schemaMode === "json_object" ? { type: "json_object" } : { type: "json_schema", json_schema: { name: "reply", schema: req.schema, strict: false } };

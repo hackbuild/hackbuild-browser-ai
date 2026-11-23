@@ -75,7 +75,9 @@ async function load(kind: string, version = "0.2.84"): Promise<{ engine: ChatEng
   } else if (kind === "prompt") e = promptApi();
   else if (kind === "openai") {
     const key = ($("#key") as HTMLInputElement).value;
-    e = openaiCompatible({ base: ($("#url") as HTMLInputElement).value, model: ($("#model") as HTMLInputElement).value, ...(key ? { apiKey: key } : {}) });
+    const base = ($("#url") as HTMLInputElement).value;
+    // llama.cpp and ollama take repeat_penalty; api.openai.com rejects it
+    e = openaiCompatible({ base, model: ($("#model") as HTMLInputElement).value, llamaParams: !/api\.openai\.com/.test(base), ...(key ? { apiKey: key } : {}) });
   } else e = anthropicMessages({ apiKey: ($("#key") as HTMLInputElement).value, model: ($("#model") as HTMLInputElement).value || "claude-haiku-4-5" });
   const ms = performance.now() - t;
   engine = e;

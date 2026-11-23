@@ -73,6 +73,39 @@ describe("openai compatible", () => {
     expect(seen[1]!.body.response_format).toBeUndefined();
   });
 
+  it("does not turn schemas off for a 400 that is not about the schema", async () => {
+    let n = 0;
+    const { fetch, seen } = fakeFetch(() =>
+      n++ === 0
+        ? new Response("context length exceeded", { status: 400 })
+        : new Response(sseBody([{ choices: [{ delta: { content: '{"a":1}' }, finish_reason: "stop" }] }, "[DONE]"])),
+    );
+    const chat = openaiCompatible({ base: "http://x/v1", model: "m", fetch });
+    await expect(chat.complete([{ role: "user", content: "hi" }], { schema: { type: "object" } })).rejects.toThrow(/context length/);
+    const r = await chat.complete([{ role: "user", content: "hi" }], { schema: { type: "object" } });
+    expect(r.schemaFallback).toBe(false);
+    expect(seen[1]!.body.response_format).toBeDefined();
+  });
+
+  it("echoes tool calls with ids and leaves out llama fields unless asked", async () => {
+    const ok = () => new Response(sseBody([{ choices: [{ delta: { content: "done" }, finish_reason: "stop" }] }, "[DONE]"]));
+    const { fetch, seen } = fakeFetch(ok);
+    const msgs = [
+      { role: "user" as const, content: "look at the mug" },
+      { role: "assistant" as const, content: "", toolCalls: [{ id: "c1", name: "look", arguments: '{"at":"mug"}' }] },
+      { role: "tool" as const, name: "look", toolCallId: "c1", content: "a red mug" },
+      { role: "tool" as const, name: "look", content: "an orphan result" },
+    ];
+    await openaiCompatible({ base: "http://x/v1", model: "m", fetch }).complete(msgs, { repetitionPenalty: 1.1, tools: [{ name: "look", parameters: { type: "object" } }] });
+    const sent = seen[0]!.body.messages as Record<string, unknown>[];
+    expect(sent[1]).toEqual({ role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "look", arguments: '{"at":"mug"}' } }] });
+    expect(sent[2]).toEqual({ role: "tool", tool_call_id: "c1", content: "a red mug" });
+    expect(sent[3]).toEqual({ role: "user", content: "[look result]\nan orphan result" });
+    expect(seen[0]!.body.repeat_penalty).toBeUndefined();
+    await openaiCompatible({ base: "http://x/v1", model: "m", fetch, llamaParams: true }).complete(msgs, { repetitionPenalty: 1.1 });
+    expect(seen[1]!.body.repeat_penalty).toBe(1.1);
+  });
+
   it("names an unreachable server and a 500", async () => {
     const down = openaiCompatible({ base: "http://down.test/v1", model: "m", fetch: (async () => { throw new TypeError("Failed to fetch"); }) as unknown as typeof fetch });
     await expect(down.complete([{ role: "user", content: "x" }])).rejects.toThrow(/could not reach down.test/);

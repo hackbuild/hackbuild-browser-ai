@@ -7,6 +7,10 @@ export interface ChatMessage {
   content: string;
   /** Tool name for role "tool". */
   name?: string;
+  /** For role "tool": the id of the call this result answers (OpenAI `tool_call_id`). */
+  toolCallId?: string;
+  /** For role "assistant": the tool calls the model made in this turn, echoed back to native tool APIs. */
+  toolCalls?: ToolCall[];
 }
 
 /** JSON Schema as a plain object. */

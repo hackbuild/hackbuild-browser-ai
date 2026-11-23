@@ -49,10 +49,15 @@ remote engine never loads WebLLM.
 - Schema: WebLLM gets `{ type: "json_object", schema: "<string>" }` (never
   json_object without a schema), wllama and OpenAI compatible servers get
   `json_schema`, Anthropic gets `output_config.format`, the Prompt API gets
-  `responseConstraint`. The first refusal (an error naming grammar or
-  schema, or an HTTP 400 on a request that carried one) turns schemas off
+  `responseConstraint`. The first refusal (an error, HTTP 400 included,
+  whose text names grammar, schema or response_format) turns schemas off
   for that engine, and the schema moves into the system prompt as text;
-  `result.schemaFallback` says so.
+  `result.schemaFallback` says so. Any other 400 is thrown as it is.
+- OpenAI compatible tool turns: an assistant message's `toolCalls` are
+  echoed as `tool_calls`, and a `tool` message with a matching
+  `toolCallId` goes out as a native tool result; one without an id goes as
+  user text. `repeat_penalty` is sent only with `llamaParams: true`
+  (llama.cpp, Ollama), since OpenAI rejects it.
 - `loadWebLLM` walks the context ladder `[want, 8192, 4096, 2048]` (SHIM)
   and names a LinkError or TVMFFI failure as a runtime and model library
   mismatch. `loadWllama` uses the FERRULE parameters (n_ctx 6144, top_p
