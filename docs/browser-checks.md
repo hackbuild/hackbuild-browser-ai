@@ -49,3 +49,6 @@ README).
 | 39 | media | decodeAudio on mp4, mov, webm and mkv, and record() of a canvas, in Chrome, Safari and Firefox | browsers, CC0 test files | not run |
 | 40 | embed | potion-base-8M (MIT) loaded from its repo, vectors compared with the Python model2vec package on 20 sentences | browser or Node, network, Python | not run |
 | 41 | embed | all-MiniLM-L6-v2 (Apache-2.0) and bge-small-en-v1.5 (MIT) through transformers.js 4.3.2 on wasm q8 and webgpu fp32, with speed measured | browser, network | not run |
+| 42 | speak | Kokoro 82M (Apache-2.0) through kokoro-js 1.2.1 on webgpu fp32 and wasm q8: time to first audio measured, joins listened to | browser, network | not run |
+| 43 | speak | Pocket TTS (weights CC-BY-4.0) worker patches against the current upstream source, from file:// and https, with a clone from an owner supplied reference kept out of git | Chrome, network | not run |
+| 44 | speak | Web Speech boundaries and the engine chain falling to it when the others fail, in Chrome, Safari and Firefox | browsers | not run |

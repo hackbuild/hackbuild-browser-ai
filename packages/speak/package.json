@@ -1,0 +1,35 @@
+{
+  "name": "@hackbuild/speak",
+  "version": "0.1.0",
+  "description": "Speech out in a tab: an engine chain over Kokoro, Pocket TTS and Web Speech, first clause streaming, gapless playback with one analyser, a watchdog, and text offsets for lip sync and action cues.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hackbuild/hackbuild-browser-ai.git",
+    "directory": "packages/speak"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.11.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@hackbuild/ai-env": "0.1.0",
+    "@hackbuild/models": "0.1.0",
+    "@hackbuild/devices": "0.1.0"
+  }
+}

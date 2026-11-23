@@ -48,6 +48,9 @@
     },
     {
       "path": "packages/embed"
+    },
+    {
+      "path": "packages/speak"
     }
   ]
 }
