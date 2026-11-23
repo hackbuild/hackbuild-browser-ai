@@ -139,6 +139,7 @@ export class ThinkSplitter {
 
 /** Mask an API key for display: first 4 and last 4 characters. */
 export function maskKey(key: string): string {
-  if (key.length <= 8) return "*".repeat(key.length);
+  // below 16 characters, 8 shown characters would give most of the key away
+  if (key.length < 16) return "*".repeat(key.length);
   return `${key.slice(0, 4)}...${key.slice(-4)}`;
 }

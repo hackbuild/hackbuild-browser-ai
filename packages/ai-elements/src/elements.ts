@@ -314,6 +314,7 @@ export function chatPanelClass(B: Base): new () => ChatPanelElement {
       });
     }
     async #run(fn: (signal: AbortSignal, push: (d: { text?: string; think?: string }) => void) => Promise<string | undefined>): Promise<void> {
+      if (this.#abort) return; // one reply at a time
       this.#abort = new AbortController();
       this.#lines = appendDelta(this.#lines, {});
       this.render();
@@ -347,6 +348,9 @@ export function chatPanelClass(B: Base): new () => ChatPanelElement {
     render() {
       const r = shadow(this);
       const busy = this.#abort !== null;
+      // keep what the user is typing across a re-render
+      const was = r.querySelector("textarea");
+      const draft = was ? { v: was.value, a: was.selectionStart, b: was.selectionEnd, focus: r.activeElement === was } : null;
       r.innerHTML = `<style>${TOKENS}
 .log { max-height: var(--hb-chat-height, 360px); overflow-y: auto; padding: 4px 0; }
 .m { margin: 0 0 8px; padding: 6px 8px; border-radius: var(--hb-radius); white-space: pre-wrap; }
@@ -368,6 +372,13 @@ form { display: flex; gap: 6px; } textarea, input { flex: 1; font: inherit; colo
         busy ? `<button type="button" data-a="stop" aria-label="stop">${ICONS.stop}</button>` : `<button type="submit" aria-label="send">${ICONS.send}</button>`
       }</form>`;
       const ta = r.querySelector("textarea")!;
+      if (draft) {
+        ta.value = draft.v;
+        if (draft.focus) {
+          ta.focus();
+          ta.setSelectionRange(draft.a, draft.b);
+        }
+      }
       r.querySelector("form")!.addEventListener("submit", (ev) => {
         ev.preventDefault();
         const v = ta.value;

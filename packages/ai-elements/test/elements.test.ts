@@ -87,7 +87,7 @@ test("pills from engine and hub status", () => {
 });
 
 test("trace rows mark the hits handed to the model", () => {
-  const t = (id: number, score: number) => ({ id, bm25Rank: id === 2 ? 0 : id, vecRank: 1, bm25: 1.23456, cos: 0.5, rrf: 0.0325, rel: 1, rec: 1, imp: 0.5, ret: 1, score, text: `item ${id} ${"x".repeat(id === 3 ? 100 : 0)}`, kind: "episode" as const });
+  const t = (id: number, score: number) => ({ id, bm25Rank: id === 2 ? -1 : id - 1, vecRank: 0, bm25: 1.23456, cos: 0.5, rrf: 0.0325, rel: 1, rec: 1, imp: 0.5, ret: 1, score, text: `item ${id} ${"x".repeat(id === 3 ? 100 : 0)}`, kind: "episode" as const });
   const rows = traceRows({ trace: [t(1, 0.9), t(2, 0.5), t(3, 0.1)], hits: [{ item: { id: 1 } } as never] });
   expect(rows.map((r) => r.used)).toEqual([true, false, false]);
   expect(rows[0]).toMatchObject({ rank: 1, bm25: "#1 1.235", cos: "#1 0.500", rrf: "0.033", score: "0.900" });
@@ -99,6 +99,7 @@ test("trace rows mark the hits handed to the model", () => {
 test("keys show first and last four only", () => {
   expect(maskKey("sk-abcdefghijkl1234")).toBe("sk-a...1234");
   expect(maskKey("short")).toBe("*****");
+  expect(maskKey("sk-12345678")).toBe("***********");
 });
 
 test("chat lines stream into one assistant line and close with a note", () => {

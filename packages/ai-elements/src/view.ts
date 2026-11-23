@@ -117,9 +117,10 @@ export interface TraceRow {
 }
 
 const n3 = (x: number) => (Number.isFinite(x) ? x.toFixed(3) : "none");
-const rank = (r: number) => (r > 0 ? `#${r}` : "none");
+// the core ranks from 0 (best) and uses -1 for absent; shown 1 based
+const rank = (r: number) => (r >= 0 ? `#${r + 1}` : "none");
 
-/** One row per fused candidate, best first; ranks of 0 mean the list did not have it. */
+/** One row per fused candidate, best first; a rank of -1 means the list did not have it. */
 export function traceRows(r: Pick<Recall, "trace" | "hits">, maxText = 80): TraceRow[] {
   const used = new Set(r.hits.map((h) => h.item.id));
   return r.trace.map((t, i) => ({
@@ -137,7 +138,8 @@ export function traceRows(r: Pick<Recall, "trace" | "hits">, maxText = 80): Trac
 
 /** A key typed into a page, shown as its first and last 4 characters. */
 export function maskKey(key: string): string {
-  if (key.length <= 8) return "*".repeat(key.length);
+  // below 16 characters, 8 shown characters would give most of the key away
+  if (key.length < 16) return "*".repeat(key.length);
   return `${key.slice(0, 4)}...${key.slice(-4)}`;
 }
 
