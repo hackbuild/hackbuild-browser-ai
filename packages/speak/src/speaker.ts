@@ -57,7 +57,8 @@ export interface SpeakerOptions {
   tickMs?: number;
   onProgress?(p: Progress): void;
   onTimed?(t: TimedEvent): void;
-  onSegment?(s: Segment & { utterance: number; engine: string }): void;
+  /** A segment starts on an engine; `cached` is true when its audio is a replay from the PCM cache. */
+  onSegment?(s: Segment & { utterance: number; engine: string; cached: boolean }): void;
   onSpeaking?(speaking: boolean): void;
   onStatus?(s: EngineStatus): void;
 }
@@ -273,9 +274,10 @@ export class Speaker {
     this.o.onProgress?.(p);
   }
 
-  private async *chunksOf(e: PcmEngine, text: string, cfg: VoiceConfig, signal: AbortSignal): AsyncGenerator<PcmChunk> {
+  private async *chunksOf(e: PcmEngine, text: string, cfg: VoiceConfig, signal: AbortSignal, info: { cached: boolean }): AsyncGenerator<PcmChunk> {
     const key = `${e.id}|${cfg.voice ?? ""}|${cfg.rate ?? 1}|${text}`;
     const hit = this.cache.get(key);
+    info.cached = !!hit;
     if (hit) {
       this.cache.delete(key);
       this.cache.set(key, hit);
@@ -284,7 +286,9 @@ export class Speaker {
     }
     const engineAbort = new AbortController();
     const onAbort = () => engineAbort.abort();
-    signal.addEventListener("abort", onAbort, { once: true });
+    // a listener added to an already aborted signal never fires
+    if (signal.aborted) engineAbort.abort();
+    else signal.addEventListener("abort", onAbort, { once: true });
     const it = e.synth(text, cfg, engineAbort.signal)[Symbol.asyncIterator]();
     const got: PcmChunk[] = [];
     let n = 0;
@@ -334,14 +338,19 @@ export class Speaker {
     let reported = false;
     let first = true;
     let pending: PcmChunk | null = null;
+    const info = { cached: false };
     const place = (c: PcmChunk, last: boolean) => {
       const span = this.player.schedule(c.samples, c.sampleRate, { in: first, out: last });
       if (first) {
         segStart = span.start;
         this.current = e.id;
-        this.o.onSegment?.({ ...seg, utterance: utt, engine: e.id });
-        this.cue(span.start, () => this.progress({ utterance: utt, offset: seg.start, kind: "segment", estimated: false }));
-        this.setSpeaking(true);
+        this.o.onSegment?.({ ...seg, utterance: utt, engine: e.id, cached: info.cached });
+        // speaking starts when the audio clock reaches the chunk, not when it is scheduled
+        this.cue(span.start, () => {
+          this.progress({ utterance: utt, offset: seg.start, kind: "segment", estimated: false });
+          this.setSpeaking(true);
+        });
+        this.startTicker();
       }
       first = false;
       segEnd = span.end;
@@ -353,7 +362,7 @@ export class Speaker {
       }
     };
     // hold one chunk back so the last one gets its fade out
-    for await (const c of this.chunksOf(e, sp.text, cfg, signal)) {
+    for await (const c of this.chunksOf(e, sp.text, cfg, signal, info)) {
       if (signal.aborted) return;
       if (pending) place(pending, false);
       pending = c;
@@ -389,7 +398,7 @@ export class Speaker {
     const at = (i: number) => seg.start + sp.map[Math.min(i, sp.map.length - 1)]!;
     this.nativeBusy = true;
     this.current = e.id;
-    this.o.onSegment?.({ ...seg, utterance: utt, engine: e.id });
+    this.o.onSegment?.({ ...seg, utterance: utt, engine: e.id, cached: false });
     // speaking starts when the platform reports audio (onstart, or the first word boundary);
     // a native engine that reports neither never sets it, so its time to first audio is unknown
     let started = false;

@@ -46,6 +46,7 @@ let t0 = 0;
 let firstAudio = 0;
 let boundaries = 0;
 let segments = 0;
+let replay = false;
 
 function speaker(key: string): Speaker {
   let s = speakers.get(key);
@@ -57,7 +58,10 @@ function speaker(key: string): Speaker {
     onSpeaking: (b) => {
       if (b && !firstAudio) firstAudio = performance.now() - t0;
     },
-    onSegment: () => segments++,
+    onSegment: (g) => {
+      segments++;
+      if (g.cached) replay = true;
+    },
     onTimed: (t) => {
       boundaries++;
       const text = ($("#text") as HTMLInputElement).value;
@@ -74,11 +78,18 @@ async function say(key: string, text: string): Promise<{ ttfa: number; total: nu
   firstAudio = 0;
   boundaries = 0;
   segments = 0;
+  replay = false;
   t0 = performance.now();
   await s.say(text);
   const total = performance.now() - t0;
   const out = { ttfa: firstAudio, total, boundaries, segments, engine: s.engine ?? "none" };
-  show({ engine: out.engine, "time to first audio ms": out.ttfa ? `${Math.round(out.ttfa)} (measured)` : "unknown, the engine reported no audio start", "say to done ms (measured)": Math.round(total), "word boundaries (measured)": boundaries });
+  // first audio is when the audio clock reaches the first chunk; a replay is served from the pcm cache
+  show({
+    engine: out.engine,
+    "time to first audio ms": out.ttfa ? `${Math.round(out.ttfa)} (measured${replay ? ", cached replay" : ""})` : "unknown, the engine reported no audio start",
+    "say to done ms (measured)": Math.round(total),
+    "timed events, words and phonemes (measured)": boundaries,
+  });
   status(`${out.engine} finished.`, "ok");
   return out;
 }

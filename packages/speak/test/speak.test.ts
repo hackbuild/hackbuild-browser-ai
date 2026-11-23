@@ -163,7 +163,8 @@ describe("speaker", () => {
     let synths = 0;
     const base = stubEngine();
     const counted = { ...base, synth: (t: string, c: object, s: AbortSignal) => (synths++, base.synth(t, c, s)) };
-    const sp = createSpeaker({ ctx, engines: [counted], tickMs: 0 });
+    const cached: boolean[] = [];
+    const sp = createSpeaker({ ctx, engines: [counted], tickMs: 0, onSegment: (g) => cached.push(g.cached) });
     sp.feed("Same words again.", true);
     await flush();
     ctx.currentTime = 50;
@@ -171,7 +172,12 @@ describe("speaker", () => {
     sp.feed("Same words again.", true);
     await flush();
     expect(synths).toBe(1);
+    // scheduled from the cache, but speaking waits for the audio clock
+    expect(sp.speaking).toBe(false);
+    ctx.currentTime = 51;
+    sp.tick();
     expect(sp.speaking).toBe(true);
+    expect(cached).toEqual([false, true]);
     sp.stop();
     expect(sp.speaking).toBe(false);
     await sp.done();
