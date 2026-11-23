@@ -1,6 +1,6 @@
 /**
  * Streaming inline tag parser. Small models drift between tag styles, so
- * the parser accepts all the forms the companion builds saw:
+ * the parser accepts all the forms earlier character chat builds saw:
  *
  *   [key:value]  [key=value]  [KEY: value]          keyed tags (BonziBuddy [ACTION: x] is one)
  *   *phrase*  (phrase)  [phrase]  {phrase}  CJK brackets   plain tags, resolved against the vocabularies

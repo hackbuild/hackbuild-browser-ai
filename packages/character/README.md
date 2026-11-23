@@ -1,6 +1,6 @@
 # @hackbuild/character
 
-Character cards for agents and companions in a browser tab. A Rust core
+Character cards for agents and chat characters in a browser tab. A Rust core
 (`crates/character`, compiled to wasm32) reads and writes Character Card
 V2 and V3 as JSON, inside PNG text chunks and as CHARX archives, and keeps
 a versioned profile extension that tells an app which body, voice and

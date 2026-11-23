@@ -21,7 +21,7 @@ CC-BY-4.0 with the code samples also MIT.
 | constrained | JSON under a strict per tool `anyOf`; the loose schema after a grammar refusal; tolerant parse of free text after that | satchel-chat |
 | prompt | `<tool_call>{"name", "arguments"}</tool_call>` after a `<tools>` system block | Hermes and Qwen format |
 | native | the runtime's own tool calls, `tool_choice: "auto"` | WebLLM Hermes builds, remote APIs |
-| tags | `[tool: argument]` inside prose | companion and BonziBuddy grammar |
+| tags | `[tool: argument]` inside prose | the BonziBuddy style tool grammar |
 | lines | `THOUGHT:` and `ACTION: tool(a, b)`, cut at the next THOUGHT | SHIM |
 
 `auto` takes native when the quirks say the runtime has tools, constrained
