@@ -11,3 +11,4 @@ Versions follow semver per package. Nothing is published to npm yet.
 - memory: rust wasm core for bm25, cosine and rrf with linear and organic scorers; indexeddb persistence, token budgeted assembly, prefix stable injection, recall trace, export.
 - chat: one streaming engine over webllm, wllama, transformers.js, the prompt api and remote endpoints; role normalization, think stripping, schema fallback.
 - structured: constrained, prompt, native, tags and lines modes with schema sanitizer, loose fallback, json repair, guards and a streaming tag parser.
+- single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.

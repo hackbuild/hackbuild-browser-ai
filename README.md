@@ -14,6 +14,15 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 30 vitest |
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 24 vitest |
 
+Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
+with reciprocal rank fusion, built natively and for wasm32 with SIMD128).
+Every package entry also builds to one self contained ESM file with
+`npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
+file://.
+
+The checks that need a real browser or model, all not run so far, are
+listed in [docs/browser-checks.md](docs/browser-checks.md).
+
 ## Develop
 
     source ~/.nvm/nvm.sh && nvm use
