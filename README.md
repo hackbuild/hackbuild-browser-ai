@@ -47,6 +47,17 @@ module scripts and dynamic imports of file URLs, measured 2026-11-23).
 The checks that need a real browser or model, all not run so far, are
 listed in [docs/browser-checks.md](docs/browser-checks.md).
 
+## Examples
+
+One page per package with something to see or hear, published at
+<https://hackbuild.github.io/hackbuild-browser-ai/>. Models download from
+their upstream host (Hugging Face) when you press a button; each page
+states the weight licence first, and no weights are hosted there. Build
+them locally with `npm run build && npm run examples`, then
+`npm run examples:check` opens each page in the system Chrome on the real
+GPU and writes results and screenshots to `.local/` (results:
+[docs/browser-checks.md](docs/browser-checks.md)).
+
 ## Develop
 
     source ~/.nvm/nvm.sh && nvm use

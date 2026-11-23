@@ -1,0 +1,60 @@
+{
+  "repo": "hackbuild-browser-ai",
+  "intro": "one page per package. models download from their upstream host when you ask, each page states the weight licence before it loads, and nothing is hosted here.",
+  "footer": "code mit. pages built from github.com/hackbuild/hackbuild-browser-ai. no weights or model files are hosted here.",
+  "source": "https://github.com/hackbuild/hackbuild-browser-ai",
+  "pages": [
+    {
+      "name": "chat",
+      "what": "one streaming interface over webllm, transformers.js, wllama, the prompt api and remote endpoints, with time to first token and tokens per second.",
+      "stage": false,
+      "timeoutS": 900
+    },
+    {
+      "name": "transcribe",
+      "what": "whisper through the scribe front end: drop a file, or speak a sentence with kokoro and read it back.",
+      "timeoutS": 600
+    },
+    {
+      "name": "speak",
+      "what": "kokoro 82m on wasm or webgpu and the system voice through one speaker, with time to first audio and word offsets.",
+      "timeoutS": 600
+    },
+    {
+      "name": "vision",
+      "what": "depth anything, mediapipe detection, slimsam masks and smolvlm captions on a scene built in code, with the frame cost of each.",
+      "timeoutS": 900
+    },
+    {
+      "name": "depth-mesh",
+      "what": "depth map to a closed relief solid, and silhouettes on a turntable carved to a hull. stl out."
+    },
+    {
+      "name": "embed",
+      "what": "potion-base-8M static embedder and minilm or bge-small through transformers.js, with a search over 20 sentences.",
+      "stage": false,
+      "timeoutS": 300
+    },
+    {
+      "name": "audio-dsp",
+      "what": "rust wasm dsp core: filters, noise floor, spectral subtraction, limiter, stft, tempo. a click track and a 10 minute timing run.",
+      "timeoutS": 240
+    },
+    {
+      "name": "devices",
+      "what": "capability probe, pinned runtime imports, resumable weight downloads and sha-256 speed.",
+      "stage": false,
+      "timeoutS": 180
+    },
+    {
+      "name": "imagegen",
+      "what": "sd-turbo on onnxruntime-web webgpu with a seeded euler loop. 2.5 GB of weights you download on request."
+    },
+    {
+      "name": "ai-elements",
+      "what": "model picker, download bar, status pills, chat panel and memory inspector as web components.",
+      "stage": false,
+      "timeoutS": 600
+    }
+  ]
+}
