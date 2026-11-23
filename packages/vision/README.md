@@ -54,6 +54,17 @@ and show `hub.onBusy` in the UI:
     hub.onBusy((n) => (pill.textContent = n ? "model busy" : ""));
     await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBudgetMs: 20, when: "skip" } });
 
+The schedule alone did not hold the scene's frames on an Apple M1: with
+`frameBudgetMs` 20 and `minIntervalMs` 200 the frame p95 stayed at 49.8
+ms with no main thread task over 50 ms (measured, Chrome 150). Running
+the model in a worker did: `depthWorker({ urls: transformersUrls(),
+device })` loads transformers.js and Depth Anything V2 small (Apache-2.0)
+in a dedicated worker and takes RGBA pixels, so pre and post processing,
+the readback and the normalization leave the page's thread:
+
+    const w = await depthWorker({ urls: transformersUrls(), device: "webgpu" });
+    paint(await w.estimate(ctx2d.getImageData(0, 0, 512, 288)));
+
 `readbackLoop({ read, onFrame, maxHz })` is the agent eye pattern: an
 async readback (`readRenderTargetPixelsAsync`), a busy flag that skips
 frames instead of queueing them, and a rate cap (default 10 Hz).
@@ -84,6 +95,17 @@ px cap) help with canvases.
   (interval wait, skip, frame budget skip) with routing to a smaller
   model and busy reports, and the readback loop's rate cap and busy
   skips.
+
+- 2026-11-23, Chrome 150 on an Apple M1, the vision page (#35): the
+  scene alone at 16.7 / 18.3 ms frame p50 / p95; depth on the main thread
+  16.7 / 49.9 unscheduled and 16.7 / 49.8 with the frame budget; depth in
+  the worker on webgpu 16.7 / 18.3 (22 runs in 6 s, 280 ms p50), with a
+  200 ms gap 16.7 / 18.3, on wasm 16.7 / 18.2 (4,664 ms per run); no main
+  thread task over 50 ms in any mode (measured). Unit tests run the worker
+  source on the inline rung with a fake transformers.js module.
+- 2026-11-23: LFM2-VL 450M (LFM Open License v1.0) loads and captions on
+  webgpu after the images first processor fix: load 8,743 ms, caption
+  4,671 ms, the caption names the cube and the scene (measured).
 
 ### Not verified by anything
 

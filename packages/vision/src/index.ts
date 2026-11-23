@@ -21,4 +21,5 @@ export { mediapipeProvider, loadTasksVision, tasksVisionUrls, tasksVisionWasm, T
 export { faceApiProvider, type FaceApi } from "./faceapi.js";
 export { yoloDetector, decodeYolo, letterboxParams, letterboxTensor, nms, iou, detectCadenceMs, COCO_LABELS, type Letterbox } from "./yolo.js";
 export { perceptionLoop, readbackLoop, ResultCache, depthToRgba, fitSize, type Loop, type LoopOptions, type ReadbackOptions } from "./loop.js";
+export { depthWorker, DEPTH_WORKER_SOURCE, type DepthWorker, type DepthWorkerOptions, type Pixels as WorkerPixels } from "./worker.js";
 export { visionStubs, rampDepth, centreDetector, discSegmenter, fixedLandmarker, fixedVlm } from "./stubs.js";
