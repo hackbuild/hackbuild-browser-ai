@@ -1,7 +1,10 @@
-// Single file builds: one self contained ESM file per package entry and
+// Single file builds: one self contained file per package entry and
 // subpath export, with sibling @hackbuild packages inlined and no bare
-// imports left, so a page can load it from file:// with a script tag of
-// type module or a dynamic import. Output: packages/<pkg>/dist/single/<entry>.js
+// imports left. Two forms: ESM (<entry>.js) for pages served over http,
+// and a classic IIFE (<entry>.iife.js, global Hackbuild<Pkg>[<Entry>]) for
+// pages opened from file://, where Chrome refuses module scripts and
+// dynamic imports of file URLs (measured in Chrome 150, 2026-11-23).
+// Output: packages/<pkg>/dist/single/
 // usage: node tools/bundle.mjs [pkg...]
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -12,6 +15,12 @@ const pkgs = process.argv.slice(2).length ? process.argv.slice(2) : readdirSync(
 
 const alias = {};
 for (const p of readdirSync(join(root, "packages"))) alias[`@hackbuild/${p}`] = join(root, "packages", p, "src", "index.ts");
+
+const pascal = (s) => s.replace(/(^|[-_.])(\w)/g, (_, _d, c) => c.toUpperCase());
+/** HackbuildAudioDsp for an index entry, HackbuildAudioDspInline for a subpath. */
+export function globalName(pkg, entry) {
+  return `Hackbuild${pascal(pkg)}${entry === "index" ? "" : pascal(entry)}`;
+}
 
 export async function bundle(pkg) {
   const dir = join(root, "packages", pkg);
@@ -28,6 +37,14 @@ export async function bundle(pkg) {
       logLevel: "silent",
     });
     out.push(join(dir, "dist", "single", `${name}.js`));
+    await build({
+      input: src,
+      resolve: { alias },
+      output: { file: join(dir, "dist", "single", `${name}.iife.js`), format: "iife", name: globalName(pkg, name), codeSplitting: false },
+      transform: { define: { "import.meta.url": "document.baseURI" } },
+      logLevel: "silent",
+    });
+    out.push(join(dir, "dist", "single", `${name}.iife.js`));
   }
   return out;
 }

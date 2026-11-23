@@ -38,9 +38,11 @@ with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
 DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes;
 `crates/biosignal`: the riemannian eeg classifier;
 `crates/character`: character cards, png chunks, charx and the profile extension, with a native cli), each built natively and for wasm32 with SIMD128.
-Every package entry also builds to one self contained ESM file with
-`npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
-file://.
+Every package entry also builds to self contained files with
+`npm run bundle` (`packages/<pkg>/dist/single/`): `<entry>.js` (ESM, for
+pages served over http) and `<entry>.iife.js` (a classic script setting
+`Hackbuild<Pkg>`, for pages opened from file://, where Chrome 150 refuses
+module scripts and dynamic imports of file URLs, measured 2026-11-23).
 
 The checks that need a real browser or model, all not run so far, are
 listed in [docs/browser-checks.md](docs/browser-checks.md).
