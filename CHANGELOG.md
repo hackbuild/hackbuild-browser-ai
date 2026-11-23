@@ -21,6 +21,7 @@ Versions follow semver per package. Nothing is published to npm yet.
 - notes: basic pitch runner on tfjs with a webgl to cpu ladder, note decoding and refinement, drums, tempo and grid fit.
 - biosignal: rust wasm riemannian tangent space classifier with zero phase filters, leak free cross validation and json export, with native and wasm parity.
 - media: audio decode at a target rate, keyframes by scene change, recording with a mime ladder.
+- character: rust wasm core and native cli for character card v2 and v3 in json, png text chunks and charx, with upgrade, downgrade, validation and a versioned profile extension for avatar, voice and actions; native and wasm parity.
 - single file ESM builds per package entry (`npm run bundle`) and the list of browser and model checks not run.
 - embed: model2vec static embedder in plain typescript and a transformers.js minilm adapter, both with a fingerprint id, and hub records.
 - speak: engine chain over kokoro, pocket tts and web speech with first clause streaming, gapless playback, a watchdog and text offsets for cues and lip sync.

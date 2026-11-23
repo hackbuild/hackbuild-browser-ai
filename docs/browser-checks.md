@@ -55,3 +55,5 @@ README).
 | 45 | listen | Silero VAD v5 (MIT) on onnxruntime-web 1.27.0: tensor names, probabilities on a recorded voice, single thread from file:// | Chrome, network | not run |
 | 46 | listen | barge in through laptop speakers with echo cancellation on, while speak plays Kokoro or the system voice: false triggers counted | Chrome, microphone, speakers | not run |
 | 47 | listen | capture worklet from a Blob and a data: URL, end of speech to text latency with whisper-base.en (MIT) measured | Chrome, Safari, microphone | not run |
+| 48 | character | the inlined wasm core from a file:// page: read a PNG card dropped on the page, write it back, open the result in a card reader of another tool | Chrome, Safari, file:// page | not run |
+| 49 | character | CHARX archives written by other tools (deflate entries, data descriptors) read, and this package's CHARX opened by another reader | browser, CHARX files with CC0 or own content | not run |

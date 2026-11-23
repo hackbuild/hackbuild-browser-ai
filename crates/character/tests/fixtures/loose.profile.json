@@ -1,0 +1,1 @@
+{"avatar":{"url":"https://example.invalid/body.glb","type":"GLB","wardrobe":{"hat":"yes"}},"voice":{"id":"bm_george","rate":0.1,"clone_ref":"embeded://assets/voice/ref.wav"},"motion":{"gestures":["bow",""]},"behavior":{"ambient_gestures":false,"blink":0},"unknown":1}

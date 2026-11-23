@@ -1,0 +1,15 @@
+[package]
+name = "hackbuild-character"
+version = "0.1.0"
+description = "Character Card V2 and V3 read and write, PNG text chunks, CHARX, and a versioned profile extension for avatar, voice and actions, for native and wasm32."
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "character"
+path = "src/bin/character.rs"

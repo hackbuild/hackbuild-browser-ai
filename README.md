@@ -25,6 +25,7 @@ their tests; the table below grows with them. Nothing is published to npm.
 | [@hackbuild/embed](packages/embed) | model2vec static embedder in plain ts (wordpiece, safetensors) and a transformers.js minilm adapter, both with a fingerprint id; hub records | 16 vitest |
 | [@hackbuild/speak](packages/speak) | engine chain over kokoro, pocket tts and web speech; first clause streaming, gapless playback, one analyser, watchdog, offsets for cues and lip sync | 17 vitest |
 | [@hackbuild/listen](packages/listen) | vad state machine with silero and energy sources, transcribe adapter with the phantom filter, barge in by threshold swap, mic helpers | 11 vitest |
+| [@hackbuild/character](packages/character) | rust wasm core: character card v2 and v3 as json, png text chunks and charx, upgrade, downgrade, validate; a versioned profile extension for avatar, voice and actions with migration; native cli; macros and lorebook matching | 46 vitest, 27 cargo |
 
 Phase P not built yet: `imagegen` (SD-Turbo) and `ai-elements` (web
 components).
@@ -32,7 +33,8 @@ components).
 Rust cores live in `crates/` (`crates/memory`: BM25 plus flat cosine
 with reciprocal rank fusion; `crates/audio-dsp`: the speech and music
 DSP kernels; `crates/depth-mesh`: depth and silhouettes to meshes;
-`crates/biosignal`: the riemannian eeg classifier), each built natively and for wasm32 with SIMD128.
+`crates/biosignal`: the riemannian eeg classifier;
+`crates/character`: character cards, png chunks, charx and the profile extension, with a native cli), each built natively and for wasm32 with SIMD128.
 Every package entry also builds to one self contained ESM file with
 `npm run bundle` (`packages/<pkg>/dist/single/`), for pages opened from
 file://.

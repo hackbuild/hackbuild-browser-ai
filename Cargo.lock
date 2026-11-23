@@ -11,6 +11,10 @@ name = "hackbuild-biosignal"
 version = "0.1.0"
 
 [[package]]
+name = "hackbuild-character"
+version = "0.1.0"
+
+[[package]]
 name = "hackbuild-depth-mesh"
 version = "0.1.0"
 
