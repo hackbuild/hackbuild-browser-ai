@@ -15,6 +15,13 @@ import { join } from "node:path";
 export { AI_IDENTITY } from "./ai-names.mjs";
 import { AI_IDENTITY } from "./ai-names.mjs";
 const ZERO = /^0+$/;
+// Commits on main that passed the hook when they landed and fail a word
+// added to the block list later. History is never rewritten, so a full
+// history check (a manual dispatch has no BEFORE or BASE_REF) skips these
+// and says so. Add a sha here only for that reason, never for a new commit.
+export const GRANDFATHERED = new Set([
+  "b0563b0f29a33b2cedd3fa3e22aa0459e493c88d", // structured: five decision modes, repair, guards and tags
+]);
 
 function git(args) {
   return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -52,6 +59,10 @@ function main() {
   const file = join(dir, "COMMIT_EDITMSG");
   try {
     for (const sha of shas) {
+      if (GRANDFATHERED.has(sha)) {
+        console.log(`lint-commits: ${sha} grandfathered, landed before the block word it now trips`);
+        continue;
+      }
       for (const who of [git(["log", "-1", "--format=%an <%ae>", sha]).trim(), git(["log", "-1", "--format=%cn <%ce>", sha]).trim()]) {
         if (AI_IDENTITY.test(who)) {
           console.error(`lint-commits: ${sha} author or committer ${who} names an ai tool, legal is a person`);
