@@ -77,8 +77,8 @@
       "dist/single/index.iife.js": 5757
     },
     "@hackbuild/speak": {
-      "main: dist/index.js bundled": 14182,
-      "dist/single/index.iife.js": 17333
+      "main: dist/index.js bundled": 16112,
+      "dist/single/index.iife.js": 19747
     },
     "@hackbuild/stems": {
       "main: dist/index.js bundled": 2199,

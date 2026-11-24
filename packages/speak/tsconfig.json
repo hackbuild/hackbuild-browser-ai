@@ -6,5 +6,5 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "references": [{ "path": "../ai-env" }, { "path": "../models" }, { "path": "../devices" }]
+  "references": [{ "path": "../ai-env" }, { "path": "../models" }, { "path": "../devices" }, { "path": "../audio-dsp" }]
 }

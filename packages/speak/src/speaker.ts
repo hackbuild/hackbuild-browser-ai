@@ -9,6 +9,7 @@
 
 import { GaplessPlayer, type AnalyserLike, type AudioContextLike, type PlayerOptions } from "./player.js";
 import { estimateWordTimes, SegmentCutter, speakable, type CutterOptions, type Segment, type SpeakableOptions } from "./text.js";
+import { renderSpeech, type RenderedSpeech } from "./render.js";
 import type { Engine, EngineStatus, PcmChunk, PcmEngine, Timed, VoiceConfig } from "./types.js";
 
 export interface Progress {
@@ -154,6 +155,27 @@ export class Speaker {
     this.uttFinal = true;
     this.setSpeaking(false);
     this.flushWaiters();
+  }
+
+  /**
+   * Render a whole text offline on the speaker's engine chain, with its
+   * voice settings, for "save wav". Engines marked failed are skipped;
+   * native engines are skipped since they give no samples.
+   */
+  render(text: string, signal?: AbortSignal): Promise<RenderedSpeech> {
+    const o = this.o;
+    return renderSpeech(
+      o.engines.filter((e) => !this.failed.has(e.id)),
+      text,
+      {
+        ...(o.voice ? { voice: o.voice } : {}),
+        ...(o.voices ? { voices: o.voices } : {}),
+        ...(o.speakable ? { speakable: o.speakable } : {}),
+        ...(o.cutter ? { cutter: o.cutter } : {}),
+        ...(signal ? { signal } : {}),
+        onSkip: (engine, reason) => o.onStatus?.({ engine, kind: "failed", text: `${engine}: ${reason}` }),
+      },
+    );
   }
 
   /** Clear failure marks so every engine is tried again. */

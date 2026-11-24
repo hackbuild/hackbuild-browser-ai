@@ -32,7 +32,8 @@
   },
   "dependencies": {
     "@hackbuild/ai-env": "0.1.0",
-    "@hackbuild/models": "0.1.0"
+    "@hackbuild/models": "0.1.0",
+    "@hackbuild/audio-dsp": "0.1.0"
   },
   "peerDependencies": {
     "bellows-voice": "0.8.0",

@@ -138,6 +138,7 @@ export function webSpeechEngine(o: { synth?: SynthLike; Utterance?: new (text: s
   return {
     kind: "native",
     id: "webspeech",
+    offline: false,
     licence: "system voices, the browser's and platform's terms",
     async load() {
       if (!synth || !U) throw new Error("no speechSynthesis in this browser");

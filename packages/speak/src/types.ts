@@ -42,6 +42,8 @@ export interface PcmEngine {
   readonly id: string;
   /** Weight licence, stated on first load. */
   readonly licence: string;
+  /** Renders to a buffer for "save wav". PCM engines can unless this is false. */
+  readonly offline?: boolean;
   load(ctx: LoadContext): Promise<void>;
   synth(text: string, cfg: VoiceConfig, signal: AbortSignal): AsyncIterable<PcmChunk>;
   voices?(): string[];
@@ -52,6 +54,8 @@ export interface NativeEngine {
   readonly kind: "native";
   readonly id: string;
   readonly licence: string;
+  /** Always false: a native engine plays through the platform and hands back no samples. */
+  readonly offline?: false;
   load(ctx: LoadContext): Promise<void>;
   /**
    * Speak and resolve when done. onBoundary gets character offsets in `text`;

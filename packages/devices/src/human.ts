@@ -85,6 +85,8 @@ export function humanError(a: unknown, b?: unknown): string {
     if (/permission|denied|not allowed/i.test(messageOf(e))) return lines.blocked;
     return `${lines.noun} did not start: ${messageOf(e)}. ${lines.alt}.`;
   }
+  // a speech render refusal from @hackbuild/speak carries its own copy
+  if (nameOf(e) === "OfflineRenderError") return messageOf(e).replace(/[^.]$/, "$&.");
   const code = codeOf(e);
   if (nameOf(e) === "WeightError" && STORAGE[code]) return STORAGE[code]!;
   if (nameOf(e) === "QuotaExceededError" || /quota|not enough storage/i.test(messageOf(e))) return STORAGE.quota!;

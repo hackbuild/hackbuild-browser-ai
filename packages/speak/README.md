@@ -70,6 +70,27 @@ references ship here.
 - `tick()` fires due cues; it runs every 25 ms while speaking, or pass
   `tickMs: 0` and call it per frame.
 
+## Offline render and save wav
+
+`renderSpeech(engines, text, opts)` renders a whole text on the first
+engine that can, to one mono buffer, with word and phoneme times kept as
+offsets in the input text and seconds from the buffer start. Segments are
+cut as the speaker cuts them and joined with 80 ms of silence (default).
+`speaker.render(text)` does the same on the speaker's chain and voice
+settings. `renderedWav(r)` gives a 16 bit wav Blob, `renderedBuffer(ctx,
+r)` an AudioBuffer, `renderedTiming(r, text)` the word timing json for
+lipsync.
+
+- Every PCM engine renders (stub, bellows, pocket, kokoro behind its opt
+  in). `canRender(engine)` reads the `offline` flag; the system voice sets
+  it false, since it plays through the platform and hands back no samples.
+- Native engines are skipped. When nothing else is left, an
+  `OfflineRenderError` (code `native`) is thrown whose message is the
+  copy, and `humanError` from `@hackbuild/devices` returns it as is:
+  "the system voice plays live and gives no audio to save. pick bellows or
+  pocket to save a wav."
+- An engine with no word times gets estimated ones, marked `estimated`.
+
 ## Kokoro and the GPL phonemizer
 
 kokoro-js turns text into phonemes with the `phonemizer` package, whose
@@ -151,6 +172,11 @@ engine sang (no word times; the speaker estimates those).
   bellows-voice 0.8.0 `/engine` (a dev dependency at the root): byte
   identical for one rng seed, different for another.
 
+- 2026-11-24: `test/render.test.ts`, 6 tests on the stub engine and fakes:
+  word offsets through markdown, estimated times, the skip order, the
+  refusal copy through `humanError`, wav bytes decoded back, and
+  `speaker.render` with the chain's rate.
+
 ### Not verified by anything
 
 - Any real engine: Kokoro 82M on webgpu fp32 or wasm q8, the Pocket
@@ -158,14 +184,15 @@ engine sang (no word times; the speaker estimates those).
   upstream documentation), system voices in Chrome, Safari and Firefox.
 - Audible gaps or clicks at chunk joins; looked at by nobody.
 - Time to first audio (no measurement).
+- Offline render on a real engine; only the stub has rendered.
 - Pocket's patches against the current upstream worker source.
 
 ## Size budget
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 14,182 bytes | 14,891 bytes |
-| `dist/single/index.iife.js` (single file build) | 17,333 bytes | 18,199 bytes |
+| `dist/index.js` (main entry, imports external) | 16,112 bytes | 16,917 bytes |
+| `dist/single/index.iife.js` (single file build) | 19,747 bytes | 20,734 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

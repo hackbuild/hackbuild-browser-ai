@@ -15,3 +15,4 @@ export { pocketEngine, pocketPrelude, pocketRewrites, POCKET_SPACE_BASE, type Po
 export { prepareClone, toMono, type CloneOptions } from "./clone.js";
 export { Speaker, createSpeaker, type SpeakerOptions, type Progress, type TimedEvent, type Timers } from "./speaker.js";
 export { SPEAK_RECORDS } from "./records.js";
+export { renderSpeech, canRender, renderedWav, renderedWavBytes, renderedBuffer, renderedTiming, OfflineRenderError, OFFLINE_RENDER_REFUSAL, type RenderedSpeech, type RenderedTimed, type RenderOptions } from "./render.js";
