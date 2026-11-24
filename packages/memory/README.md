@@ -137,6 +137,6 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 | `wasm/memory.wasm` | 41,134 bytes | 43,190 bytes |
 | `dist/single/index.iife.js` (single file build) | 10,662 bytes | 11,195 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

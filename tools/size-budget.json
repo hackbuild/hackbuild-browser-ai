@@ -1,6 +1,6 @@
 {
   "about": "gzip level 9 bytes (measured) per published file; CI fails when a file moves more than 5 percent from its row. Rewrite with node tools/lint-packages.mjs --update-budget after a reviewed change.",
-  "measured": "2026-11-23",
+  "measured": "2026-11-24",
   "margin": 0.05,
   "packages": {
     "@hackbuild/act": {
@@ -69,8 +69,8 @@
       "dist/single/index.iife.js": 10662
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 32640,
-      "dist/single/index.iife.js": 32182
+      "main: dist/index.js bundled": 35691,
+      "dist/single/index.iife.js": 35275
     },
     "@hackbuild/notes": {
       "main: dist/index.js bundled": 5040,

@@ -43,6 +43,6 @@ MIT; this README CC-BY-4.0 with the code samples also MIT. No models.
 | `dist/index.js` (main entry, imports external) | 2,033 bytes | 2,134 bytes |
 | `dist/single/index.iife.js` (single file build) | 2,015 bytes | 2,115 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

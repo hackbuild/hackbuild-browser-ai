@@ -39,11 +39,15 @@ export class RegistryError extends Error {
   }
 }
 
+const CENSORSHIP: readonly string[] = ["stock", "uncensored", "abliterated", "unknown"];
+
 export function validateRecord(r: ModelRecord): void {
   if (!r.id) throw new RegistryError("record has no id");
   if (!r.licence || !r.licence.trim()) throw new RegistryError(`${r.id}: every model reference names its weight licence`);
   if (!r.provides.length) throw new RegistryError(`${r.id}: provides is empty`);
   if (!r.ladder.length) throw new RegistryError(`${r.id}: ladder is empty`);
+  if (r.vramMB != null && !r.vramSource) throw new RegistryError(`${r.id}: vramMB needs its source word in vramSource`);
+  if (r.censorship !== undefined && !CENSORSHIP.includes(r.censorship)) throw new RegistryError(`${r.id}: censorship is one of ${CENSORSHIP.join(", ")}`);
 }
 
 export function createRegistry(initial: readonly ModelRecord[] = []): Registry {

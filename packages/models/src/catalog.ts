@@ -3,6 +3,11 @@
  * from parameter count times bits and are not measured downloads. Licences
  * are the ones on each model card as of 2026-11-22; recheck before shipping
  * a product on them. Add your own records with registry.add().
+ *
+ * Catalogue facts (params, quant, VRAM, censorship, tags, note) are copied
+ * from the owners' tool labels and the WebLLM catalogue as recorded in the
+ * design harvest; VRAM figures are the catalogue's own (vendor). Licence
+ * strings are shown as recorded and were not verified for these facts.
  */
 
 import { ortLadder, type ModelRecord } from "./record.js";
@@ -10,6 +15,13 @@ import { ortLadder, type ModelRecord } from "./record.js";
 export const CATALOG: readonly ModelRecord[] = [
   {
     id: "smollm2-135m-instruct",
+    params: "135M",
+    quant: "q4",
+    censorship: "stock",
+    tier: "tiny",
+    family: "smollm2",
+    tags: ["no gpu"],
+    note: "smallest. autocomplete tier chat with short, simple replies.",
     provides: ["chat"],
     provider: "tjs",
     source: { modelId: "HuggingFaceTB/SmolLM2-135M-Instruct" },
@@ -27,6 +39,13 @@ export const CATALOG: readonly ModelRecord[] = [
   },
   {
     id: "smollm2-360m-instruct",
+    params: "360M",
+    quant: "q4",
+    censorship: "stock",
+    tier: "tiny",
+    family: "smollm2",
+    tags: ["no gpu"],
+    note: "the no gpu default. questions, summaries, light reasoning.",
     provides: ["chat"],
     provider: "tjs",
     source: { modelId: "HuggingFaceTB/SmolLM2-360M-Instruct" },
@@ -44,6 +63,13 @@ export const CATALOG: readonly ModelRecord[] = [
   },
   {
     id: "gemma-3-270m-it",
+    params: "270M",
+    quant: "q4",
+    censorship: "stock",
+    tier: "tiny",
+    family: "gemma",
+    tags: ["multilingual"],
+    note: "tiny and multilingual. stays on q4 on webgpu, where fp16 output is garbled.",
     provides: ["chat"],
     provider: "tjs",
     source: { modelId: "onnx-community/gemma-3-270m-it-ONNX" },
@@ -61,6 +87,15 @@ export const CATALOG: readonly ModelRecord[] = [
   },
   {
     id: "qwen2.5-0.5b-instruct-mlc",
+    params: "0.5B",
+    quant: "q4f16_1",
+    vramMB: 945,
+    vramSource: "vendor",
+    censorship: "stock",
+    tier: "small",
+    family: "qwen2.5",
+    tags: ["low vram"],
+    note: "minimal. expect json repair passes.",
     provides: ["chat"],
     provider: "webllm",
     source: { modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC" },
@@ -78,6 +113,15 @@ export const CATALOG: readonly ModelRecord[] = [
   },
   {
     id: "hermes-3-llama-3.2-3b-mlc",
+    params: "3B",
+    quant: "q4f16_1",
+    vramMB: 2200,
+    vramSource: "vendor",
+    censorship: "uncensored",
+    tier: "medium",
+    family: "llama",
+    tags: ["tools", "low vram"],
+    note: "small, steerable, few refusals. native tool calls.",
     provides: ["chat", "tools"],
     provider: "webllm",
     source: { modelId: "Hermes-3-Llama-3.2-3B-q4f16_1-MLC" },
@@ -99,6 +143,13 @@ export const CATALOG: readonly ModelRecord[] = [
   },
   {
     id: "qwen2.5-0.5b-instruct-gguf",
+    params: "0.5B",
+    quant: "Q4_K_M",
+    censorship: "stock",
+    tier: "small",
+    family: "qwen2.5",
+    tags: ["no gpu"],
+    note: "gguf fallback on cpu. one thread on a page that is not isolated.",
     provides: ["chat"],
     provider: "wllama",
     source: { repo: "Qwen/Qwen2.5-0.5B-Instruct-GGUF", file: "qwen2.5-0.5b-instruct-q4_k_m.gguf" },
@@ -117,6 +168,9 @@ export const CATALOG: readonly ModelRecord[] = [
   {
     id: "gemini-nano",
     label: "chrome built in model",
+    censorship: "stock",
+    tags: ["built in"],
+    note: "the browser's own model. chrome downloads and keeps it.",
     provides: ["chat"],
     provider: "prompt-api",
     source: {},

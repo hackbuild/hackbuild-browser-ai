@@ -137,6 +137,6 @@ Every string a person reads is built by pure functions in `view.ts`
 | `dist/index.js` (main entry, imports external) | 23,538 bytes | 24,714 bytes |
 | `dist/single/index.iife.js` (single file build) | 23,904 bytes | 25,099 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

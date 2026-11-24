@@ -94,9 +94,29 @@ export interface ModelSource {
   sha256?: string;
 }
 
+/** How the weights treat refusals, from the record's label or repo name; never guessed from substrings at run time. */
+export type Censorship = "stock" | "uncensored" | "abliterated" | "unknown";
+
+/** Memory tier the model is comfortable in, the same cut as `sizeClass`. */
+export type Tier = "tiny" | "small" | "medium" | "large";
+
 export interface ModelRecord {
   id: string;
   label?: string;
+  /** Parameter count label, e.g. "3B", "360M", "E4B". */
+  params?: string;
+  /** Quantization as the runtime names it, e.g. "q4f16_1", "Q4_K_M", "q4". */
+  quant?: string;
+  /** GPU memory the runtime states for the model, in MB; a second figure beside the download size. */
+  vramMB?: number | null;
+  vramSource?: SizeSource;
+  censorship?: Censorship;
+  /** Catalogue tags shown as chips, e.g. "tools", "low vram", "think". */
+  tags?: string[];
+  tier?: Tier;
+  family?: string;
+  /** One honest line for the catalogue row. */
+  note?: string;
   provides: Capability[];
   provider: Provider;
   source: ModelSource;

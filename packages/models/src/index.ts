@@ -16,6 +16,8 @@ export {
   type SizeSource,
   type ModelSource,
   type ModelRecord,
+  type Censorship,
+  type Tier,
   type ErrorKind,
   type LadderFailure,
 } from "./record.js";
@@ -38,3 +40,22 @@ export {
   type RunOptions,
   type HubTimers,
 } from "./hub.js";
+export {
+  budgetFor,
+  fitOf,
+  presetTotal,
+  ggufFacts,
+  PRESETS,
+  SLOTS,
+  MEMORY_SHARE,
+  CPU_CAP_MB,
+  FALLBACK_BUDGET_MB,
+  type Budget,
+  type StorageEstimate,
+  type Fit,
+  type FitResult,
+  type Slot,
+  type Preset,
+  type PresetTotal,
+  type GgufFacts,
+} from "./fit.js";

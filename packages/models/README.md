@@ -91,6 +91,32 @@ In stub mode every `use(capability)` resolves to `stubRecord(capability)`
 with no weights. Each capability package ships its own stub builder, so an
 app runs headless with `?stub` and tests need no download.
 
+## Catalogue facts and fit
+
+Records carry the facts a picker row shows before any download: `params`,
+`quant`, `vramMB` with `vramSource`, `censorship` (stock, uncensored,
+abliterated, unknown; a field on the record, never a substring rule),
+`tags`, `tier`, `family` and a one line `note`. Licences are shown as
+recorded.
+
+```ts
+import { CATALOG, PRESETS, budgetFor, fitOf, presetTotal } from "@hackbuild/models";
+
+const budget = budgetFor(env); // { mb, why: "8 gb memory or more, webgpu", source: "proposed" }
+for (const r of CATALOG) console.log(r.id, fitOf(r, env, await store.estimate()).fit);
+for (const p of PRESETS) console.log(p.label, presetTotal(p, CATALOG)); // { mb, source, parts, unknown }
+```
+
+`budgetFor` gives a model 45 percent of `deviceMemoryGB`, capped at 6 GB
+on cpu, and 5.5 GB when the browser does not say; the three constants are
+vendor figures for a native runtime and proposed here until a browser run
+measures them. `fitOf` combines the ladder against the probe, the budget
+against VRAM (or the download when no VRAM is recorded) and the storage
+estimate against the download, and returns one of "fits", "fits on cpu,
+slow", "needs f16", "needs webgpu", "over memory", "over storage" or
+"cannot run here" with a lowercase reason. `ggufFacts(fileName)` reads
+params, quant and split part from a GGUF name for a custom row.
+
 ## How later packages attach
 
 A capability package (vision, transcribe, stems, notes, imagegen, speak,
@@ -114,7 +140,13 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
   idle wait, frame budget skip and defer limit, busy counts, listeners
   and re-entry skip.
 
+- 2026-11-24: `test/fit.test.ts`: catalogue facts valid on every row,
+  budget fallback, share and cpu cap, each fit word, preset picks and
+  computed totals with the weakest source word, GGUF name facts.
+
 ### Not verified by anything
+
+- The budget constants in a browser, and whether a "fits" row loads.
 
 - Any record against its real runtime and weights. Not run: whether each
   catalog ladder loads in Chrome, Safari or Firefox; the catalog sizes
@@ -125,9 +157,9 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 32,640 bytes | 34,272 bytes |
-| `dist/single/index.iife.js` (single file build) | 32,182 bytes | 33,791 bytes |
+| `dist/index.js` (main entry, imports external) | 35,691 bytes | 37,475 bytes |
+| `dist/single/index.iife.js` (single file build) | 35,275 bytes | 37,038 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

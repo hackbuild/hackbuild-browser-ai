@@ -4,6 +4,15 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Catalogue facts, 2026-11-24
+
+- models: `ModelRecord` gains `params`, `quant`, `vramMB` with
+  `vramSource`, `censorship`, `tags`, `tier`, `family` and `note`; the
+  chat rows of `CATALOG` carry them, VRAM as the WebLLM catalogue states
+  it (vendor). `budgetFor(env)`, `fitOf(record, env, estimate)`,
+  `PRESETS` with `presetTotal` (phone, laptop, desktop; totals computed
+  from the records) and `ggufFacts(fileName)`.
+
 ### Shared origin check, 2026-11-24
 
 - tools: `check-origin.mjs` (`npm run check:origin`) serves two paths

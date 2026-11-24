@@ -115,6 +115,6 @@ not import a speech engine.
 | `dist/index.js` (main entry, imports external) | 7,733 bytes | 8,119 bytes |
 | `dist/single/index.iife.js` (single file build) | 8,913 bytes | 9,358 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

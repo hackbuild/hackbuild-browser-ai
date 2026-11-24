@@ -116,6 +116,6 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 | `wasm/audio-dsp.wasm` | 27,444 bytes | 28,816 bytes |
 | `dist/single/index.iife.js` (single file build) | 8,563 bytes | 8,991 bytes |
 
-Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
