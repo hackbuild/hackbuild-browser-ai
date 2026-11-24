@@ -190,6 +190,9 @@ describe("onnxruntime-web provider", () => {
     expect(graphFiles({ ...rec, source: { url: "https://h.test/yolov8n.onnx" } })[0]).toMatchObject({ name: "yolov8n", external: false });
     expect(graphFiles({ ...rec, source: { url: "https://h.test/m/", file: "a.onnx" } })[0]!.ref.url).toBe("https://h.test/m/a.onnx");
     expect(() => graphFiles({ ...rec, source: {} })).toThrow(/needs source/);
+    // graphs that share a file name are keyed by their folder
+    const sd = graphFiles({ ...rec, source: { url: "https://h.test/sd/", files: [{ path: "text_encoder/model.onnx" }, { path: "unet/model.onnx" }, { path: "unet/weights.pb" }] } });
+    expect(sd.map((f) => [f.name, f.path, f.label])).toEqual([["text_encoder", "model.onnx", "text_encoder/model.onnx"], ["unet", "model.onnx", "unet/model.onnx"], ["weights.pb", "weights.pb", "unet/weights.pb"]]);
     expect(sessionOptions({ device: "wasm" }, [])).toEqual({ executionProviders: ["wasm"] });
   });
 });

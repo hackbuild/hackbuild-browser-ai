@@ -1,7 +1,7 @@
 {
   "name": "@hackbuild/imagegen",
   "version": "0.1.0",
-  "description": "Text to image in a tab: SD-Turbo text encoder, UNet and VAE on onnxruntime-web with a seeded Euler scheduler on trailing timesteps, run under the models hub gpu lock.",
+  "description": "Text to image in a tab: SD-Turbo and SD 1.5 text encoder, UNet and VAE on onnxruntime-web with a seeded Euler scheduler on trailing or leading timesteps, guidance with a negative prompt, per model form records, loaded through the models hub and run under its gpu lock.",
   "type": "module",
   "license": "MIT",
   "author": "Moheeb Zara <hackbuildvideo@gmail.com>",

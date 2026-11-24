@@ -52,8 +52,8 @@
       "dist/single/index.iife.js": 33502
     },
     "@hackbuild/imagegen": {
-      "main: dist/index.js bundled": 3032,
-      "dist/single/index.iife.js": 2905
+      "main: dist/index.js bundled": 5631,
+      "dist/single/index.iife.js": 5276
     },
     "@hackbuild/listen": {
       "main: dist/index.js bundled": 5090,

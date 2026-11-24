@@ -52,8 +52,12 @@ export interface OrtProviderOptions {
 }
 
 export interface GraphFile {
+  /** Session key: the file name without `.onnx`, or its folder when two graphs share a file name (`text_encoder/model.onnx` is `text_encoder`). */
   name: string;
+  /** The file name, as external data is matched. */
   path: string;
+  /** The path as the record lists it, for per file progress rows. */
+  label: string;
   ref: WeightRef;
   external: boolean;
 }
@@ -68,15 +72,20 @@ export function graphFiles(rec: ModelRecord): GraphFile[] {
     const ref: WeightRef = { url: s.url, licence: rec.licence };
     const sha = s.sha256 ?? pinnedSha(s.url);
     if (sha) ref.sha256 = sha;
-    return [{ name: path.replace(/\.onnx$/, ""), path, ref, external: false }];
+    return [{ name: path.replace(/\.onnx$/, ""), path, label: path, ref, external: false }];
   }
   if (!list.length) throw new Error(`${rec.id}: an ort record needs source.url, source.file or source.files`);
+  const base_ = (p: string) => p.split("/").pop()!;
+  const seen = new Map<string, number>();
+  for (const f of list) seen.set(base_(f.path), (seen.get(base_(f.path)) ?? 0) + 1);
   return list.map((f) => {
     const ref: WeightRef = { url: /^https?:|^blob:|^data:/.test(f.path) ? f.path : base + f.path, licence: rec.licence };
     const sha = f.sha256 ?? pinnedSha(ref.url);
     if (sha) ref.sha256 = sha;
-    const file = f.path.split("/").pop()!;
-    return { name: file.replace(/\.onnx$/, ""), path: file, ref, external: !file.endsWith(".onnx") };
+    const file = base_(f.path);
+    const dir = f.path.split("/").slice(-2, -1)[0];
+    const name = (seen.get(file)! > 1 && dir ? dir : file).replace(/\.onnx$/, "");
+    return { name, path: file, label: f.path, ref, external: !file.endsWith(".onnx") };
   });
 }
 
@@ -126,7 +135,7 @@ export function ortProvider(opts: OrtProviderOptions): OrtProvider {
           files.map((f) =>
             opts.store.once(f.ref, {
               ...(signal ? { signal } : {}),
-              ...(opts.onProgress ? { onProgress: (p: { fraction: number | null }) => opts.onProgress!(record.id, f.path, p.fraction) } : {}),
+              ...(opts.onProgress ? { onProgress: (p: { fraction: number | null }) => opts.onProgress!(record.id, f.label, p.fraction) } : {}),
             }),
           ),
         );

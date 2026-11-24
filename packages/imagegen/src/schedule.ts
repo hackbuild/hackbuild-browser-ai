@@ -58,9 +58,23 @@ export interface EulerPlan {
   sigmas: number[];
 }
 
-export function eulerPlan(steps: number): EulerPlan {
+/**
+ * Leading spacing with an offset of 1, the Euler default SD 1.5 ships
+ * with: 1000 // steps apart from 0, reversed, plus 1. 4 steps are 751,
+ * 501, 251, 1.
+ */
+export function leadingTimesteps(steps: number, train = 1000, offset = 1): number[] {
+  const ratio = Math.floor(train / steps);
+  const out: number[] = [];
+  for (let i = steps - 1; i >= 0; i--) out.push(Math.min(train - 1, i * ratio + offset));
+  return out;
+}
+
+export type Spacing = "trailing" | "leading";
+
+export function eulerPlan(steps: number, spacing: Spacing = "trailing"): EulerPlan {
   const all = sigmas();
-  const timesteps = trailingTimesteps(steps);
+  const timesteps = spacing === "leading" ? leadingTimesteps(steps) : trailingTimesteps(steps);
   return { timesteps, sigmas: [...timesteps.map((t) => all[t]!), 0] };
 }
 

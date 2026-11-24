@@ -7,7 +7,7 @@
  * call so the gpu lock and frame budget apply.
  */
 
-import { euler, eulerPlan, gaussian, mulberry32, type Rng } from "./schedule.js";
+import { euler, eulerPlan, gaussian, mulberry32, type Rng, type Spacing } from "./schedule.js";
 
 export interface OrtLike {
   Tensor: new (type: string, data: Float32Array | Int32Array | BigInt64Array, dims: number[]) => unknown;
@@ -27,7 +27,17 @@ export type ClipTokenize = (prompt: string) => Promise<ArrayLike<number>> | Arra
 
 export interface GenerateOptions {
   prompt: string;
-  /** SD-Turbo is distilled for 1 to 4 steps. Default 1. */
+  /** Used only when guidance is above 1; the empty prompt when absent. */
+  negative?: string;
+  /**
+   * Classifier free guidance scale. Above 1 the UNet runs twice a step,
+   * on the negative and on the prompt, and the noise is
+   * uncond + guidance * (cond - uncond). SD-Turbo takes none (default 1).
+   */
+  guidance?: number;
+  /** Timestep spacing: "trailing" for SD-Turbo (default), "leading" for SD 1.5. */
+  spacing?: Spacing;
+  /** SD-Turbo is distilled for 1 to 4 steps. Default 1, at most 50. */
   steps?: number;
   seed?: number;
   /** Replaces the seeded noise source. */
@@ -74,7 +84,9 @@ export function padIds(ids: ArrayLike<number>, n = 77, pad?: number): Int32Array
 export async function generate(ort: OrtLike, s: Sessions, tokenize: ClipTokenize, o: GenerateOptions): Promise<Generated> {
   const now = o.now ?? (() => (globalThis.performance ? performance.now() : Date.now()));
   const run = o.run ?? (<T>(fn: () => Promise<T>) => fn());
-  const steps = Math.max(1, Math.min(8, o.steps ?? 1));
+  const steps = Math.max(1, Math.min(50, o.steps ?? 1));
+  const guidance = o.guidance ?? 1;
+  const cfg = guidance > 1;
   const seed = (o.seed ?? 0) >>> 0;
   const size = o.size ?? 512;
   if (size % 8) throw new Error("size must be a multiple of 8");
@@ -83,34 +95,53 @@ export async function generate(ort: OrtLike, s: Sessions, tokenize: ClipTokenize
   const ms = { text: 0, unet: 0, vae: 0 };
 
   let t = now();
-  const ids = padIds(await tokenize(o.prompt.length ? o.prompt : " "));
-  const te = await run(() => s.textEncoder.run({ input_ids: new ort.Tensor("int32", ids, [1, 77]) }));
-  const hidden = te.last_hidden_state ?? Object.values(te)[0]!;
+  const encode = async (text: string) => {
+    const ids = padIds(await tokenize(text.length ? text : " "));
+    const te = await run(() => s.textEncoder.run({ input_ids: new ort.Tensor("int32", ids, [1, 77]) }));
+    const hidden = te.last_hidden_state ?? Object.values(te)[0]!;
+    return new ort.Tensor("float32", Float32Array.from(hidden.data), [...(hidden.dims ?? [1, 77, hidden.data.length / 77])]);
+  };
+  const hiddenTensor = await encode(o.prompt);
+  const uncondTensor = cfg ? await encode(o.negative ?? "") : null;
   ms.text = now() - t;
   o.onStep?.({ stage: "text", step: 0, steps, ms: ms.text });
-  const hiddenTensor = new ort.Tensor("float32", Float32Array.from(hidden.data), [...(hidden.dims ?? [1, 77, hidden.data.length / 77])]);
 
-  const plan = eulerPlan(steps);
+  const plan = eulerPlan(steps, o.spacing);
   const randn = gaussian(o.rng ?? mulberry32(seed));
   const latent = new Float32Array(n);
-  for (let i = 0; i < n; i++) latent[i] = randn() * plan.sigmas[0]!;
+  // diffusers scales the first noise by sigma for trailing spacing and by sqrt(sigma^2 + 1) for leading
+  const s0 = plan.sigmas[0]!;
+  const init = o.spacing === "leading" ? Math.sqrt(s0 * s0 + 1) : s0;
+  for (let i = 0; i < n; i++) latent[i] = randn() * init;
 
   const final = await euler(
     latent,
     plan,
     async (scaled, timestep, step) => {
       const t0 = now();
-      const u = await run(() =>
-        s.unet.run({
-          sample: new ort.Tensor("float32", scaled, [1, 4, lw, lw]),
-          timestep: new ort.Tensor("int64", BigInt64Array.from([BigInt(timestep)]), [1]),
-          encoder_hidden_states: hiddenTensor,
-        }),
-      );
+      const unet = async (h: unknown) => {
+        const u = await run(() =>
+          s.unet.run({
+            sample: new ort.Tensor("float32", scaled, [1, 4, lw, lw]),
+            timestep: new ort.Tensor("int64", BigInt64Array.from([BigInt(timestep)]), [1]),
+            encoder_hidden_states: h,
+          }),
+        );
+        return (u.out_sample ?? Object.values(u)[0]!).data;
+      };
+      const c = await unet(hiddenTensor);
+      let e: ArrayLike<number> = c;
+      if (uncondTensor) {
+        // one sample per call, so exports fixed at batch 1 still run
+        const u = await unet(uncondTensor);
+        const g = new Float32Array(c.length);
+        for (let i = 0; i < g.length; i++) g[i] = u[i]! + guidance * (c[i]! - u[i]!);
+        e = g;
+      }
       const d = now() - t0;
       ms.unet += d;
       o.onStep?.({ stage: "denoise", step: step + 1, steps, ms: d });
-      return (u.out_sample ?? Object.values(u)[0]!).data;
+      return e;
     },
     o.signal,
   );
