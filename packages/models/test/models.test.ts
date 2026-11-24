@@ -118,8 +118,8 @@ describe("records and ladders", () => {
 
   it("routes by capability, env, size and budget", () => {
     const reg = createRegistry(CATALOG);
-    // the largest tiny chat model: qwen2.5 0.5b mlc at 290 MB (vendor) over gemma 3 270m at 280 MB (inferred)
-    expect(reg.route({ provides: "chat", env: env(), size: "tiny" })!.id).toBe("qwen2.5-0.5b-instruct-mlc");
+    // the largest tiny chat model: smollm2 360m at 370 MB over gemma 3 270m at 328 MB (both measured)
+    expect(reg.route({ provides: "chat", env: env(), size: "tiny" })!.id).toBe("smollm2-360m-instruct");
     expect(reg.route({ provides: "chat", env: env(), maxMB: 1000 })!.provider).not.toBe("prompt-api");
     expect(reg.route({ provides: "chat", env: env({ webgpu: false, f16: false }) })!.provider).toMatch(/tjs|wllama/);
     expect(reg.route({ provides: "stems", env: env() })!.id).toBe("htdemucs-fast");

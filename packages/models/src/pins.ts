@@ -8,7 +8,7 @@ export interface RepoPin {
   readonly files: Readonly<Record<string, PinFile>>;
 }
 
-export const PINNED_AT = "2026-11-23";
+export const PINNED_AT = "2026-11-24";
 
 export const PINS: Readonly<Record<string, RepoPin>> = {
   "HuggingFaceTB/SmolLM2-135M-Instruct": {
@@ -2712,6 +2712,151 @@ export const PINS: Readonly<Record<string, RepoPin>> = {
       "vae_decoder/model.onnx": [
         "b37a85f91a982811957abd6cfb617499742309f7b8e253240da3132e533a7605",
         99094314,
+        "vendor"
+      ]
+    }
+  },
+  "onnx-community/Qwen3-0.6B-ONNX": {
+    "revision": "79346d370dfae34801d26993fda9ae2372900fd0",
+    "files": {
+      "config.json": [
+        "8a04114ba59cc42b47d804d35d1d5c61d746ae4634f41f796768c6e302d39b9e",
+        912,
+        "measured"
+      ],
+      "generation_config.json": [
+        "9e9e031ae8bca36eefcdcdd0b35d83c61baa01e31d68d5f5a961c9ca1a4b95bf",
+        219,
+        "measured"
+      ],
+      "onnx/model_q4.onnx": [
+        "d43d836fc5e240df9013733ccd214972c5d21bd9ec47e574e4f1e359cf90aed0",
+        919096585,
+        "vendor"
+      ],
+      "onnx/model_q4f16.onnx": [
+        "9e33a5911974174761d0dfdcc0bec975d9c45af0eae5e9eb647b8ba9442a8f91",
+        569789750,
+        "vendor"
+      ],
+      "tokenizer.json": [
+        "e7a95fce95bf5b0946d0ddb3f9d7caa030b7e850bbe92b0edb26bcf563e9f3d5",
+        9117040,
+        "vendor"
+      ],
+      "tokenizer_config.json": [
+        "7c5194eecfd95a4dcbd6b4b502af785d2541fd65a388d1cae7ad43693c67b802",
+        10369,
+        "measured"
+      ]
+    }
+  },
+  "onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX": {
+    "revision": "90c5edf28c2538b20f85a3c83e6413810b7579ee",
+    "files": {
+      "config.json": [
+        "6921c4b2446d1eb03fbdbe3edcf7331806682bbb95ea5ec61f60b68974599739",
+        1000,
+        "measured"
+      ],
+      "generation_config.json": [
+        "6b7eff7f36effbd0abff8c00bcc907b0a6f0f718263b93bb76fd63e4781fb06d",
+        132,
+        "measured"
+      ],
+      "onnx/model_q4.onnx": [
+        "3c64abf7c85102af29c0c0231caf754e981faebfa83ef9530fb457d2c5140b04",
+        1966462264,
+        "vendor"
+      ],
+      "onnx/model_q4f16.onnx": [
+        "db35d720beb08c4cddc820af4d51c903d953afa12dc5fa084ed2467999875953",
+        1369397579,
+        "vendor"
+      ],
+      "tokenizer.json": [
+        "0d7259f8a225ceaa421baf5ae0687e0e4a4239b86a6d1838aba50e2470d99341",
+        9117072,
+        "measured"
+      ],
+      "tokenizer_config.json": [
+        "ad695e83df533dbf830bdb48b540bf2d1556e01e7500585fb7aef741ce3f0c2b",
+        7062,
+        "measured"
+      ]
+    }
+  },
+  "mradermacher/Gemma-4-E4B-IT-ABLITERATED-UNCENSORED-PHILADELPHIA-CLASS-i1-GGUF": {
+    "revision": "3a0d970a617501cba41d3cea0b94716e35728058",
+    "files": {
+      "Gemma-4-E4B-IT-ABLITERATED-UNCENSORED-PHILADELPHIA-CLASS.i1-Q4_K_M.gguf": [
+        "a00847b12bf124019c022e495bb8d24648692b53932d7141067a13fe6881e884",
+        5302275456,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Huihui-gemma-4-E2B-it-abliterated-GGUF": {
+    "revision": "0538cae708ae060ba4fff720297b79c672c339ff",
+    "files": {
+      "Huihui-gemma-4-E2B-it-abliterated.Q4_K_M.gguf": [
+        "55044454df35c2e3b9f4ca7a52b27cc7b057b3b3547cd114183196c31f5062a8",
+        3427874272,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF": {
+    "revision": "9d3aebb998fcf084086a3d1c60c31035fcfbf8e1",
+    "files": {
+      "Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf": [
+        "423f10b6ec2d99c3378143d7cd3b80eb4887b3ed92103103ac59173b404f4f7c",
+        2707514688,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Hermes-3-Llama-3.2-3B-abliterated-i1-GGUF": {
+    "revision": "9622d49875c8a1aed9792bfb486ca698f9b1aab3",
+    "files": {
+      "Hermes-3-Llama-3.2-3B-abliterated.i1-IQ3_M.gguf": [
+        "a82af823de410f867453a0bcee194c989fcd76fd6f9cc6b8b02a1ccd7097282b",
+        1599665568,
+        "vendor"
+      ],
+      "Hermes-3-Llama-3.2-3B-abliterated.i1-Q4_K_M.gguf": [
+        "d3dff662e6ba2ced41b9447e9b9d94af00ba112a0d4d5cfe70b5c29fd9702394",
+        2019374496,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Llama-3.2-3B-Instruct-uncensored-GGUF": {
+    "revision": "186911b5658f85bfe68684b83646ba2e89169a0c",
+    "files": {
+      "Llama-3.2-3B-Instruct-uncensored.Q4_K_M.gguf": [
+        "1a01383341be9bf04a904e168089401c3f0533b3af4089d3536d8b36e497ccd6",
+        2241004096,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Huihui-Qwen3.5-2B-abliterated-GGUF": {
+    "revision": "7f5aee7d2dc4df18bd67eab85ea81e0bc2e98a2c",
+    "files": {
+      "Huihui-Qwen3.5-2B-abliterated.Q4_K_M.gguf": [
+        "aa25eea787afe56a097268f7ed3460cb623e1901d2e89cd2b654cabb42f80636",
+        1270809024,
+        "vendor"
+      ]
+    }
+  },
+  "mradermacher/Huihui-Qwen3.5-0.8B-abliterated-GGUF": {
+    "revision": "a8afb4737641a05ee0d02b0cef43ac3b6404db28",
+    "files": {
+      "Huihui-Qwen3.5-0.8B-abliterated.Q4_K_M.gguf": [
+        "411e0f945a5d57c63f33bcb5bfa4d5c2711d1ce28cb7635201ac0c311a7dfdf0",
+        527503840,
         "vendor"
       ]
     }

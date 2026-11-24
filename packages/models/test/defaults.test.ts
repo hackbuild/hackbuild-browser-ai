@@ -89,6 +89,13 @@ describe("suggestDefaults", () => {
     expect(a.patch.model).toBe("smollm2-360m-instruct");
     expect(a.download!.id).toBe("hermes-3-llama-3.2-3b-mlc");
   });
+
+  it("offers downloads from the start group only when the catalogue has one", () => {
+    const grouped = [rec("small", 300, { group: "start here" }), rec("abl", 1700, { group: "uncensored", censorship: "abliterated" })];
+    expect(suggestDefaults(four, { catalogue: grouped }).download!.id).toBe("small");
+    expect(suggestDefaults(four, { catalogue: grouped.map((r) => ({ ...r, group: undefined })) }).download!.id).toBe("abl");
+    expect(suggestDefaults(four, { catalogue: grouped, stored: ["abl"] }).patch.model).toBe("abl");
+  });
 });
 
 describe("hub.onLoad", () => {

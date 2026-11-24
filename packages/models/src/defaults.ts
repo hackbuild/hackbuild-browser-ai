@@ -12,6 +12,9 @@ import { ladderFor, type Capability, type ModelRecord } from "./record.js";
 /** A catalogue model is offered over a stored one only when it is this many times larger (a real step up, not a sideways move). Vendor, proposed here. */
 export const STEP_UP = 1.5;
 
+/** The catalogue group a first visit offers downloads from, when the catalogue has one; other groups are a choice the person makes. */
+export const START_GROUP = "start here";
+
 export interface Reason {
   label: string;
   value: string;
@@ -58,8 +61,10 @@ export function pickModel(env: Env | undefined, input: DefaultsInput): { model: 
   const installed = runnable.filter((r) => stored.has(r.id));
   const fits = installed.filter(sized).filter((r) => r.sizeMB <= budget.mb).sort((a, b) => b.sizeMB - a.sizeMB);
   const roomFor = (r: ModelRecord & { sizeMB: number }) => !input.estimate || input.estimate.fits(r.sizeMB * 1024 * 1024);
+  // offer from the start group when the catalogue has one: the largest row that fits is often a 5 gb abliterated gguf
+  const offered = runnable.some((r) => r.group === START_GROUP) ? runnable.filter((r) => r.group === START_GROUP) : runnable;
   const best =
-    runnable
+    offered
       .filter(sized)
       .filter((r) => !stored.has(r.id) && r.sizeMB <= budget.mb && roomFor(r))
       .sort((a, b) => b.sizeMB - a.sizeMB || tools(b) - tools(a))[0] ?? null;

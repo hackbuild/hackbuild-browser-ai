@@ -10,6 +10,7 @@ import {
   createRegistry,
   fitOf,
   ggufFacts,
+  pinnedSha,
   presetTotal,
   RegistryError,
   validateRecord,
@@ -61,6 +62,43 @@ describe("catalogue facts", () => {
       if (r.vramMB != null) expect(r.vramSource).toBe("vendor");
     }
     expect(CATALOG.find((r) => r.id === "hermes-3-llama-3.2-3b-mlc")).toMatchObject({ params: "3B", vramMB: 2200, censorship: "uncensored", tier: "medium" });
+  });
+
+  it("holds the chat rows of design 3.1 with a measured size, a group and the owner's label", () => {
+    const want = [
+      "hermes-3-llama-3.2-3b-mlc", "qwen2.5-1.5b-instruct-mlc", "llama-3.2-1b-instruct-mlc", "smollm2-360m-instruct",
+      "llama-3.2-3b-instruct-q4f32-mlc", "gemma-2-2b-it-mlc", "qwen2.5-3b-instruct-mlc", "qwen2.5-7b-instruct-mlc", "llama-3.1-8b-instruct-q4f32-mlc",
+      "gemma-4-e4b-abliterated-gguf", "gemma-4-e2b-abliterated-gguf", "qwen3.5-4b-abliterated-gguf", "hermes-3-llama-3.2-3b-abliterated-gguf",
+      "hermes-3-llama-3.2-3b-abliterated-iq3-gguf", "llama-3.2-3b-instruct-uncensored-gguf", "qwen3.5-2b-abliterated-gguf", "qwen3.5-0.8b-abliterated-gguf",
+      "hermes-3-llama-3.1-8b-mlc", "qwen3-0.6b", "deepseek-r1-distill-qwen-1.5b", "deepseek-r1-distill-qwen-7b-mlc",
+      "smollm2-135m-instruct", "gemma-3-270m-it", "qwen2.5-0.5b-instruct-gguf", "gemini-nano",
+    ];
+    const byId = new Map(CATALOG.map((r) => [r.id, r]));
+    expect(new Set(CATALOG.map((r) => r.id)).size).toBe(CATALOG.length);
+    for (const id of want) {
+      const r = byId.get(id);
+      expect(r, id).toBeDefined();
+      expect(r!.group, id).toBeTruthy();
+      expect(r!.badge, id).toBeTruthy();
+      if (r!.provider !== "prompt-api") expect([id, r!.sizeSource]).toEqual([id, "measured"]);
+    }
+    expect(byId.get("gemma-4-e4b-abliterated-gguf")).toMatchObject({ badge: "best", group: "uncensored", censorship: "abliterated", params: "E4B" });
+    expect(byId.get("llama-3.2-3b-instruct-uncensored-gguf")!.censorship).toBe("uncensored");
+    expect(byId.get("hermes-3-llama-3.1-8b-mlc")!.censorship).toBe("uncensored");
+  });
+
+  it("names censorship from the repo words and pins every gguf file with its SHA-256", () => {
+    for (const r of CATALOG) {
+      const words = `${r.source.repo ?? ""} ${r.source.file ?? ""}`.toLowerCase();
+      if (words.includes("abliterated")) expect([r.id, r.censorship]).toEqual([r.id, "abliterated"]);
+      else if (words.includes("uncensored")) expect([r.id, r.censorship]).toEqual([r.id, "uncensored"]);
+      if (r.provider !== "wllama") continue;
+      const rec = createRegistry([r]).get(r.id)!;
+      expect(rec.source.revision, r.id).toMatch(/^[0-9a-f]{40}$/);
+      const url = `https://huggingface.co/${rec.source.repo}/resolve/${rec.source.revision}/${rec.source.file}`;
+      expect(pinnedSha(url), r.id).toMatch(/^[0-9a-f]{64}$/);
+      expect(ggufFacts(r.source.file!).quant).toBe(r.quant);
+    }
   });
 
   it("rejects a VRAM figure with no source word and an unknown censorship value", () => {
@@ -149,7 +187,7 @@ describe("presets", () => {
 
   it("states a computed total with the weakest source word", () => {
     const t = presetTotal(PRESETS[0]!, CATALOG);
-    expect(t.mb).toBe(100 + 23);
+    expect(t.mb).toBe(174 + 23);
     expect(t.source).toBe("inferred");
     expect(t.parts.map((p) => p.slot)).toEqual(["brain", "embedder"]);
     const totals = PRESETS.map((p) => presetTotal(p, createRegistry(CATALOG)).mb);

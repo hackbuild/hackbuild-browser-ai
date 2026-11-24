@@ -6,6 +6,10 @@
 //   node tools/pin-weights.mjs                  list sizes only
 //   node tools/pin-weights.mjs --write          query the hub and write pins.ts
 //   node tools/pin-weights.mjs --write --measure-mb 300
+//   node tools/pin-weights.mjs --write --add   pin only repos missing from pins.ts
+//
+// A REPOS entry is a repo, or [repo, regex] to pin only the files a record
+// loads (a GGUF repo holds every quant; a record loads one).
 //
 // LFS files carry their SHA-256 as the LFS oid (the X-Linked-ETag the hub
 // sends on a HEAD of the resolve URL); those are labelled vendor. Small
@@ -38,6 +42,15 @@ export const REPOS = [
   "onnx-community/Kokoro-82M-v1.0-ONNX",
   "StemSplitio/htdemucs-onnx",
   "schmuell/sd-turbo-ort-web",
+  ["onnx-community/Qwen3-0.6B-ONNX", /^(config|generation_config|tokenizer|tokenizer_config)\.json$|^onnx\/model_q4(f16)?\.onnx$/],
+  ["onnx-community/DeepSeek-R1-Distill-Qwen-1.5B-ONNX", /^(config|generation_config|tokenizer|tokenizer_config)\.json$|^onnx\/model_q4(f16)?\.onnx$/],
+  ["mradermacher/Gemma-4-E4B-IT-ABLITERATED-UNCENSORED-PHILADELPHIA-CLASS-i1-GGUF", /\.i1-Q4_K_M\.gguf$/],
+  ["mradermacher/Huihui-gemma-4-E2B-it-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
+  ["mradermacher/Huihui-Qwen3.5-4B-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
+  ["mradermacher/Hermes-3-Llama-3.2-3B-abliterated-i1-GGUF", /\.i1-(Q4_K_M|IQ3_M)\.gguf$/],
+  ["mradermacher/Llama-3.2-3B-Instruct-uncensored-GGUF", /\.Q4_K_M\.gguf$/],
+  ["mradermacher/Huihui-Qwen3.5-2B-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
+  ["mradermacher/Huihui-Qwen3.5-0.8B-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
 ];
 
 const KEEP = /(\.onnx|\.onnx_data|_data|\.json|\.gguf|\.safetensors|\.bin|\.txt|\.model)$/;
@@ -45,6 +58,8 @@ const SKIP = /(^|\/)(\.gitattributes|README\.md)$|^(?!onnx\/|voices\/|src\/siler
 
 const args = process.argv.slice(2);
 const write = args.includes("--write");
+const add = args.includes("--add");
+const pinsFile = join(import.meta.dirname, "..", "packages", "models", "src", "pins.ts");
 const mi = args.indexOf("--measure-mb");
 const measureMb = mi >= 0 ? Number(args[mi + 1]) : 0;
 const HF = "https://huggingface.co";
@@ -88,9 +103,15 @@ try {
   /* first run */
 }
 const out = {};
+if (add) {
+  const text = readFileSync(pinsFile, "utf8");
+  Object.assign(out, JSON.parse(text.slice(text.indexOf("= {", text.indexOf("export const PINS")) + 2, text.lastIndexOf(";"))));
+}
 let total = 0;
 let measured = 0;
-for (const repo of REPOS) {
+for (const entry of REPOS) {
+  const [repo, only] = Array.isArray(entry) ? entry : [entry, null];
+  if (add && out[repo]) continue;
   const { sha: rev } = await json(`${HF}/api/models/${repo}/revision/main`);
   if (write && cache[repo]?.revision === rev && cache[repo].measureMb === measureMb) {
     out[repo] = { revision: rev, files: cache[repo].files };
@@ -100,7 +121,7 @@ for (const repo of REPOS) {
   const tree = await json(`${HF}/api/models/${repo}/tree/${rev}?recursive=true`);
   const files = {};
   for (const e of tree) {
-    if (e.type !== "file" || !KEEP.test(e.path) || SKIP.test(e.path)) continue;
+    if (e.type !== "file" || !KEEP.test(e.path) || SKIP.test(e.path) || (only && !only.test(e.path))) continue;
     const url = `${HF}/${repo}/resolve/${rev}/${e.path}`;
     if (e.lfs) {
       total += e.size;
@@ -143,5 +164,5 @@ if (write) {
     "export const PINS: Readonly<Record<string, RepoPin>> = " + JSON.stringify(out, null, 2) + ";",
     "",
   ];
-  writeFileSync(join(import.meta.dirname, "..", "packages", "models", "src", "pins.ts"), lines.join("\n"));
+  writeFileSync(pinsFile, lines.join("\n"));
 }

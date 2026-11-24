@@ -117,6 +117,10 @@ export interface ModelRecord {
   family?: string;
   /** One honest line for the catalogue row. */
   note?: string;
+  /** Catalogue group the row sits in, e.g. "start here", "uncensored", "reasoning". */
+  group?: string;
+  /** The owner's label for the row, verbatim from the tool that listed it, e.g. "best", "default", "fast, capable". */
+  badge?: string;
   provides: Capability[];
   provider: Provider;
   source: ModelSource;

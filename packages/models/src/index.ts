@@ -61,4 +61,4 @@ export {
   type PresetTotal,
   type GgufFacts,
 } from "./fit.js";
-export { suggestDefaults, pickModel, STEP_UP, type Reason, type DefaultsInput, type Defaults } from "./defaults.js";
+export { suggestDefaults, pickModel, STEP_UP, START_GROUP, type Reason, type DefaultsInput, type Defaults } from "./defaults.js";

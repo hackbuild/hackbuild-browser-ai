@@ -4,6 +4,19 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Chat catalogue rows, 2026-11-24
+
+- models: `CATALOG` gains 19 chat rows (9 WebLLM, 8 GGUF, 2
+  transformers.js) and holds 26 chat rows; every chat row has a download
+  size measured by HEAD requests, the owner's label as `badge` and a
+  catalogue `group`. The abliterated and uncensored GGUF builds are kept
+  with `censorship` set. Licences are the model card field or the design
+  harvest's string, unverified.
+- models: `suggestDefaults` offers downloads from the `START_GROUP`
+  group when the catalogue has one.
+- tools: `pin-weights.mjs` takes `[repo, regex]` entries and `--add`;
+  the new GGUF and ONNX repos are pinned with the hub's SHA-256.
+
 ### Weights rows, failure copy, stats and sessions, 2026-11-24
 
 - weights: `downloads()` and `onDownloads(fn)` for one row per

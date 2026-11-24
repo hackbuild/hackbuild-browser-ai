@@ -47,11 +47,17 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
   strict alternation (Gemma 3), think tags, repetition penalty, native
   tools (WebLLM Hermes), `<tool_call>` tags (Hermes, Qwen), warnings such
   as Kokoro's q8 on webgpu.
-- `CATALOG` holds 12 starter records for chat, embed, depth, transcribe,
-  speak and stems. Every size there is inferred from the builds or from
-  parameter count; licences are the model cards' as of 2026-11-22
-  (Apache-2.0, MIT, Gemma Terms of Use, Llama 3.2 Community License, and
-  the Chrome built in AI terms for the Prompt API model).
+- `CATALOG` holds 31 records (computed): 26 chat rows, which cover the
+  suite design's chat catalogue, and 5 starter records for embed, depth,
+  transcribe, speak and stems. Chat sizes are measured: the Content-Length of a HEAD request
+  on every file the runtime loads, summed in MiB, at the repo head of
+  2026-11-24 (WebLLM rows leave out the model library wasm). The other
+  sizes are inferred from the builds or from parameter count. Licences on
+  the starter rows are the model cards' as of 2026-11-22; on the chat rows
+  added 2026-11-24 they are the model card licence field the Hugging Face
+  API returns, or the design harvest's string marked "inferred,
+  unverified", and `commercial` is "unknown". The abliterated and
+  uncensored GGUF builds are kept and carry `censorship`.
 
 ## Hub
 
@@ -96,8 +102,9 @@ app runs headless with `?stub` and tests need no download.
 Records carry the facts a picker row shows before any download: `params`,
 `quant`, `vramMB` with `vramSource`, `censorship` (stock, uncensored,
 abliterated, unknown; a field on the record, never a substring rule),
-`tags`, `tier`, `family` and a one line `note`. Licences are shown as
-recorded.
+`tags`, `tier`, `family`, a one line `note`, the catalogue `group` and
+the owner's label as `badge` ("best", "default", "fast, capable").
+Licences are shown as recorded.
 
 ```ts
 import { CATALOG, PRESETS, budgetFor, fitOf, presetTotal } from "@hackbuild/models";
@@ -131,7 +138,9 @@ budget, the device and thread count, and one `{ label, value, why }`
 row per field. A catalogue row is offered for download only when it is
 1.5 times the stored pick (vendor rule, proposed here) or nothing stored
 fits; with nothing that fits, the smallest stored model is picked and
-the reason says replies may be slow.
+the reason says replies may be slow. When the catalogue has a
+`START_GROUP` ("start here") group, downloads are offered from it only;
+the largest row that fits is otherwise a 5 GB abliterated GGUF.
 
 ## How later packages attach
 
@@ -158,12 +167,15 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 
 - 2026-11-24: `test/fit.test.ts`: catalogue facts valid on every row,
   budget fallback, share and cpu cap, each fit word, preset picks and
-  computed totals with the weakest source word, GGUF name facts.
+  computed totals with the weakest source word, GGUF name facts; every
+  design chat row present with a measured size, group and label;
+  censorship matching the repo words; every GGUF file pinned with its
+  SHA-256 (the hub's LFS oid, vendor).
 
 - 2026-11-24: `test/defaults.test.ts`: fallback and cpu budgets in the
   reasons, largest stored fit, the 1.5 times offer rule, smallest stored
   with the slow warning, the empty pick with an offer that fits storage,
-  determinism, and `onLoad` phases for two listeners, a ladder fallback,
+  determinism, offers from the start group only, and `onLoad` phases for two listeners, a ladder fallback,
   a failure and a throwing listener.
 
 ### Not verified by anything
@@ -171,16 +183,18 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 - The budget constants in a browser, and whether a "fits" row loads.
 
 - Any record against its real runtime and weights. Not run: whether each
-  catalog ladder loads in Chrome, Safari or Firefox; the catalog sizes
-  (inferred, not measured downloads); the error patterns against current
+  catalog ladder loads in Chrome, Safari or Firefox; the sizes of the
+  embed, depth, transcribe, speak and stems rows (inferred); whether the
+  added GGUF and ONNX chat rows load in wllama 3.8.1 and transformers.js
+  4.3.2; the error patterns against current
   WebLLM 0.2.89, onnxruntime-web 1.31 and transformers.js 4.3.2 messages.
 
 ## Size budget
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 37,064 bytes | 38,917 bytes |
-| `dist/single/index.iife.js` (single file build) | 36,523 bytes | 38,349 bytes |
+| `dist/index.js` (main entry, imports external) | 40,309 bytes | 42,324 bytes |
+| `dist/single/index.iife.js` (single file build) | 39,789 bytes | 41,778 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
