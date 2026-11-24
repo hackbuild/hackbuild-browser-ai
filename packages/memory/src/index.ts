@@ -26,7 +26,14 @@ export {
   type Hit,
   type Recall,
   type ExportData,
+  type EditPatch,
+  type CompactOptions,
+  type CompactReport,
+  type StorageLike,
+  type Usage,
+  exchangeNote,
   open,
   Memory,
   gistOf,
 } from "./memory.js";
+export { tokenize, scoreParts, termWeights, howScored, type RecallParams, type RecallTrace, type TraceRow, type TermWeight } from "./trace.js";

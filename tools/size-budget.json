@@ -64,9 +64,9 @@
       "dist/single/index.iife.js": 2015
     },
     "@hackbuild/memory": {
-      "main: dist/index.js bundled": 10443,
+      "main: dist/index.js bundled": 13709,
       "wasm/memory.wasm": 41134,
-      "dist/single/index.iife.js": 10662
+      "dist/single/index.iife.js": 13960
     },
     "@hackbuild/models": {
       "main: dist/index.js bundled": 40309,

@@ -5,6 +5,7 @@ import { type Core, type CoreHit, type CoreIndex, type Kind, KINDS, kindCode } f
 import type { Embedder } from "./embed.js";
 import { assembleSections, CoreMemory, expandQuery, select, type Assembled, type Section } from "./assemble.js";
 import { indexedDbSink, memorySink, type MemorySink, type StoredItem } from "./sink.js";
+import { howScored, scoreParts, termWeights, tokenize, type RecallParams, type RecallTrace, type TraceRow } from "./trace.js";
 
 const HOUR = 3_600_000;
 
@@ -68,6 +69,8 @@ export interface RecallOptions {
   /** Recency time constant in hours for the linear scorer. Default 72. */
   tauH?: number;
   vecFloor?: number;
+  /** User turns still in view: a memory whose meta.said is one of them is skipped and the next takes its place. */
+  skipSaid?: string[];
 }
 
 export interface Hit {
@@ -79,9 +82,65 @@ export interface Hit {
 export interface Recall {
   query: string;
   hits: Hit[];
-  /** Every fused candidate, ranked, with its terms: the recall inspector rows. */
-  trace: (CoreHit & { text: string; kind: Kind })[];
+  /** Every fused candidate, ranked, with its terms: the recall inspector rows. `parts` times `weight` is the score. */
+  trace: (CoreHit & { text: string; kind: Kind; weight: number; parts: Record<string, number>; skipped: boolean })[];
   mode: Status["mode"];
+  /** What the recall ran with; `Memory.trace` reads it. */
+  params: RecallParams;
+}
+
+export interface EditPatch {
+  text?: string;
+  kind?: Kind;
+  scope?: string;
+  importance?: number;
+  section?: string;
+  entities?: string[];
+  meta?: Record<string, unknown>;
+}
+
+export interface CompactOptions {
+  /** Retention floor for decay; false skips decay. Default 0.05. */
+  decay?: number | false;
+  /** Cosine for merging stored near duplicates; false skips it. Default 0.95. */
+  merge?: number | false;
+  /** Episode folding into a gist; false skips it. Default on with consolidate's defaults. */
+  consolidate?: Parameters<Memory["consolidate"]>[0] | false;
+}
+
+export interface CompactReport {
+  before: number;
+  after: number;
+  decayed: number[];
+  merged: [number, number][];
+  gist: { id: number; folded: number } | null;
+}
+
+/** The part of the browser's StorageManager the usage line reads. */
+export interface StorageLike {
+  estimate?: () => Promise<{ usage?: number; quota?: number }>;
+  persisted?: () => Promise<boolean>;
+  persist?: () => Promise<boolean>;
+}
+
+export interface Usage {
+  items: number;
+  byKind: Record<Kind, number>;
+  coreLines: number;
+  /** Bytes of item json plus one float32 vector per item when an embedder is loaded (computed estimate; the store's real overhead is unknown). */
+  bytes: number;
+  /** The whole origin, from navigator.storage.estimate (vendor estimate); null where the browser gives none. */
+  browser: { usage: number | null; quota: number | null; persisted: boolean | null } | null;
+}
+
+/** An exchange worth keeping, as a note: null under 3 meaningful words; the reply cut at 160 characters on a word boundary. */
+export function exchangeNote(said: string, reply: string, o: { minWords?: number; replyChars?: number } = {}): { text: string; meta: { said: string } } | null {
+  const s = said.trim();
+  if (tokenize(s).length < (o.minWords ?? 3)) return null;
+  const max = o.replyChars ?? 160;
+  const r = reply.trim().replace(/\s+/g, " ");
+  const short = r.length > max ? `${r.slice(0, max).replace(/\s\S*$/, "")}...` : r;
+  return { text: short ? `They said: "${s}" I answered: "${short}"` : `They said: "${s}"`, meta: { said: s } };
 }
 
 export interface ExportData {
@@ -305,30 +364,162 @@ export class Memory {
     const cand = o.cand ?? 18;
     const k = o.k ?? 6;
     const scopes = o.scopes ?? this.opts.scopes;
+    const params: RecallParams = {
+      scorer: o.score ?? "linear",
+      weights: { rel: o.weights?.rel ?? 0.55, rec: o.weights?.rec ?? 0.2, imp: o.weights?.imp ?? 0.25 },
+      tauH: o.tauH ?? 72,
+      rrfK: o.rrfK ?? 60,
+      cand,
+      k,
+      vecFloor: o.vecFloor ?? 0.12,
+      now: this.now(),
+      scopes: scopes ? [...scopes] : null,
+      kinds: o.kinds ? [...o.kinds] : null,
+      place: o.place ?? null,
+      valence: o.valence ?? 0,
+      skipSaid: o.skipSaid ? [...o.skipSaid] : [],
+    };
     const all = this.index.recall(query, vec, {
-      now: this.now() / HOUR,
+      now: params.now / HOUR,
       k: cand * 2,
       cand,
-      rrfK: o.rrfK ?? 60,
-      scorer: o.score ?? "linear",
+      rrfK: params.rrfK,
+      scorer: params.scorer,
       scopes: scopes?.map((s) => this.scope(s)),
       kinds: o.kinds?.map(kindCode),
       place: o.place,
-      valence: o.valence ?? 0,
-      wRel: o.weights?.rel ?? 0.55,
-      wRec: o.weights?.rec ?? 0.2,
-      wImp: o.weights?.imp ?? 0.25,
-      tauH: o.tauH ?? 72,
-      vecFloor: o.vecFloor ?? 0.12,
+      valence: params.valence,
+      wRel: params.weights.rel,
+      wRec: params.weights.rec,
+      wImp: params.weights.imp,
+      tauH: params.tauH,
+      vecFloor: params.vecFloor,
     });
-    const trace = all.map((h) => ({ ...h, text: this.items.get(h.id)?.text ?? "", kind: this.items.get(h.id)?.kind ?? KINDS[0] }));
+    const skip = new Set(params.skipSaid.map((t) => t.trim()));
+    const trace = all.map((h) => {
+      const it = this.items.get(h.id);
+      const said = it?.meta?.said;
+      return {
+        ...h,
+        text: it?.text ?? "",
+        kind: it?.kind ?? KINDS[0],
+        weight: it?.weight ?? 1,
+        parts: it ? scoreParts(h, it, params) : {},
+        skipped: typeof said === "string" && skip.has(said.trim()),
+      };
+    });
     const hits: Hit[] = [];
-    for (const h of all.slice(0, k)) {
+    for (const h of trace) {
+      if (hits.length >= k) break;
       const item = this.items.get(h.id);
-      if (item) hits.push({ item: structuredClone(item), score: h.score, terms: h });
+      if (!item || h.skipped) continue;
+      const { text: _t, kind: _k, weight: _w, parts: _p, skipped: _s, ...terms } = h;
+      hits.push({ item: structuredClone(item), score: h.score, terms });
     }
     if (o.strengthen ?? true) await this.strengthen(hits.map((h) => h.item.id));
-    return { query, hits, trace, mode: this.status_.mode };
+    return { query, hits, trace, mode: this.status_.mode, params };
+  }
+
+  /**
+   * The recall trace view's object for a recall: per query term weights
+   * over the memories the recall could see, and per candidate its rank,
+   * used mark, score parts and per term BM25 contributions. Texts are read
+   * now, so an edit after the recall shows in the terms.
+   */
+  trace(r: Recall): RecallTrace {
+    const p = r.params;
+    const docs = [...this.items.values()].filter((it) => (!p.scopes || p.scopes.includes(it.scope)) && (!p.kinds || p.kinds.includes(it.kind)));
+    const { terms, byId } = termWeights(r.query, docs);
+    const used = new Set(r.hits.map((h) => h.item.id));
+    const rows: TraceRow[] = r.trace.map((h, i) => ({ ...h, rank: i + 1, used: used.has(h.id), terms: byId.get(h.id) ?? [] }));
+    return { query: r.query, mode: r.mode, params: p, terms, rows, how: howScored(r.mode, p, rows.length, used.size) };
+  }
+
+  /** A recall for the inspector: nothing is strengthened unless asked. */
+  async explain(q: string, o: RecallOptions = {}): Promise<RecallTrace> {
+    return this.trace(await this.recall(q, { strengthen: false, ...o }));
+  }
+
+  /** Changes one memory by hand. New text is embedded again and every cached vector of the old text is dropped. Null when the id is gone. */
+  async edit(id: number, patch: EditPatch): Promise<StoredItem | null> {
+    const it = this.items.get(id);
+    if (!it) return null;
+    if (patch.kind !== undefined && !KINDS.includes(patch.kind)) throw new Error(`memory: unknown kind ${JSON.stringify(patch.kind)}`);
+    const text = patch.text?.trim();
+    if (patch.text !== undefined && !text) throw new Error("memory: an edit cannot empty the text. forget the memory instead.");
+    const retext = text !== undefined && text !== it.text;
+    if (text !== undefined) it.text = text;
+    if (patch.kind !== undefined) it.kind = patch.kind;
+    if (patch.scope !== undefined) it.scope = patch.scope;
+    if (patch.importance !== undefined) it.importance = Math.min(1, Math.max(0, patch.importance));
+    if (patch.section !== undefined) it.section = patch.section;
+    if (patch.entities !== undefined) it.entities = [...patch.entities];
+    if (patch.meta !== undefined) it.meta = { ...patch.meta };
+    it.edited = this.now();
+    let vec: Float32Array | null = null;
+    if (retext) {
+      vec = await this.embedOne(it.text);
+      await this.sink.deleteItems([id]);
+    } else if (this.embedder) {
+      vec = (await this.sink.getVectors(this.embedder.id, [id])).get(id) ?? null;
+    }
+    this.index.upsert(this.coreItem(it, vec));
+    await this.sink.putItems([it]);
+    if (retext && vec && this.embedder) await this.sink.putVectors(this.embedder.id, new Map([[id, vec]]));
+    return structuredClone(it);
+  }
+
+  /** Writes a note of one exchange (kind episode, meta.said), or nothing when the user turn is too short. */
+  async addExchange(said: string, reply: string, o: AddOptions & { minWords?: number; replyChars?: number } = {}): Promise<{ id: number; merged: boolean } | null> {
+    const { minWords, replyChars, ...add } = o;
+    const n = exchangeNote(said, reply, { ...(minWords !== undefined ? { minWords } : {}), ...(replyChars !== undefined ? { replyChars } : {}) });
+    if (!n) return null;
+    return this.add(n.text, { kind: "episode", ...add, meta: { ...(add.meta ?? {}), said: n.meta.said } });
+  }
+
+  /** Decay, near duplicate merge and episode folding in one call, with what each removed. */
+  async compact(o: CompactOptions = {}): Promise<CompactReport> {
+    const before = this.items.size;
+    const decayed = o.decay === false ? [] : await this.decay(o.decay ?? 0.05);
+    const merged = o.merge === false || !this.embedder ? [] : await this.mergeNear(o.merge ?? 0.95);
+    const gist = o.consolidate === false ? null : await this.consolidate(o.consolidate ?? {});
+    return { before, after: this.items.size, decayed, merged, gist };
+  }
+
+  /** Counts and an estimate of the bytes this memory holds, plus the browser's estimate for the origin when it gives one. */
+  async usage(o: { storage?: StorageLike | null } = {}): Promise<Usage> {
+    const byKind = Object.fromEntries(KINDS.map((k) => [k, 0])) as Record<Kind, number>;
+    const enc = new TextEncoder();
+    let bytes = 0;
+    for (const it of this.items.values()) {
+      byKind[it.kind]++;
+      bytes += enc.encode(JSON.stringify(it)).length;
+    }
+    bytes += enc.encode(JSON.stringify(this.core.lines)).length;
+    if (this.embedder) bytes += this.items.size * this.embedder.dim * 4;
+    const st = o.storage === undefined ? (globalThis as { navigator?: { storage?: StorageLike } }).navigator?.storage : o.storage;
+    let browser: Usage["browser"] = null;
+    if (st?.estimate) {
+      try {
+        const e = await st.estimate();
+        const persisted = st.persisted ? await st.persisted().catch(() => null) : null;
+        browser = { usage: e.usage ?? null, quota: e.quota ?? null, persisted };
+      } catch {
+        browser = null;
+      }
+    }
+    return { items: this.items.size, byKind, coreLines: this.core.lines.length, bytes, browser };
+  }
+
+  /** Asks the browser not to clear this origin's storage. False when it says no or cannot. */
+  async persist(o: { storage?: StorageLike | null } = {}): Promise<boolean> {
+    const st = o.storage === undefined ? (globalThis as { navigator?: { storage?: StorageLike } }).navigator?.storage : o.storage;
+    if (!st?.persist) return false;
+    try {
+      return await st.persist();
+    } catch {
+      return false;
+    }
   }
 
   private async strengthen(ids: number[]): Promise<void> {

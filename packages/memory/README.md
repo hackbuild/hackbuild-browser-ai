@@ -100,6 +100,24 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 - `export()` gives JSON without vectors; `import()` re-embeds.
 - The clock is injected (`now`); nothing in the package calls Math.random.
 
+## Inspector calls
+
+    const t = await mem.explain("where does the mug go");   // no strengthening
+    // t.how, t.terms [{ term, df, idf }], t.rows [{ rank, used, score, weight, parts, terms, ... }]
+    const last = mem.trace(recallFromTheLastReply);          // the same object for a past recall
+    await mem.edit(id, { text: "the mug goes on the top shelf" });
+    const report = await mem.compact();                      // decay, merge near duplicates, fold episodes
+    const u = await mem.usage();                             // counts, bytes (computed estimate), browser estimate
+    await mem.persist();                                     // asks the browser to keep the origin's storage
+    await mem.addExchange(userTurn, reply);                  // null under 3 meaningful words
+    await mem.recall(q, { skipSaid: userTurnsInView });
+
+Each trace row's `parts` times its `weight` is the core's score, and its
+per term BM25 contributions add up to the core's `bm25`; both are
+recomputed in TypeScript from the core's formulas and a port of its
+tokenizer, and a test holds them equal. `edit` embeds new text again and
+drops every cached vector of the old text.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -118,7 +136,15 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 - exp and ln agree with the host libm to 2e-15 relative (computed in the
   crate tests).
 
+- 2026-11-24: `npx vitest run packages/memory` passes 57 tests, the trace
+  parity for the linear and organic scorers, per term BM25 against the
+  core, edit one, exchange notes and the skip of turns in view,
+  compaction and the usage line with an injected storage manager
+  included.
+
 ### Not verified by anything
+
+- `usage` and `persist` against a real browser's storage manager.
 
 - IndexedDB in a real browser, quota errors and private windows.
 - Loading from file:// in a real page.
@@ -133,9 +159,9 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 10,443 bytes | 10,965 bytes |
+| `dist/index.js` (main entry, imports external) | 13,709 bytes | 14,394 bytes |
 | `wasm/memory.wasm` | 41,134 bytes | 43,190 bytes |
-| `dist/single/index.iife.js` (single file build) | 10,662 bytes | 11,195 bytes |
+| `dist/single/index.iife.js` (single file build) | 13,960 bytes | 14,658 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

@@ -22,6 +22,8 @@ export interface StoredItem {
   section?: string;
   entities?: string[];
   meta?: Record<string, unknown>;
+  /** When a person last changed it by hand, ms since 1970. */
+  edited?: number;
 }
 
 export interface MemorySink {
