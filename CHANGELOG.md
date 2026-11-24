@@ -4,6 +4,15 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Shared origin check, 2026-11-24
+
+- tools: `check-origin.mjs` (`npm run check:origin`) serves two paths
+  from one local host in headless Chrome. Measured: a store entry on
+  opfs, idb and cache, a WebLLM `webllm/model` entry and a
+  `transformersCache` put are each read from the other path; two pages
+  asking for one key at once fetch it twice. Rows 58 to 60 of
+  docs/browser-checks.md.
+
 ### hackbuild-ui pin, 2026-11-23
 
 - examples: hackbuild-ui 0.4.3 to 0.5.0 at commit 5211c3a, pinned by

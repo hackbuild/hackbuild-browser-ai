@@ -22,7 +22,8 @@
     "build:wasm": "node tools/build-wasm.mjs --all",
     "lint:packages": "node tools/lint-packages.mjs",
     "release:dry": "node tools/lint-packages.mjs && node tools/release-plan.mjs",
-    "ui:check": "node tools/vendor/pin-ui.mjs --check"
+    "ui:check": "node tools/vendor/pin-ui.mjs --check",
+    "check:origin": "node tools/check-origin.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
