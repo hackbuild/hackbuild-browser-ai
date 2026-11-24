@@ -53,7 +53,8 @@ Ten pages over the 23 packages, one per thing to see or hear, published at
 <https://hackbuild.github.io/hackbuild-browser-ai/>. Models download from
 their upstream host (Hugging Face) when you press a button; each page
 states the weight licence first, and no weights are hosted there. Build
-them locally with `npm run build && npm run examples`, then
+them locally with `npm run build && npm run examples` (`_site/`, and
+`_site/single/` with one HTML per page that opens from disk), then
 `npm run examples:check` opens each page in the system Chrome on the real
 GPU and writes results and screenshots to `.local/` (results:
 [docs/browser-checks.md](docs/browser-checks.md)).

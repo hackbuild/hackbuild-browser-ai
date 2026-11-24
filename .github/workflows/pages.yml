@@ -23,7 +23,7 @@ jobs:
       - run: node tools/vendor/pin-ui.mjs --check
       - run: npm ci
       - run: npm run build
-      - run: node tools/build-examples.mjs
+      - run: node tools/build-pages.mjs
       # the wasm cores are committed; weights and model files never ship, the pages fetch them from upstream or take a dropped file
       - run: "! find _site -type f | grep -Ei '\\.(glb|gltf|vrm|fbx|bvh|wav|bin|onnx|safetensors|gguf)$'"
       - uses: actions/upload-pages-artifact@v5

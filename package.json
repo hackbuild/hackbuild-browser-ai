@@ -17,7 +17,7 @@
     "typecheck": "tsc -b && tsc -p examples",
     "lint:voice": "git ls-files | grep -Ev '\\.(png|jpe?g|glb|bin|wasm|wav)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock' | xargs node tools/lint-voice.mjs",
     "bundle": "node tools/bundle.mjs",
-    "examples": "node tools/build-examples.mjs",
+    "examples": "node tools/build-pages.mjs",
     "examples:check": "node tools/check-examples.mjs",
     "build:wasm": "node tools/build-wasm.mjs --all",
     "lint:packages": "node tools/lint-packages.mjs",
