@@ -13,3 +13,19 @@ export {
   type Turntable,
 } from "./core.js";
 export { bounds, fitToPrint, toStl, toObj, toPly, cloudToPly, openEdges, volume, type Bounds } from "./export.js";
+export {
+  photoRelief,
+  brightnessHeight,
+  inflateHeight,
+  depthHeight,
+  HEIGHT_SOURCES,
+  RELIEF_DEFAULTS,
+  type HeightSource,
+  type HeightSourceName,
+  type ReliefParams,
+  type PhotoReliefOptions,
+  type PhotoRelief,
+  type RgbaImage,
+  type DepthGrid,
+  type MaskGrid,
+} from "./heights.js";

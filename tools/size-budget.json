@@ -39,9 +39,9 @@
       "dist/single/index.iife.js": 7135
     },
     "@hackbuild/depth-mesh": {
-      "main: dist/index.js bundled": 4562,
+      "main: dist/index.js bundled": 8151,
       "wasm/depth-mesh.wasm": 23546,
-      "dist/single/index.iife.js": 4602
+      "dist/single/index.iife.js": 8031
     },
     "@hackbuild/devices": {
       "main: dist/index.js bundled": 6810,

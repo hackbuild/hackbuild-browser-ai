@@ -46,6 +46,37 @@ Apache-2.0) or any other source.
 - Export: `toStl` (binary), `toObj`, `toPly` and `cloudToPly` (binary),
   `fitToPrint`, `bounds`, `openEdges`, `volume`.
 
+## Photo to relief in one call
+
+`photoRelief(dm, rgba, options)` takes a photo's RGBA pixels and a
+height source and returns the closed relief solid, the heights, the
+cell size and status notes (as the earlier relief bench did). The
+sources are named in `HEIGHT_SOURCES`, in the bench's height from order:
+`depth` (Depth Anything, needs a model or a stored map), `brightness`
+and `inflate` (a silhouette domed by its distance to the outline); both
+of the last two need no model. Options are the bench's: `width` (mm),
+`base` and `height` (the relief range, mm), `gamma`, `bgcut` (depth and
+brightness), `smooth` (mm), `invert`, `threshold` (inflate), plus a
+relief `mask` (a segmentation mask works), the `erase` and `restore`
+brush masks (restore wins), `keepLargest` and `cells` (grid columns,
+default the photo width up to 256). Masks of any size are resampled.
+
+    import { depth, fitSize } from "@hackbuild/vision";
+    import { photoRelief, toStl } from "@hackbuild/depth-mesh";
+
+    const r = await photoRelief(dm, ctx.getImageData(0, 0, w, h), {
+      source: "depth",
+      depth: saved ?? (() => depth(hub, canvas)),       // a stored map skips the model
+      width: 30, base: 0.24, height: 2.4, bgcut: 0.25, smooth: 0.3,
+      erase, restore,
+    });
+    store(r.depth);                                      // keep the map with the design
+    download("relief.stl", toStl(r.mesh));               // mm, centred, image up is +y
+
+When depth fails or no map is given, the call uses brightness and
+`r.notes` says why; `r.source` is the source used. `brightnessHeight`,
+`inflateHeight` and `depthHeight` are the sources on their own.
+
 Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 @hackbuild/depth-mesh`.
 
@@ -68,8 +99,19 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   carved hull and the relief solid have no open edges; volumes are
   positive and near the box's.
 
+- 2026-11-24: `npx vitest run packages/depth-mesh` passes 12 tests: the
+  three named sources; brightness from a ramp; the inflate dome highest
+  in the middle of a disc, and inverted; depth through a call, resampled,
+  kept on the result, inverted; the fallback to brightness with its
+  note; background cut, relief mask, erase and restore; keep largest;
+  closed solids (0 open edges, computed) and an STL of the right length.
+
 ### Not verified by anything
 
+- `photoRelief` on a real photo with a real Depth Anything map, and its
+  speed; the inflate blur matches the bench's canvas blur only in
+  approach (a gaussian of half the smoothing radius before the
+  threshold).
 - Any real depth map or webcam scan; ICP drift over a real sequence;
   carving with real turntable silhouettes and a real focal length.
 - Printing: no STL from here was sliced or printed.
@@ -79,9 +121,9 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 4,562 bytes | 4,790 bytes |
+| `dist/index.js` (main entry, imports external) | 8,151 bytes | 8,558 bytes |
 | `wasm/depth-mesh.wasm` | 23,546 bytes | 24,723 bytes |
-| `dist/single/index.iife.js` (single file build) | 4,602 bytes | 4,832 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,031 bytes | 8,432 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

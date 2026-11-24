@@ -4,6 +4,16 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Height sources and photo to relief, 2026-11-24
+
+- depth-mesh: `HEIGHT_SOURCES` names depth, brightness and inflate
+  silhouette, each with its params; `brightnessHeight`,
+  `inflateHeight`, `depthHeight`; `photoRelief` takes a photo and a
+  source and returns the closed solid with the relief bench's width,
+  base, height, gamma, background cut, smoothing and invert, a relief
+  mask, the erase and restore brushes and keep largest, falling back to
+  brightness with a note when depth fails.
+
 ### Segment prompts, mask operations and export, 2026-11-24
 
 - vision: `segment` takes a box and negative points; `EmbeddingCache`
