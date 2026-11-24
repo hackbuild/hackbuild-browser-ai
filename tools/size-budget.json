@@ -93,8 +93,8 @@
       "dist/single/index.iife.js": 17609
     },
     "@hackbuild/vision": {
-      "main: dist/index.js bundled": 17157,
-      "dist/single/index.iife.js": 47420
+      "main: dist/index.js bundled": 21326,
+      "dist/single/index.iife.js": 51302
     },
     "@hackbuild/weights": {
       "main: dist/index.js bundled": 9195,

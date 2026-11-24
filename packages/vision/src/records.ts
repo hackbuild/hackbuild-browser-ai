@@ -49,6 +49,13 @@ export const VISION_RECORDS: ModelRecord[] = [
   mp("selfie-segmenter", "segment.person", "image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite", 1, "mediapipe selfie segmenter"),
   mp("face-landmarker", "landmarks.face", "face_landmarker/face_landmarker/float16/1/face_landmarker.task", 4, "mediapipe face landmarker with blendshapes"),
   mp("hand-landmarker", "landmarks.hand", "hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", 8, "mediapipe hand landmarker"),
+  {
+    ...mp("gesture-recognizer", "landmarks.gesture", "gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task", 8, "mediapipe gesture recognizer (7 canned gestures)"),
+    // the model card's licence was not checked when this record was added
+    licence: "unknown, check the mediapipe model card",
+    commercial: "unknown",
+    notes: ["optional: hands feed waves and canned gestures to the signal tracker, which runs on faces alone"],
+  },
   mp("pose-landmarker-lite", "landmarks.pose", "pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", 6, "mediapipe pose landmarker lite"),
   {
     id: "slimsam-77-uniform",

@@ -10,7 +10,7 @@
 import { importEsm } from "@hackbuild/ai-env";
 import type { Factory } from "@hackbuild/models";
 import type { WeightStore } from "@hackbuild/weights";
-import type { Detector, Landmarker, Segmenter } from "./types.js";
+import type { Detector, Landmarker, Landmarks, Segmenter } from "./types.js";
 
 export const TASKS_VISION = "1.2.3";
 
@@ -26,6 +26,7 @@ export interface TasksVision {
   FaceLandmarker?: TaskClass;
   HandLandmarker?: TaskClass;
   PoseLandmarker?: TaskClass;
+  GestureRecognizer?: TaskClass;
 }
 
 export function tasksVisionUrls(version = TASKS_VISION): string[] {
@@ -44,6 +45,7 @@ const CLASS: Record<string, keyof TasksVision> = {
   "landmarks.face": "FaceLandmarker",
   "landmarks.hand": "HandLandmarker",
   "landmarks.pose": "PoseLandmarker",
+  "landmarks.gesture": "GestureRecognizer",
 };
 
 export interface MediapipeProviderOptions {
@@ -100,7 +102,9 @@ function segmenter(t: Task): Segmenter {
 function landmarker(t: Task, kind: string, video: boolean, source: string): Landmarker {
   return {
     async detect(image, o = {}) {
-      const r = (video ? call(t, "detectForVideo", image, o.timestamp ?? 0) : call(t, "detect", image)) as {
+      const g = kind === "landmarks.gesture";
+      const r = (video ? call(t, g ? "recognizeForVideo" : "detectForVideo", image, o.timestamp ?? 0) : call(t, g ? "recognize" : "detect", image)) as {
+        gestures?: MpCategory[][];
         faceLandmarks?: { x: number; y: number; z: number }[][];
         landmarks?: { x: number; y: number; z: number }[][];
         faceBlendshapes?: { categories: MpCategory[] }[];
@@ -108,13 +112,17 @@ function landmarker(t: Task, kind: string, video: boolean, source: string): Land
         handednesses?: MpCategory[][];
       };
       const lists = (kind === "landmarks.face" ? r.faceLandmarks : r.landmarks) ?? [];
-      const out: { points: [number, number, number][][]; source: string; blendshapes?: Record<string, number>[]; handedness?: string[] } = {
+      const out: Landmarks = {
         points: lists.map((l) => l.map((p): [number, number, number] => [p.x, p.y, p.z])),
         source,
       };
       if (r.faceBlendshapes) out.blendshapes = r.faceBlendshapes.map((b) => Object.fromEntries(b.categories.map((c) => [c.categoryName ?? "", c.score])));
       const hd = r.handedness ?? r.handednesses;
       if (hd) out.handedness = hd.map((h) => h[0]?.categoryName ?? "");
+      if (g) out.gestures = lists.map((_, i) => {
+        const top = r.gestures?.[i]?.[0];
+        return top && top.categoryName && top.categoryName !== "None" ? { name: top.categoryName, score: top.score } : null;
+      });
       return out;
     },
     dispose: () => call(t, "close"),

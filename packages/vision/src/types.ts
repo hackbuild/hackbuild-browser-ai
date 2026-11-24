@@ -72,7 +72,8 @@ export interface Segmenter {
   dispose?(): unknown;
 }
 
-export type LandmarkKind = "face" | "hand" | "pose";
+/** "gesture" is hand landmarks plus a canned gesture label per hand (MediaPipe gesture recognizer). */
+export type LandmarkKind = "face" | "hand" | "pose" | "gesture";
 
 export interface Landmarks {
   /** One list per face, hand or body; x and y normalized 0 to 1, z relative. */
@@ -81,6 +82,8 @@ export interface Landmarks {
   blendshapes?: Record<string, number>[];
   /** Hand labels, per hand. */
   handedness?: string[];
+  /** Top canned gesture per hand ("Open_Palm", "Thumb_Up" and so on), null for "None". */
+  gestures?: ({ name: string; score: number } | null)[];
   /** Which record produced this, for status lines after a fallback. */
   source: string;
 }

@@ -38,6 +38,7 @@ also MIT. No weights ship here.
 | segment.person | selfie-segmenter | MediaPipe | Apache-2.0 |
 | landmarks.face | face-landmarker, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | Apache-2.0; MIT |
 | landmarks.hand, landmarks.pose | hand-landmarker, pose-landmarker-lite | MediaPipe | Apache-2.0 |
+| landmarks.gesture (optional) | gesture-recognizer | MediaPipe, hand points plus 7 canned gestures | unknown, model card not checked |
 | vision.caption, vision.ask | smolvlm-256m-instruct | transformers.js, per sub graph dtypes, repetition penalty 1.3 | Apache-2.0 |
 | vision.caption, vision.ask | lfm2-vl-450m | transformers.js, q4f16 on webgpu only (as earlier builds did) | LFM Open License v1.0, commercial use limited by revenue |
 
@@ -108,7 +109,32 @@ uncompressed run length, column major). `encodePng` deflates through
 CompressionStream where the runtime has it and writes stored blocks
 otherwise.
 
+## Perception signals and seen notes
+
+`SignalTracker` turns per frame face and hand readings into steady
+signals and a few events: `arrived`, `left`, `smiled`, `gesture`. The
+clock comes in with each frame. Hands are optional; it runs on faces
+alone.
+
+    const tracker = new SignalTracker();
+    const notes = new SeenNotes();
+    const f = await landmarks(hub, "face", video, { timestamp: now });
+    const h = everyOther ? await landmarks(hub, "gesture", video, { timestamp: now }) : null;
+    for (const e of tracker.feed(rawFromLandmarks(f, h), now)) for (const r of reactionsFor(e, rng)) play(r);
+    const seen = notes.next(tracker.perception, wantsLook(text) ? await caption(hub, still) : null); // null when nothing changed
+
+Thresholds are vendor figures from earlier builds, none measured here:
+presence grace 2.5 s, "left" after 8 s, "arrived" after 20 s away, smile
+on at 0.55 and off at 0.3 held 500 ms with a 10 s cooldown, gestures held
+350 ms with a 4 s cooldown and a 0.6 score floor, a wave as 2 wrist
+reversals inside 1.5 s above face level. `DEFAULT_REACTIONS` is data
+(smile back after 600 ms at 0.7 chance, drawn from the injected rng);
+`gazeTarget` applies a gain of 1.3. Frames never leave the tab; only the
+signals and the lowercase note do.
+
 ## What is verified, and what is not
+
+- Signals: the tracker's rules (noise, smile hold and cooldown, presence grace, left and arrived, wave and low hand, gesture score floor) and the seen note run in unit tests on synthetic frames. Not tuned against a live camera in this repository.
 
 ### Verified on this machine
 
@@ -165,8 +191,8 @@ otherwise.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 17,157 bytes | 18,014 bytes |
-| `dist/single/index.iife.js` (single file build) | 47,420 bytes | 49,791 bytes |
+| `dist/index.js` (main entry, imports external) | 21,326 bytes | 22,392 bytes |
+| `dist/single/index.iife.js` (single file build) | 51,302 bytes | 53,867 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
