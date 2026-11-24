@@ -4,7 +4,11 @@ import { TRANSCRIBE_RECORDS } from "./records.js";
 
 export { analyze, finishReel, options as frontEndOptions, SR, HOP, FRAME, type Analysis, type FrontEndOptions } from "./frontend.js";
 export { packReels, materialize, mapTime, type Reel, type Run, type MappedRun, type Materialized } from "./reels.js";
-export { cleanup, HARD, SOFT, WEAK, type Seg, type Dropped, type DropReason } from "./cleanup.js";
+export { cleanup, HARD, SOFT, WEAK, type Seg, type Word, type Dropped, type DropReason } from "./cleanup.js";
+export { WHISPER_LANGUAGES, englishOnly, languagesFor, type Language, type LanguageChoice } from "./languages.js";
+export { asTxt, asSrt, asVtt, asJson, bundle, baseName, type TranscriptDoc, type Manifest, type ManifestFile } from "./export.js";
+export { levelRail, regate, railBins, type LevelRail, type RailBins } from "./rail.js";
+export { createQueue, acceptsFile, measure, type FileQueue, type QueueOptions, type Job, type JobState, type FileLike, type FileMeta, type Decoded } from "./queue.js";
 export { transcribe, toMono, type Asr, type AsrOutput, type TranscribeOptions, type Transcript } from "./transcribe.js";
 export { TRANSCRIBE_RECORDS, defaultTranscribeId } from "./records.js";
 export { LiveSegmenter, StreamDecimator, StreamResampler, toSixteenK, lowpassTaps, blockDb, type LiveOptions } from "./live.js";

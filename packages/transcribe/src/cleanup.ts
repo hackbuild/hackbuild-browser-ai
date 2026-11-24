@@ -9,10 +9,26 @@
 
 import { coverage, type Region } from "@hackbuild/audio-dsp";
 
+/** One timed word, seconds. */
+export interface Word {
+  start: number;
+  end: number;
+  text: string;
+  /** 0 to 1, when the engine gives one. */
+  confidence?: number;
+}
+
 export interface Seg {
   start: number;
   end: number;
   text: string;
+  /** Speaker label, set by hand; no diarization runs here. */
+  speaker?: string;
+  /** 0 to 1, when the engine gives one. */
+  confidence?: number;
+  words?: Word[];
+  /** Set when a person changed the text, speaker or times. */
+  edited?: boolean;
 }
 
 export type DropReason = "empty" | "watermark" | "outro" | "phantom" | "loop" | "repeat";

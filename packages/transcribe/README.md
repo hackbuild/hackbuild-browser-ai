@@ -53,6 +53,36 @@ segment at 24 s; segments under 0.7 s are dropped; at most 4 wait.
 `webSpeech({ onSegment })` wraps the browser's recognizer (Chrome sends
 the audio to its service; tell the user).
 
+## Queue, languages, rail and exports
+
+    import { createQueue, languagesFor, regate, railBins, bundle, asSrt } from "@hackbuild/transcribe";
+
+    const q = createQueue({
+      decode: (file) => decodeAudio(file),                       // @hackbuild/media
+      run: (a, { signal, progress }) => transcribe(hub, dsp, toMono(a.channels), { signal, onProgress: (p) => progress(p.done / p.total) }),
+      onChange: (jobs) => render(jobs),                          // queued, running (decoding, working), done, failed
+    });
+    const { skipped, warnings } = q.add(droppedFiles);           // ui lines, lowercase
+    await q.start();                                             // q.stop(), q.cancel(id), q.retry(id)
+
+`languagesFor(record, wanted)` gives auto detect plus 19 languages, or
+english only and locked with the reason; `englishOnly` also catches a
+custom repo id ending in `.en`. A transcript carries `rail` (frame levels,
+the floor and gate threshold per frame, kept frames), `model` and
+`language`; `regate(rail, { vadMargin })` moves the gate without a model
+run and `railBins(rail, width)` folds it for drawing. Segments take an
+optional `speaker` (by hand), `confidence`, `words` and `edited`.
+`asTxt`, `asSrt`, `asVtt` and `asJson` write one file; `bundle(docs)`
+writes a store only zip with four files per source and `manifest.json`
+holding each file's own model, language and levels.
+
+The english only Whisper rows (Xenova tiny.en, base.en, small.en) stay:
+their repos list the fp32 and q8 (`_quantized`) encoder and merged
+decoder files the ladder asks for (measured from the hub file listing,
+2026-11-24). The earlier transcription tool failed on them because it
+passed `task` and `language`, which transformers.js rejects for an
+english only model; `transcribe` passes neither to them.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -72,9 +102,16 @@ the audio to its service; tell the user).
   test is skipped without them. Dropped lines carry no end time in the
   export, so the test gives them 2 s, and coverage is set to full.
 
+- 2026-11-24: `npx vitest run packages/transcribe` passes 29 tests: the
+  language list and the english only lock, the four exports with speaker,
+  confidence and words, the zip read back with crc checks and the
+  manifest, the rail against the analysis and `regate`, and the queue
+  states, failure copy, cancel and stop with stub decoders and runs.
+
 ### Not verified by anything
 
 - Any Whisper or Moonshine model in a browser; word error rates.
+- The queue over real files and `decodeAudio` in a browser.
 - The front end against the earlier transcription tool on the same audio file sample for sample;
   no input audio from that tool was available, only its text outputs.
 - Moonshine's licence beyond the model card line.
@@ -83,8 +120,8 @@ the audio to its service; tell the user).
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 8,457 bytes | 8,879 bytes |
-| `dist/single/index.iife.js` (single file build) | 9,589 bytes | 10,068 bytes |
+| `dist/index.js` (main entry, imports external) | 13,524 bytes | 14,200 bytes |
+| `dist/single/index.iife.js` (single file build) | 15,495 bytes | 16,269 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

@@ -36,7 +36,7 @@ export interface Analysis {
   vad: Region[];
   noise: Float32Array | null;
   /** All levels in dB, computed. */
-  stats: { dur: number; noiseDb: number; speechDb: number; snrDb: number; gainDb: number; density: number; thrDb: number; forced: boolean };
+  stats: { dur: number; noiseDb: number; speechDb: number; snrDb: number; gainDb: number; density: number; thrDb: number; loudDb: number; forced: boolean };
   gain: number;
 }
 
@@ -57,7 +57,8 @@ export function analyze(dsp: Dsp, raw: Float32Array, opts: FrontEndOptions = {})
   const bdb = dsp.frameDb(sig, HOP, FRAME);
   const nF = vdb.length;
   const noiseDb = dsp.noiseFloor(vdb);
-  const thr = gateThreshold(noiseDb, dsp.percentile(vdb, 0.95), o.vadMargin);
+  const loudDb = dsp.percentile(vdb, 0.95);
+  const thr = gateThreshold(noiseDb, loudDb, o.vadMargin);
   let vad: Region[] = o.skipSilence ? gate(vdb, thr, n) : [[0, n]];
   let speech = vad.reduce((a, [x, y]) => a + (y - x), 0);
   let forced = false;
@@ -87,7 +88,7 @@ export function analyze(dsp: Dsp, raw: Float32Array, opts: FrontEndOptions = {})
     vad,
     noise,
     gain,
-    stats: { dur, noiseDb, speechDb, snrDb: speechDb - noiseDb, gainDb: 20 * Math.log10(gain), density: speech / n, thrDb: thr, forced },
+    stats: { dur, noiseDb, speechDb, snrDb: speechDb - noiseDb, gainDb: 20 * Math.log10(gain), density: speech / n, thrDb: thr, loudDb, forced },
   };
 }
 

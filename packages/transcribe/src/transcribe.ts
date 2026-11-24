@@ -8,6 +8,8 @@ import type { Dsp } from "@hackbuild/audio-dsp";
 import type { Hub, Loaded, RunOptions } from "@hackbuild/models";
 import { cleanup, type Dropped, type Seg } from "./cleanup.js";
 import { analyze, finishReel, SR, type FrontEndOptions } from "./frontend.js";
+import { englishOnly } from "./languages.js";
+import { levelRail, type LevelRail } from "./rail.js";
 import { mapTime, materialize, packReels } from "./reels.js";
 
 /** The transformers.js ASR pipeline call shape. */
@@ -35,7 +37,13 @@ export interface TranscribeOptions extends FrontEndOptions {
 export interface Transcript {
   segments: Seg[];
   dropped: Dropped[];
-  stats: { dur: number; noiseDb: number; speechDb: number; snrDb: number; gainDb: number; density: number; reels: number; wall: number; rtf: number; forced: boolean };
+  stats: { dur: number; noiseDb: number; speechDb: number; snrDb: number; gainDb: number; density: number; thrDb: number; loudDb: number; reels: number; wall: number; rtf: number; forced: boolean };
+  /** The level rail: frame levels, floor and gate lines, kept frames. */
+  rail: LevelRail;
+  /** Record id of the run, "" when no reel reached a model. */
+  model: string;
+  /** Language passed to the model: a code, "auto", or "en" for an english only model. */
+  language: string;
 }
 
 export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: TranscribeOptions = {}): Promise<Transcript> {
@@ -44,9 +52,10 @@ export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: Tr
   const a = analyze(dsp, pcm16k, o);
   const reels = packReels(a.vad, a.vdb, Math.round(26 * SR), Math.round(0.12 * SR));
   const base = { ...a.stats, reels: reels.length, wall: 0, rtf: 0 };
-  if (!reels.length) return { segments: [], dropped: [], stats: base };
+  const rail = levelRail(a, o.vadMargin ?? 6);
+  if (!reels.length) return { segments: [], dropped: [], stats: base, rail, model: o.model ?? "", language: o.language ?? "auto" };
   const model: Loaded<Asr> = await hub.use<Asr>(o.model ? { id: o.model } : "transcribe", o.signal ? { signal: o.signal } : {});
-  const english = model.record.notes?.some((n) => /english only/.test(n)) ?? false;
+  const english = englishOnly(model.record);
   // transformers.js refuses task and language for an english only model, so both go only to multilingual ones
   const call: Record<string, unknown> = english ? { return_timestamps: true } : { return_timestamps: true, task: "transcribe" };
   if (o.language && o.language !== "auto" && !english) call.language = o.language;
@@ -78,7 +87,8 @@ export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: Tr
   segs.sort((x, y) => x.start - y.start);
   const { kept, dropped } = cleanup(segs, a.vad, o.halluc ?? true);
   const wall = (now() - t0) / 1000;
-  return { segments: kept, dropped, stats: { ...base, wall, rtf: a.stats.dur / Math.max(0.001, wall) } };
+  const language = english ? "en" : (o.language ?? "auto");
+  return { segments: kept, dropped, stats: { ...base, wall, rtf: a.stats.dur / Math.max(0.001, wall) }, rail, model: model.record.id, language };
 }
 
 /** Mono from a decoded buffer, as earlier builds chose it: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest. */

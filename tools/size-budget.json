@@ -89,8 +89,8 @@
       "dist/single/index.iife.js": 9310
     },
     "@hackbuild/transcribe": {
-      "main: dist/index.js bundled": 8457,
-      "dist/single/index.iife.js": 9589
+      "main: dist/index.js bundled": 13524,
+      "dist/single/index.iife.js": 15495
     },
     "@hackbuild/vision": {
       "main: dist/index.js bundled": 17157,
