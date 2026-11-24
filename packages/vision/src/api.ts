@@ -11,7 +11,8 @@ import type { OrtModel, TjsProvider } from "@hackbuild/devices";
 import type { Hub, Loaded, ModelRecord, RunOptions, SizeClass, UseOptions } from "@hackbuild/models";
 import { depthLoader, samLoader, vlmLoader } from "./loaders.js";
 import { VISION_RECORDS } from "./records.js";
-import type { DepthMap, Detection, Detector, ImageInput, LandmarkKind, Landmarker, Landmarks, Mask, Pixels, SegmentPrompt, Segmenter, Vlm } from "./types.js";
+import { hasPrompt } from "./segment.js";
+import type { DepthMap, Detection, Detector, ImageInput, LandmarkKind, Landmarker, Landmarks, Mask, Pixels, SegmentOptions, SegmentPrompt, Segmenter, Vlm } from "./types.js";
 import { yoloDetector } from "./yolo.js";
 
 /** Add the vision records and register the transformers.js loaders. MediaPipe and ort factories are provided by the app. */
@@ -74,10 +75,18 @@ export function detect(
   return withModel<unknown, Detection[]>(hub, target("detect", o), (v) => asDetector(v, o.toPixels).detect(image, opts), o);
 }
 
-/** Point prompted masks (SlimSAM), or a person mask without a prompt (selfie segmenter). Best first. */
-export function segment(hub: Hub, image: ImageInput, prompt?: SegmentPrompt, o: CallOptions = {}): Promise<Mask[]> {
-  const cap = prompt?.points?.length ? "segment" : "segment.person";
-  return withModel<Segmenter, Mask[]>(hub, target(cap, o), (m) => m.segment(image, prompt), o);
+/**
+ * Point, negative point and box prompted masks (SlimSAM), or a person mask
+ * without a prompt (selfie segmenter). Best first. The image is encoded
+ * once: pass `key` (an image hash) and your own `cache` to keep and drop
+ * embeddings yourself.
+ */
+export function segment(hub: Hub, image: ImageInput, prompt?: SegmentPrompt, o: CallOptions & SegmentOptions = {}): Promise<Mask[]> {
+  const cap = hasPrompt(prompt) ? "segment" : "segment.person";
+  const so: SegmentOptions = {};
+  if (o.key !== undefined) so.key = o.key;
+  if (o.cache) so.cache = o.cache;
+  return withModel<Segmenter, Mask[]>(hub, target(cap, o), (m) => m.segment(image, prompt, so), o);
 }
 
 /** Records for a landmark kind in fallback order: the routed record first, then the rest. */

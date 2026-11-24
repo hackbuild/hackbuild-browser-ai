@@ -4,6 +4,17 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Segment prompts, mask operations and export, 2026-11-24
+
+- vision: `segment` takes a box and negative points; `EmbeddingCache`
+  keeps one embedding per image, keyed by a caller hash or the image,
+  and can be passed in to see and drop entries; `promptSegmenter` builds
+  a cached segmenter from an encoder and a decoder; SlimSAM scores are
+  clamped to 0 to 1.
+- vision: mask operations (union, intersect, subtract, invert,
+  threshold, feather, dilate, erode, largest piece) and export (grey PNG,
+  cutout PNG with alpha, SVG outline, COCO run length JSON).
+
 ### Conversation core, 2026-11-24
 
 - converse: new package. `createConversation` with send, stop, redo,

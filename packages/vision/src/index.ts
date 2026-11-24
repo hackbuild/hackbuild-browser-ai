@@ -8,6 +8,7 @@ export type {
   Detector,
   Mask,
   SegmentPrompt,
+  SegmentOptions,
   Segmenter,
   LandmarkKind,
   Landmarks,
@@ -23,3 +24,27 @@ export { yoloDetector, decodeYolo, letterboxParams, letterboxTensor, nms, iou, d
 export { perceptionLoop, readbackLoop, ResultCache, depthToRgba, fitSize, type Loop, type LoopOptions, type ReadbackOptions } from "./loop.js";
 export { depthWorker, DEPTH_WORKER_SOURCE, type DepthWorker, type DepthWorkerOptions, type Pixels as WorkerPixels } from "./worker.js";
 export { visionStubs, rampDepth, centreDetector, discSegmenter, fixedLandmarker, fixedVlm } from "./stubs.js";
+export { EmbeddingCache, promptSegmenter, hasPrompt, type PromptSegmenterOptions } from "./segment.js";
+export {
+  emptyMask,
+  maskArea,
+  maskThreshold,
+  maskUnion,
+  maskIntersect,
+  maskSubtract,
+  maskInvert,
+  maskDilate,
+  maskErode,
+  maskFeather,
+  maskLargestComponent,
+  maskToRgba,
+  cutoutRgba,
+  encodePng,
+  maskToPng,
+  cutoutPng,
+  maskOutline,
+  maskToSvg,
+  maskToRle,
+  maskFromRle,
+  type MaskRle,
+} from "./masks.js";

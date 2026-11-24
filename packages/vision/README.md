@@ -77,6 +77,37 @@ render loop; `detectCadenceMs(latency)` is the earlier scene app's max(0.45 s, 4
 the last latency). `ResultCache` keeps results by key so a depth map is
 computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as earlier builds did) help with canvases.
 
+## Prompts, the embedding cache, mask operations and export
+
+`segment` takes points (label 1 object, 0 background), a box, or both.
+The image is encoded once and every later prompt on it decodes from the
+cached embedding. Pass a stable `key` (an image hash) and your own
+`EmbeddingCache` to see and drop what is kept:
+
+    const cache = new EmbeddingCache(4);                 // four images, least recently used out
+    const opts = { key: imageHash, cache };
+    const [m] = await segment(hub, img, { box: { x: 40, y: 30, w: 200, h: 160 } }, opts);
+    const [n] = await segment(hub, img, { points: [{ x: 90, y: 80 }, { x: 120, y: 90, label: 0 }] }, opts);
+    cache.hits;                                          // 1, the second prompt did not encode
+    cache.delete(imageHash);
+
+`promptSegmenter({ encode, decode })` builds the same cached segmenter
+around any encoder and decoder; scores come back clamped to 0 to 1.
+
+Mask operations are functions on `Mask` (128 and up is inside):
+`maskUnion`, `maskIntersect`, `maskSubtract`, `maskInvert`,
+`maskThreshold`, `maskFeather(m, r)` (gaussian, sigma r / 2, soft edges),
+`maskDilate(m, r)` and `maskErode(m, r)` (a disc of radius r through an
+exact distance transform; the image border is not treated as outside),
+`maskLargestComponent(m, 8 | 4)` and `maskArea`.
+
+Export: `maskToPng` (grey), `cutoutPng(pixels, mask)` (the image with
+the mask as alpha), `maskToSvg` (one even odd path along pixel edges,
+loops from `maskOutline`), `maskToRle` and `maskFromRle` (COCO style
+uncompressed run length, column major). `encodePng` deflates through
+CompressionStream where the runtime has it and writes stored blocks
+otherwise.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -107,11 +138,22 @@ computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as
   webgpu after the images first processor fix: load 8,743 ms, caption
   4,671 ms, the caption names the cube and the scene (measured).
 
+- 2026-11-24: `npx vitest run packages/vision` passes 30 tests: one
+  encode for point, negative point and box prompts on one image, shared
+  encodes in flight, failed encodes dropped, least recently used
+  eviction, SlimSAM fed `input_boxes` and negative labels from one
+  embedding, a box prompt routed through the hub to the stub, union,
+  subtract, invert, a radius 3 dilate giving 29 pixels (computed),
+  erode keeping the border, feather, largest piece at 4 and 8
+  connectivity, PNG grey and alpha read back through zlib, the SVG
+  outline of a square and a ring, and the run length round trip.
+
 ### Not verified by anything
 
 - Any model in a browser: tasks-vision 1.2.3 (as earlier builds did) task
   options and result shapes, transformers.js 4.3.2 SmolVLM, LFM2-VL and
-  SlimSAM class names and processor calls, a real YOLOv8n export's output
+  SlimSAM class names and processor calls (box prompts through
+  `input_boxes` included), a real YOLOv8n export's output
   name and layout.
 - FastSAM: not built. Its weights are AGPL-3.0 and its mask decoder is
   not written; SlimSAM covers point prompts.
@@ -123,8 +165,8 @@ computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 11,990 bytes | 12,589 bytes |
-| `dist/single/index.iife.js` (single file build) | 42,479 bytes | 44,602 bytes |
+| `dist/index.js` (main entry, imports external) | 17,157 bytes | 18,014 bytes |
+| `dist/single/index.iife.js` (single file build) | 47,420 bytes | 49,791 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

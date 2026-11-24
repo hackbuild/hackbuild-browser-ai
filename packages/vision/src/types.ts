@@ -1,5 +1,7 @@
 /** Shapes every vision provider returns, so stubs, MediaPipe, transformers.js and onnxruntime models are interchangeable. */
 
+import type { EmbeddingCache } from "./segment.js";
+
 /** Anything the runtimes accept: an image, canvas, video frame, bitmap, URL or data URL. */
 export type ImageInput = unknown;
 
@@ -52,12 +54,21 @@ export interface Mask {
 }
 
 export interface SegmentPrompt {
-  /** Points in image pixels; label 1 for object, 0 for background. */
+  /** Points in image pixels; label 1 for object, 0 for background (a negative point). */
   points?: { x: number; y: number; label?: 0 | 1 }[];
+  /** A box around the object, image pixels. */
+  box?: Box;
+}
+
+export interface SegmentOptions {
+  /** A stable key for the image, such as a hash; the image object itself when omitted. */
+  key?: string;
+  /** The caller's embedding cache; the segmenter's own when omitted. */
+  cache?: EmbeddingCache<unknown>;
 }
 
 export interface Segmenter {
-  segment(image: ImageInput, prompt?: SegmentPrompt): Promise<Mask[]>;
+  segment(image: ImageInput, prompt?: SegmentPrompt, o?: SegmentOptions): Promise<Mask[]>;
   dispose?(): unknown;
 }
 

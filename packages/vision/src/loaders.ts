@@ -5,6 +5,7 @@
  */
 
 import type { TjsLoadContext, TjsModule } from "@hackbuild/devices";
+import { promptSegmenter } from "./segment.js";
 import type { DepthMap, DepthModel, ImageInput, Mask, Segmenter, Vlm } from "./types.js";
 
 interface TensorLike {
@@ -97,7 +98,7 @@ export async function vlmLoader(ctx: TjsLoadContext): Promise<Vlm> {
   };
 }
 
-/** SlimSAM: one embedding per image (the last image is cached), then point prompts. */
+/** SlimSAM: one embedding per image, kept in an `EmbeddingCache`, then point, negative point and box prompts. */
 export async function samLoader(ctx: TjsLoadContext): Promise<Segmenter> {
   const id = ctx.record.source.modelId!;
   const processor = (await cls(ctx.tjs, "AutoProcessor").from_pretrained(id)) as Fn & {
@@ -107,19 +108,27 @@ export async function samLoader(ctx: TjsLoadContext): Promise<Segmenter> {
     get_image_embeddings(i: unknown): Promise<Record<string, unknown>>;
     dispose?: () => unknown;
   };
-  let last: { image: ImageInput; raw: unknown; inputs: Record<string, unknown>; emb: Record<string, unknown> } | null = null;
-  return {
-    async segment(image, prompt = {}) {
-      if (!last || last.image !== image) {
-        const raw = await toRaw(ctx.tjs, image);
-        const inputs = (await processor(raw)) as Record<string, unknown>;
-        last = { image, raw, inputs, emb: await model.get_image_embeddings(inputs) };
-      }
+  type Emb = { raw: unknown; inputs: Record<string, unknown>; emb: Record<string, unknown> };
+  return promptSegmenter<Emb>({
+    async encode(image) {
+      const raw = await toRaw(ctx.tjs, image);
+      const inputs = (await processor(raw)) as Record<string, unknown>;
+      return { raw, inputs, emb: await model.get_image_embeddings(inputs) };
+    },
+    async decode(e, prompt) {
       const pts = prompt.points?.length ? prompt.points : null;
-      if (!pts) throw new Error("slimsam needs at least one point; use segment.person for people without a prompt");
-      const p = (await processor(last.raw, { input_points: [[pts.map((q) => [q.x, q.y])]], input_labels: [[pts.map((q) => q.label ?? 1)]] })) as Record<string, unknown>;
-      const out = (await model({ ...last.emb, input_points: p.input_points, input_labels: p.input_labels })) as { pred_masks: unknown; iou_scores: TensorLike };
-      const masks = await processor.post_process_masks(out.pred_masks, last.inputs.original_sizes, last.inputs.reshaped_input_sizes);
+      const b = prompt.box;
+      const q: Record<string, unknown> = {};
+      if (pts) {
+        q.input_points = [[pts.map((p) => [p.x, p.y])]];
+        q.input_labels = [[pts.map((p) => p.label ?? 1)]];
+      }
+      if (b) q.input_boxes = [[[b.x, b.y, b.x + b.w, b.y + b.h]]];
+      const p = (await processor(e.raw, q)) as Record<string, unknown>;
+      const feed: Record<string, unknown> = { ...e.emb };
+      for (const k of ["input_points", "input_labels", "input_boxes"]) if (p[k] !== undefined) feed[k] = p[k];
+      const out = (await model(feed)) as { pred_masks: unknown; iou_scores: TensorLike };
+      const masks = await processor.post_process_masks(out.pred_masks, e.inputs.original_sizes, e.inputs.reshaped_input_sizes);
       const m = masks[0]!;
       const [n, h, w] = m.dims.slice(-3) as [number, number, number];
       const res: Mask[] = [];
@@ -128,8 +137,8 @@ export async function samLoader(ctx: TjsLoadContext): Promise<Segmenter> {
         for (let i = 0; i < w * h; i++) data[i] = m.data[k * w * h + i] ? 255 : 0;
         res.push({ width: w, height: h, data, score: out.iou_scores.data[k] ?? 0 });
       }
-      return res.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      return res;
     },
     dispose: () => model.dispose?.(),
-  };
+  });
 }
