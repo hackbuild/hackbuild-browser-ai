@@ -2,6 +2,8 @@
 
 Run language, vision and speech models in a browser tab: one chat interface over local runtimes, a resumable weights cache, structured output for small models, memory, voice in and out, character cards and an agent loop.
 
+Live examples: <https://hackbuild.github.io/hackbuild-browser-ai/>
+
 Status, 2026-11-23: 23 packages and 5 Rust cores, all in `packages/` and `crates/`.
 Nothing is published to npm.
 
