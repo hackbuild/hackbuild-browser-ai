@@ -76,6 +76,18 @@ optional `speaker` (by hand), `confidence`, `words` and `edited`.
 writes a store only zip with four files per source and `manifest.json`
 holding each file's own model, language and levels.
 
+`importTranscript(name, text)` reads a dropped json, srt or vtt back into
+a document for editing, picking the format by extension or by its first
+characters. Each parser reads what the matching exporter writes, so times
+survive to the millisecond with text and speakers; the json also keeps
+confidence, words, the edited mark, dropped lines, model and language.
+srt has no speaker field, so `{ speakers: true }` reads the leading
+"name: " that `asSrt` writes; it is off by default. vtt voice tags come
+back as speakers; cue ids, settings, notes, styles, mm:ss stamps and
+styling tags from other tools are read or skipped. A file it cannot read
+throws a `TranscriptImportError` whose message is the copy, e.g. "this is
+not a vtt file. it must start with WEBVTT."
+
 The english only Whisper rows (Xenova tiny.en, base.en, small.en) stay:
 their repos list the fp32 and q8 (`_quantized`) encoder and merged
 decoder files the ladder asks for (measured from the hub file listing,
@@ -108,6 +120,12 @@ english only model; `transcribe` passes neither to them.
   manifest, the rail against the analysis and `regate`, and the queue
   states, failure copy, cancel and stop with stub decoders and runs.
 
+- 2026-11-24: `test/import.test.ts`, 8 tests: json, srt and vtt
+  exported by asJson, asSrt and asVtt (speakers, escapes, a two line cue,
+  a stamp past an hour) parse back equal and export again byte for byte;
+  the audio-dsp toSrt, toVtt and toJson layouts read back; vtt and srt
+  written by hand in other tools' styles; the refusal copy.
+
 ### Not verified by anything
 
 - Any Whisper or Moonshine model in a browser; word error rates.
@@ -120,8 +138,8 @@ english only model; `transcribe` passes neither to them.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 13,524 bytes | 14,200 bytes |
-| `dist/single/index.iife.js` (single file build) | 15,495 bytes | 16,269 bytes |
+| `dist/index.js` (main entry, imports external) | 15,804 bytes | 16,594 bytes |
+| `dist/single/index.iife.js` (single file build) | 17,609 bytes | 18,489 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

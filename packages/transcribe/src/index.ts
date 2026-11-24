@@ -7,6 +7,7 @@ export { packReels, materialize, mapTime, type Reel, type Run, type MappedRun, t
 export { cleanup, HARD, SOFT, WEAK, type Seg, type Word, type Dropped, type DropReason } from "./cleanup.js";
 export { WHISPER_LANGUAGES, englishOnly, languagesFor, type Language, type LanguageChoice } from "./languages.js";
 export { asTxt, asSrt, asVtt, asJson, bundle, baseName, type TranscriptDoc, type Manifest, type ManifestFile } from "./export.js";
+export { importTranscript, parseSrt, parseVtt, parseTranscriptJson, parseStamp, sniffTranscript, TranscriptImportError, type TranscriptFormat, type ImportOptions } from "./import.js";
 export { levelRail, regate, railBins, type LevelRail, type RailBins } from "./rail.js";
 export { createQueue, acceptsFile, measure, type FileQueue, type QueueOptions, type Job, type JobState, type FileLike, type FileMeta, type Decoded } from "./queue.js";
 export { transcribe, toMono, type Asr, type AsrOutput, type TranscribeOptions, type Transcript } from "./transcribe.js";
