@@ -93,6 +93,33 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
   lessons go to memory and to LESSONS.
 - Clock and Rng are injected; nothing calls Math.random.
 
+## Planner fallback chain
+
+`createPlannerChain` tries the model planner, then a scripted planner,
+then the reflex brain, and records each step down with its reason:
+`absent`, `loading`, `error`, `invalid` (no valid plan after `tries`
+model calls, default 3), `aborted` or `no-match`. `dropLine` turns a drop
+into the line a room shows.
+
+    import { createPlannerChain, dropLine, Reflex } from "@hackbuild/agent";
+    import { scripted } from "@hackbuild/chat";
+
+    const chain = createPlannerChain({
+      tools: registry.names,
+      getModel: () => brain,                 // null until a brain loads
+      loading: () => brainLoading,
+      scripted: scripted({ replies: cannedPlans }),
+      reflex,
+    });
+    const r = await chain.plan({ text: heard, messages });
+    if (r) await run(r.plan.do);
+    for (const d of chain.lastDrops) inspector.push(dropLine(d), d.raw);
+    // "the brain returned no valid plan three times. reflexes took over."
+
+`chain.log` keeps the last 50 drops for the mind tab; each drop carries
+the tier it left, the tier that took over, the tries spent and the last
+raw reply.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -105,7 +132,15 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
   budget, reflex only turns, a tidy goal by planner with a skip list,
   persistence and a single report, blocking after 7 tries, idle picks.
 
+- 2026-11-24: `npx vitest run packages/agent` passes, 31 tests; the
+  planner chain with scripted engines: a valid model plan, three invalid
+  replies stepping down to scripted, reflexes taking over with the absent
+  tier recorded, an error, loading, no brain, nothing left, and a plan
+  function as a tier.
+
 ### Not verified by anything
+
+- The planner chain in a room with a real brain.
 
 - Any real model: how often 0.5B to 4B models (Qwen2.5 0.5B and 1.5B
   Instruct, Apache-2.0; Gemma 3 1B, Gemma terms) return a usable plan
@@ -119,8 +154,8 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 10,395 bytes | 10,914 bytes |
-| `dist/single/index.iife.js` (single file build) | 12,311 bytes | 12,926 bytes |
+| `dist/index.js` (main entry, imports external) | 12,081 bytes | 12,685 bytes |
+| `dist/single/index.iife.js` (single file build) | 13,763 bytes | 14,451 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

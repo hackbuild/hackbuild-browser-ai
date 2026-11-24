@@ -16,3 +16,17 @@ export {
   Agent,
   createAgent,
 } from "./agent.js";
+export {
+  type Tier,
+  type DropReason,
+  type Drop,
+  type ChainRequest,
+  type ChainResult,
+  type PlanFn,
+  type ChainOptions,
+  type PlannerChain,
+  TIERS,
+  createPlannerChain,
+  validPlan,
+  dropLine,
+} from "./chain.js";
