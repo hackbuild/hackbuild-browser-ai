@@ -20,9 +20,9 @@
       "dist/single/index.iife.js": 6087
     },
     "@hackbuild/audio-dsp": {
-      "main: dist/index.js bundled": 8743,
+      "main: dist/index.js bundled": 9218,
       "wasm/audio-dsp.wasm": 27444,
-      "dist/single/index.iife.js": 8563
+      "dist/single/index.iife.js": 9049
     },
     "@hackbuild/biosignal": {
       "main: dist/index.js bundled": 2716,

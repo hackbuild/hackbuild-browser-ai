@@ -360,3 +360,36 @@ export function zipStore(entries: readonly { name: string; data: string | Uint8A
   }
   return out;
 }
+
+/**
+ * Reads a store only zip, as `zipStore` writes it, back into entries. The
+ * central directory gives names and offsets; each entry's crc32 is checked.
+ * Throws on a file that is no zip, a compressed entry, or a crc mismatch,
+ * naming the entry.
+ */
+export function unzipStore(zip: Uint8Array): { name: string; data: Uint8Array }[] {
+  const v = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  let e = zip.length - 22;
+  while (e >= 0 && v.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error("not a zip file: no end of central directory");
+  const n = v.getUint16(e + 10, true);
+  let p = v.getUint32(e + 16, true);
+  const dec = new TextDecoder();
+  const out: { name: string; data: Uint8Array }[] = [];
+  for (let i = 0; i < n; i++) {
+    if (p + 46 > zip.length || v.getUint32(p, true) !== 0x02014b50) throw new Error(`zip directory entry ${i} is damaged`);
+    const method = v.getUint16(p + 10, true);
+    const crc = v.getUint32(p + 16, true);
+    const size = v.getUint32(p + 20, true);
+    const nl = v.getUint16(p + 28, true);
+    const name = dec.decode(zip.subarray(p + 46, p + 46 + nl));
+    const off = v.getUint32(p + 42, true);
+    if (method !== 0) throw new Error(`zip entry ${name} is compressed; only store only zips are read`);
+    const start = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true);
+    const data = zip.subarray(start, start + size);
+    if (data.length !== size || crc32(data) !== crc) throw new Error(`zip entry ${name} fails its crc32 check`);
+    out.push({ name, data });
+    p += 46 + nl + v.getUint16(p + 30, true) + v.getUint16(p + 32, true);
+  }
+  return out;
+}

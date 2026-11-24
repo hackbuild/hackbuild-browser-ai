@@ -20,6 +20,7 @@ import {
   toVtt,
   writeMidi,
   zipStore,
+  unzipStore,
   crc32,
 } from "@hackbuild/audio-dsp";
 import { AUDIO_DSP_WASM_BASE64 } from "@hackbuild/audio-dsp/inline";
@@ -188,6 +189,19 @@ describe("writers", () => {
     expect(z.length).toBe(30 + 5 + 5 + 46 + 5 + 22);
     expect(new DataView(z.buffer).getUint32(0, true)).toBe(0x04034b50);
     expect(new TextDecoder().decode(z.subarray(35, 40))).toBe("hello");
+  });
+  it("reads a store only zip back and names a damaged entry", () => {
+    const bytes = Uint8Array.from([0, 1, 2, 255]);
+    const z = zipStore([{ name: "a.txt", data: "hello" }, { name: "dir/b.bin", data: bytes }, { name: "empty", data: "" }]);
+    const back = unzipStore(z);
+    expect(back.map((x) => x.name)).toEqual(["a.txt", "dir/b.bin", "empty"]);
+    expect(new TextDecoder().decode(back[0]!.data)).toBe("hello");
+    expect([...back[1]!.data]).toEqual([0, 1, 2, 255]);
+    expect(back[2]!.data.length).toBe(0);
+    const bad = z.slice();
+    bad[30 + 5] ^= 1;
+    expect(() => unzipStore(bad)).toThrow(/a\.txt fails its crc32/);
+    expect(() => unzipStore(new Uint8Array(40))).toThrow(/not a zip/);
   });
 });
 

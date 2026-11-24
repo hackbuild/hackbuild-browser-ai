@@ -57,7 +57,8 @@ so the native and wasm builds give the same bits.
   `toLrc`, `parseLrc`, `spreadWords` (as earlier builds did), `encodeWav` and `decodeWav`,
   `writeMidi` (format 1, 480 ticks per quarter, drums on channel 10,
   note times in seconds), `zipStore` (store only, reproducible with a
-  fixed date).
+  fixed date) and `unzipStore`, which reads such a zip back and checks
+  each entry's crc32.
 
 Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 @hackbuild/audio-dsp`.
@@ -112,9 +113,9 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 8,743 bytes | 9,180 bytes |
+| `dist/index.js` (main entry, imports external) | 9,218 bytes | 9,678 bytes |
 | `wasm/audio-dsp.wasm` | 27,444 bytes | 28,816 bytes |
-| `dist/single/index.iife.js` (single file build) | 8,563 bytes | 8,991 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,049 bytes | 9,501 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

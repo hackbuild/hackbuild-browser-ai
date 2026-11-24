@@ -16,6 +16,7 @@ export {
   writeMidi,
   crc32,
   zipStore,
+  unzipStore,
   type Segment,
   type TranscriptJson,
   type MidiNote,
