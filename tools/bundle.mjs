@@ -11,10 +11,10 @@ import { join, resolve } from "node:path";
 import { build } from "rolldown";
 
 const root = resolve(import.meta.dirname, "..");
-const pkgs = process.argv.slice(2).length ? process.argv.slice(2) : readdirSync(join(root, "packages"));
+const pkgs = process.argv.slice(2).length ? process.argv.slice(2) : readdirSync(join(root, "packages"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
 
 const alias = {};
-for (const p of readdirSync(join(root, "packages"))) alias[`@hackbuild/${p}`] = join(root, "packages", p, "src", "index.ts");
+for (const p of readdirSync(join(root, "packages"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name)) alias[`@hackbuild/${p}`] = join(root, "packages", p, "src", "index.ts");
 
 const pascal = (s) => s.replace(/(^|[-_.])(\w)/g, (_, _d, c) => c.toUpperCase());
 /** HackbuildAudioDsp for an index entry, HackbuildAudioDspInline for a subpath. */
