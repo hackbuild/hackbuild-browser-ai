@@ -4,8 +4,8 @@
   "margin": 0.05,
   "packages": {
     "@hackbuild/act": {
-      "main: dist/index.js bundled": 7733,
-      "dist/single/index.iife.js": 8913
+      "main: dist/index.js bundled": 13478,
+      "dist/single/index.iife.js": 14268
     },
     "@hackbuild/agent": {
       "main: dist/index.js bundled": 10395,

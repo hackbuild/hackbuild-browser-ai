@@ -6,6 +6,8 @@
  * only for moves the body can make.
  */
 
+import { ACTION_WORDS, EMOTION_WORDS, GESTURE_WORDS, POSTURE_WORDS, aliasesFrom } from "./words.js";
+
 export type ActKind = "mood" | "gesture" | "posture";
 export const KINDS: readonly ActKind[] = ["mood", "gesture", "posture"];
 
@@ -24,8 +26,13 @@ export interface AvatarActs {
   postures?: readonly string[];
 }
 
-/** Common words for the usual names. Only entries whose target the avatar has are kept. */
+/**
+ * Common words for the usual names: the hand table below, then every word
+ * of the word tables (hand entries win). Only entries whose target the
+ * avatar has are kept.
+ */
 export const DEFAULT_ALIASES: Readonly<Record<string, string>> = {
+  ...aliasesFrom(EMOTION_WORDS, GESTURE_WORDS, POSTURE_WORDS, ACTION_WORDS),
   smile: "happy",
   smiles: "happy",
   grin: "happy",
@@ -79,6 +86,7 @@ export const MOOD_RELATIVES: Readonly<Record<string, string>> = {
   excited: "happy",
   amused: "happy",
   proud: "happy",
+  smug: "happy",
   fear: "surprised",
   scared: "surprised",
   confused: "surprised",

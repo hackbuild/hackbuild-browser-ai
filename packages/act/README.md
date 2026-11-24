@@ -32,6 +32,41 @@ code samples also MIT. No model ships here.
     voice.onProgress = (offset) => director.reached(offset);
     history.push({ role: "assistant", content: rawReply });   // keep the tags
 
+## Bind to an avatar's own clips
+
+`bindActs` turns an expression list and a clip library into the three
+lists `buildVocabulary` takes, plus a map from each name back to its
+clips.
+
+    import { bindActs, buildVocabulary, createResolver, pickClip, talkingLoop, idleLoop } from "@hackbuild/act";
+
+    const binding = bindActs({ expressions: avatar.expressions, clips: library.map((c) => ({ id: c.id, name: c.name, folder: c.folder, tags: c.analysisTags })) });
+    const vocab = buildVocabulary(binding.acts);
+    const r = createResolver(vocab).resolve(tag);
+    const clip = r && r.kind !== "mood" ? await pickClip(binding, r.name, sentence, { rng }) : null;   // null: no clip for it, do nothing
+    const idle = idleLoop(binding.all);
+    const talk = talkingLoop(binding.all);
+
+- Classes: `classifyClip` sorts a clip into idle, talk, gesture, posture,
+  dance, reaction, locomotion, action or odd through eight ordered rules
+  (`CLIP_RULES`, data an app can extend) over folder and name, then a
+  `walk` analysis tag; a user tag naming a class wins. Gesture, dance and
+  reaction clips become gestures, posture clips postures, idle and talk
+  clips loops; locomotion, action and odd clips stay out of replies.
+- Names: a clip name that says what it is decides alone ("sits down" with
+  a nod analysis tag binds to sit); tags place only opaque names. Past the
+  cap (default 14) the kinds of movement come first, most common first.
+- `pickClip` prefers a clip named for the thing: without an embedder the
+  draw keeps to named clips through the injected rng; with one, named
+  clips get a 0.15 bonus (vendor). A cued pose relaxes after 6 s
+  (`CUE_POSE_SECONDS`, vendor).
+- Word tables: 256 words in 38 buckets (computed) feed `DEFAULT_ALIASES`
+  and, for moods and conversational gestures only, `DEFAULT_KEYWORDS`.
+  `hug`, `kiss` and `flirt` are in `OPTIONAL_BUCKETS`, off by default;
+  pass them as `buckets` and as aliases to turn them on. `WEAK_WORDS` (28
+  single words, computed) are skipped by the keyword step beside
+  `WEAK_PHRASES`.
+
 ## Contract with speech
 
 The text `feed` and `finish` return is what speech is given. Speech
@@ -96,7 +131,14 @@ not import a speech engine.
   hybrid inference, json style, replay, the grammar text and the JSON
   Schema.
 
+- 2026-11-24: `npx vitest run packages/act` passes, 32 tests, in Node
+  22.18.0: clip class rule order, binding by name over analysis tags,
+  loops kept out of the vocabulary, the name cap, whole word matching,
+  the named bonus, and the optional buckets left out.
+
 ### Not verified by anything
+
+- The binder on a real clip library: only synthetic names ran.
 
 - The GBNF grammar in wllama or llama.cpp, and the JSON Schema in WebLLM
   XGrammar: not compiled by a runtime.
@@ -112,8 +154,8 @@ not import a speech engine.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 7,733 bytes | 8,119 bytes |
-| `dist/single/index.iife.js` (single file build) | 8,913 bytes | 9,358 bytes |
+| `dist/index.js` (main entry, imports external) | 13,478 bytes | 14,151 bytes |
+| `dist/single/index.iife.js` (single file build) | 14,268 bytes | 14,981 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

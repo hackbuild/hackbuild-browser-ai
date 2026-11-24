@@ -43,7 +43,7 @@ describe("resolver", () => {
   });
   test("a kind is honoured, crossing only on exact or alias", () => {
     expect(r.resolve("smile", "gesture")).toMatchObject({ kind: "mood", name: "happy" });
-    expect(r.resolve("nodding", "mood")).toBeNull();
+    expect(r.resolve("nodding slowly", "mood")).toBeNull();
   });
   test("stemmer", () => {
     expect(stem("nodding")).toBe("nod");
