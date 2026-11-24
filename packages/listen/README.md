@@ -53,6 +53,14 @@ code samples also MIT. No weights ship here.
   control. `micBlocks` runs a capture AudioWorklet loaded from a Blob URL
   with a data: URL fallback.
 
+## Conversation settings
+
+`CONVERSATION` is a machine preset for spoken turns: 900 ms of quiet ends
+an utterance (vendor) in place of the default 600 ms, so a breath does
+not cut a sentence. `dropWhileTalking: true` on the listener leaves out
+an utterance that began while the character talked, for when barge in
+is off.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -63,7 +71,13 @@ code samples also MIT. No weights ship here.
   the phantom filter, the hub transcriber with a stub model, and the
   Silero feed shapes against a fake onnxruntime.
 
+- 2026-11-24: the conversation preset's 900 ms end, and
+  `dropWhileTalking` dropping speech that began over the voice and
+  keeping it after (`test/listen.test.ts`).
+
 ### Not verified by anything
+
+- The 900 ms preset in a real conversation.
 
 - Silero VAD v5 on real onnxruntime-web, and whether its output and
   state names match this code (taken from the model's published python
@@ -77,8 +91,8 @@ code samples also MIT. No weights ship here.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 4,950 bytes | 5,197 bytes |
-| `dist/single/index.iife.js` (single file build) | 6,929 bytes | 7,275 bytes |
+| `dist/index.js` (main entry, imports external) | 5,090 bytes | 5,344 bytes |
+| `dist/single/index.iife.js` (single file build) | 7,083 bytes | 7,437 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

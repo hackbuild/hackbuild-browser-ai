@@ -58,9 +58,34 @@ export interface StoreOptions {
   onNotice?: (line: string) => void;
   /** navigator.storage.estimate, injectable. */
   estimate?: () => Promise<{ usage?: number; quota?: number }>;
+  /** navigator.storage.persist and persisted, injectable. */
+  persist?: () => Promise<boolean>;
+  persisted?: () => Promise<boolean>;
+  /**
+   * Web Locks, so pages and workers of one origin share one download per
+   * key: the second page waits, then reads what the first stored. Default
+   * navigator.locks where present; false turns it off.
+   */
+  locks?: LocksLike | false;
   /** Page protocol; "file:" removes opfs and cache from auto. */
   protocol?: string;
   now?: () => number;
+}
+
+/** The part of navigator.locks the store uses. */
+export interface LocksLike {
+  request<T>(name: string, opts: { signal?: AbortSignal }, fn: () => Promise<T>): Promise<T>;
+}
+
+/** One download in flight, for a row with its own bar and cancel. */
+export interface DownloadRow {
+  key: string;
+  url: string;
+  loaded: number;
+  total: number | null;
+  fraction: number | null;
+  /** Callers waiting on this download. */
+  waiters: number;
 }
 
 export interface Estimate {
@@ -83,6 +108,16 @@ export interface WeightStore {
   evict(key: string): Promise<void>;
   keys(): Promise<string[]>;
   estimate(): Promise<Estimate>;
+  /** Downloads in flight, oldest first. */
+  downloads(): DownloadRow[];
+  /** Called with the rows whenever a download starts, moves or ends. Returns an unsubscribe. */
+  onDownloads(fn: (rows: DownloadRow[]) => void): () => void;
+  /** Stop one download for every caller waiting on it; its parts are kept for resume. False when nothing ran under the key. */
+  cancel(key: string): boolean;
+  /** Ask the browser not to clear this origin's storage (navigator.storage.persist). False when refused or missing. */
+  persist(): Promise<boolean>;
+  /** Whether the browser keeps this origin's storage; null when the browser cannot say. */
+  persisted(): Promise<boolean | null>;
 }
 
 function pickBackends(opts: StoreOptions): Backend[] {
@@ -162,8 +197,26 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
     ac: AbortController;
     waiters: number;
     progress: Set<(p: Progress) => void>;
+    row: DownloadRow;
   }
   const inflight = new Map<string, Flight>();
+  const rowFns = new Set<(rows: DownloadRow[]) => void>();
+  const rows = () => [...inflight.values()].filter((f) => !f.ac.signal.aborted).map((f) => ({ ...f.row, waiters: f.waiters }));
+  const tell = () => {
+    if (!rowFns.size) return;
+    const r = rows();
+    for (const fn of rowFns) fn(r);
+  };
+  const g = globalThis as { navigator?: { locks?: LocksLike; storage?: { persist?: () => Promise<boolean>; persisted?: () => Promise<boolean> } } };
+  const locks = opts.locks === false ? null : (opts.locks ?? g.navigator?.locks ?? null);
+  /** Run one download under the origin wide lock for its key, when Web Locks exist. */
+  const locked = <T>(key: string, signal: AbortSignal, fn: () => Promise<T>): Promise<T> => {
+    if (!locks) return fn();
+    return locks.request(`hackbuild-weights:${key}`, { signal }, fn).catch((e: unknown) => {
+      if (signal.aborted && !(e instanceof WeightError)) throw new WeightError("abort", `download of ${key} aborted while another page held it`);
+      throw e;
+    });
+  };
   const onceMap = new Map<string, Promise<Uint8Array>>();
 
   const tellLicence = (key: string, licence: string) => {
@@ -344,13 +397,24 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
         const before = f ? f.p.then(() => undefined, () => undefined) : Promise.resolve();
         const ac = new AbortController();
         const progress = new Set<(p: Progress) => void>();
-        const dl: GetOptions = { signal: ac.signal, onProgress: (x) => progress.forEach((cb) => cb(x)) };
+        const row: DownloadRow = { key, url: ref.url, loaded: 0, total: null, fraction: null, waiters: 0 };
+        const dl: GetOptions = {
+          signal: ac.signal,
+          onProgress: (x) => {
+            row.loaded = x.loaded;
+            row.total = x.total;
+            row.fraction = x.fraction;
+            progress.forEach((cb) => cb(x));
+            tell();
+          },
+        };
         if (o.resume !== undefined) dl.resume = o.resume;
-        const flight: Flight = { p: null as unknown as Promise<Blob>, ac, waiters: 0, progress };
+        const flight: Flight = { p: null as unknown as Promise<Blob>, ac, waiters: 0, progress, row };
         flight.p = before
-          .then(() => download(ref, key, dl))
+          .then(() => locked(key, ac.signal, () => download(ref, key, dl)))
           .finally(() => {
             if (inflight.get(key) === flight) inflight.delete(key);
+            tell();
           });
         f = flight;
         inflight.set(key, f);
@@ -358,6 +422,7 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
       const fl = f;
       fl.waiters++;
       if (o.onProgress) fl.progress.add(o.onProgress);
+      tell();
       return new Promise<Blob>((resolve, reject) => {
         let settled = false;
         const leave = () => {
@@ -437,6 +502,36 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
     },
     keys: () => be.keys(),
     estimate,
+    downloads: rows,
+    onDownloads(fn) {
+      rowFns.add(fn);
+      return () => rowFns.delete(fn);
+    },
+    cancel(key) {
+      const f = inflight.get(key);
+      if (!f || f.ac.signal.aborted) return false;
+      f.ac.abort();
+      tell();
+      return true;
+    },
+    async persist() {
+      const fn = opts.persist ?? g.navigator?.storage?.persist?.bind(g.navigator.storage);
+      if (!fn) return false;
+      try {
+        return (await fn()) === true;
+      } catch {
+        return false;
+      }
+    },
+    async persisted() {
+      const fn = opts.persisted ?? g.navigator?.storage?.persisted?.bind(g.navigator.storage);
+      if (!fn) return null;
+      try {
+        return (await fn()) === true;
+      } catch {
+        return null;
+      }
+    },
   };
   return store;
 }

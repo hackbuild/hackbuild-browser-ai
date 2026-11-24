@@ -13,9 +13,23 @@ export {
   type Driver,
   type ChatEvent,
   type ChatResult,
+  type ReplyStats,
   type ChatEngine,
 } from "./types.js";
-export { createEngine, isSchemaError, schemaInstruction, type EngineOptions, type EngineQuirks } from "./engine.js";
+export { createEngine, isSchemaError, schemaInstruction, PREWARM_DELAY_MS, type EngineOptions, type EngineQuirks } from "./engine.js";
 export { normalizeMessages, ThinkSplitter, splitThink, stripThink, stripMarkers, maskKey, type NormalizeOptions } from "./text.js";
 export { scripted, scriptedDriver, type ScriptedOptions } from "./scripted.js";
 export { Channel, sse } from "./util.js";
+export {
+  createSession,
+  migrateSession,
+  importSession,
+  exportSession,
+  sessionMessages,
+  sessionToMarkdown,
+  SessionError,
+  SESSION_KIND,
+  SESSION_VERSION,
+  type ChatSession,
+  type SessionMessage,
+} from "./session.js";

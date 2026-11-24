@@ -35,8 +35,8 @@
       "dist/single/index.iife.js": 3110
     },
     "@hackbuild/chat": {
-      "main: dist/index.js bundled": 4942,
-      "dist/single/index.iife.js": 4897
+      "main: dist/index.js bundled": 7290,
+      "dist/single/index.iife.js": 7128
     },
     "@hackbuild/depth-mesh": {
       "main: dist/index.js bundled": 4562,
@@ -44,8 +44,8 @@
       "dist/single/index.iife.js": 4602
     },
     "@hackbuild/devices": {
-      "main: dist/index.js bundled": 5426,
-      "dist/single/index.iife.js": 33476
+      "main: dist/index.js bundled": 6810,
+      "dist/single/index.iife.js": 34880
     },
     "@hackbuild/embed": {
       "main: dist/index.js bundled": 6580,
@@ -56,8 +56,8 @@
       "dist/single/index.iife.js": 2905
     },
     "@hackbuild/listen": {
-      "main: dist/index.js bundled": 4950,
-      "dist/single/index.iife.js": 6929
+      "main: dist/index.js bundled": 5090,
+      "dist/single/index.iife.js": 7083
     },
     "@hackbuild/media": {
       "main: dist/index.js bundled": 2033,
@@ -69,8 +69,8 @@
       "dist/single/index.iife.js": 10662
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 35691,
-      "dist/single/index.iife.js": 35275
+      "main: dist/index.js bundled": 37064,
+      "dist/single/index.iife.js": 36523
     },
     "@hackbuild/notes": {
       "main: dist/index.js bundled": 5040,
@@ -97,8 +97,8 @@
       "dist/single/index.iife.js": 41104
     },
     "@hackbuild/weights": {
-      "main: dist/index.js bundled": 8723,
-      "dist/single/index.iife.js": 8639
+      "main: dist/index.js bundled": 9195,
+      "dist/single/index.iife.js": 9115
     }
   }
 }

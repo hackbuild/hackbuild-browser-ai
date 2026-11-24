@@ -383,3 +383,97 @@ describe("backend choice", () => {
     expect(["idb", "memory"]).toContain(store.backend.name);
   });
 });
+
+/** Web Locks for tests: one holder per name, FIFO, a waiting request leaves on abort. */
+function fakeLocks() {
+  const tails = new Map<string, Promise<unknown>>();
+  return {
+    request<T>(name: string, o: { signal?: AbortSignal }, fn: () => Promise<T>): Promise<T> {
+      const prev = tails.get(name) ?? Promise.resolve();
+      const run = new Promise<T>((resolve, reject) => {
+        let started = false;
+        o.signal?.addEventListener("abort", () => !started && reject(new DOMException("aborted", "AbortError")), { once: true });
+        prev.then(() => {
+          if (o.signal?.aborted) return reject(new DOMException("aborted", "AbortError"));
+          started = true;
+          fn().then(resolve, reject);
+        });
+      });
+      tails.set(name, run.then(() => undefined, () => undefined));
+      return run;
+    },
+  };
+}
+
+describe("rows, cancel, persist and pages", () => {
+  it("lists a download with its progress and drops it at the end", async () => {
+    const data = file(20_000);
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 4096, fetch: server(data, { chunk: 1000 }).fetch, ...quiet });
+    const seen: number[] = [];
+    const off = store.onDownloads((rows) => rows[0] && seen.push(rows[0].loaded));
+    const p = store.get({ url: "https://h.test/rows", licence: "MIT" });
+    expect(store.downloads()).toMatchObject([{ key: "https://h.test/rows", waiters: 1 }]);
+    await p;
+    off();
+    expect(seen.at(-1)).toBe(20_000);
+    expect(store.downloads()).toEqual([]);
+  });
+
+  it("cancel stops a download for every waiter and keeps its parts", async () => {
+    const data = file(40_000);
+    const store = await openWeightStore({ backends: ["memory"], partBytes: 2048, fetch: server(data, { chunk: 500 }).fetch, ...quiet });
+    const ref = { url: "https://h.test/cancel", licence: "MIT" };
+    const a = store.get(ref, { onProgress: (p) => p.loaded >= 5_000 && store.cancel(ref.url) }).catch((e: WeightError) => e.code);
+    const b = store.get(ref).catch((e: WeightError) => e.code);
+    expect(await a).toBe("abort");
+    expect(await b).toBe("abort");
+    expect(store.cancel(ref.url)).toBe(false);
+    expect((await store.meta(ref.url))!.parts.length).toBeGreaterThan(0);
+    expect(store.downloads()).toEqual([]);
+  });
+
+  it("persist and persisted call the browser and say null when it cannot answer", async () => {
+    let asked = 0;
+    const store = await openWeightStore({ backends: ["memory"], persist: async () => (asked++, true), persisted: async () => false, ...quiet });
+    expect(await store.persist()).toBe(true);
+    expect(await store.persisted()).toBe(false);
+    expect(asked).toBe(1);
+    const bare = await openWeightStore({ backends: ["memory"], locks: false, ...quiet });
+    const g = globalThis as { navigator?: { storage?: unknown } };
+    if (!g.navigator?.storage) {
+      expect(await bare.persist()).toBe(false);
+      expect(await bare.persisted()).toBe(null);
+    }
+    const refusing = await openWeightStore({ backends: ["memory"], persist: () => Promise.reject(new Error("no")), ...quiet });
+    expect(await refusing.persist()).toBe(false);
+  });
+
+  it("two stores on one origin download a key once under the lock", async () => {
+    const data = file(30_000);
+    const s = server(data, { chunk: 1000, etag: '"one"' });
+    const shared = memoryBackend();
+    const locks = fakeLocks();
+    const a = await openWeightStore({ backends: [shared], locks, partBytes: 4096, fetch: s.fetch, ...quiet });
+    const b = await openWeightStore({ backends: [shared], locks, partBytes: 4096, fetch: s.fetch, ...quiet });
+    const ref = { url: "https://h.test/pages", licence: "MIT" };
+    const [x, y] = await Promise.all([a.get(ref), b.get(ref)]);
+    expect(s.calls).toHaveLength(1);
+    expect(new Uint8Array(await x.arrayBuffer())).toEqual(data);
+    expect(new Uint8Array(await y.arrayBuffer())).toEqual(data);
+  });
+
+  it("a page waiting on the lock can abort", async () => {
+    const data = file(30_000);
+    const shared = memoryBackend();
+    const locks = fakeLocks();
+    const a = await openWeightStore({ backends: [shared], locks, fetch: server(data, { chunk: 1000 }).fetch, ...quiet });
+    const b = await openWeightStore({ backends: [shared], locks, fetch: server(data).fetch, ...quiet });
+    const ref = { url: "https://h.test/wait", licence: "MIT" };
+    const first = a.get(ref);
+    const ac = new AbortController();
+    const second = b.get(ref, { signal: ac.signal }).catch((e: WeightError) => e.code);
+    ac.abort();
+    expect(await second).toBe("abort");
+    expect((await first).size).toBe(30_000);
+  });
+});

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { createHub, stubFactory } from "@hackbuild/models";
 import { attachTranscribe } from "@hackbuild/transcribe";
-import { VAD_RECORDS, VadMachine, captureWorkletSource, createListener, energyVad, hubTranscriber, sileroVad, type Utterance, type VadEvent, type VadSource } from "@hackbuild/listen";
+import { CONVERSATION, VAD_RECORDS, VadMachine, captureWorkletSource, createListener, energyVad, hubTranscriber, sileroVad, type Utterance, type VadEvent, type VadSource } from "@hackbuild/listen";
 
 const F = 512; // 32 ms
 const frame = () => new Float32Array(F);
@@ -90,6 +90,31 @@ describe("listener", () => {
     await feed(l, [tone(0.6, 0.4, 16000), tone(1, 0, 16000)]);
     expect(barge).toBe(1);
     expect(got.at(-1)).toMatchObject({ text: "stop", bargeIn: true });
+  });
+
+  test("dropWhileTalking leaves out an utterance that began over the voice", async () => {
+    const level: VadSource = { id: "level", prob: (f) => Math.min(1, Math.sqrt(f.reduce((s, v) => s + v * v, 0) / f.length) * 4) };
+    for (const drop of [true, false]) {
+      const got: Utterance[] = [];
+      let asked = 0;
+      const l = createListener({ vad: level, inputRate: 16000, dropWhileTalking: drop, transcribe: async () => (asked++, "stop"), onUtterance: (u) => got.push(u) });
+      l.start();
+      l.setTalking(true);
+      await feed(l, [tone(0.6, 0.6, 16000), tone(1, 0, 16000)]);
+      expect(got.length).toBe(drop ? 0 : 1);
+      expect(asked).toBe(drop ? 0 : 1);
+      // the same speech after the voice stops is kept
+      l.setTalking(false);
+      await feed(l, [tone(0.6, 0.6, 16000), tone(1, 0, 16000)]);
+      expect(got.at(-1)?.text).toBe("stop");
+    }
+  });
+
+  test("the conversation preset waits 900 ms of quiet", () => {
+    const m = new VadMachine(CONVERSATION);
+    const ev = run(m, [...rep(0.9, 400), ...rep(0.1, 700)]);
+    expect(ev.some((e) => e.type === "end")).toBe(false);
+    expect(run(m, rep(0.1, 250)).some((e) => e.type === "end")).toBe(true);
   });
 
   test("the phantom filter drops a subtitle watermark", async () => {

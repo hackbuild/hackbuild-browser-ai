@@ -31,6 +31,8 @@ export interface ListenerOptions {
   /** Microphone rate; any rate is brought to 16 kHz. Default 48000. */
   inputRate?: number;
   machine?: VadOptions;
+  /** Drop an utterance that began while the character talked, for when barge in is off. Default false. */
+  dropWhileTalking?: boolean;
   /** Run the phantom filter on transcripts. Default true. */
   filter?: boolean;
   onUtterance?(u: Utterance): void;
@@ -49,6 +51,7 @@ export class Listener {
   private chain: Promise<void> = Promise.resolve();
   private stateNow: ListenState = "idle";
   private barged = false;
+  private overVoice = false;
   private running = false;
 
   constructor(o: ListenerOptions) {
@@ -121,7 +124,10 @@ export class Listener {
       const p = await this.o.vad.prob(f);
       this.o.onProb?.(p);
       for (const ev of this.machine.process(p, f)) {
-        if (ev.type === "start") this.set("hearing");
+        if (ev.type === "start") {
+          this.overVoice = this.machine.isTalking;
+          this.set("hearing");
+        }
         else if (ev.type === "confirmed" && ev.talking) {
           this.barged = true;
           this.o.onBargeIn?.();
@@ -136,7 +142,13 @@ export class Listener {
   private async utter(audio: Float32Array, speech: [number, number][]): Promise<void> {
     const bargeIn = this.barged;
     this.barged = false;
+    const over = this.overVoice;
+    this.overVoice = false;
     const sec = audio.length / 16000;
+    if (over && this.o.dropWhileTalking) {
+      if (this.running) this.set("listening");
+      return;
+    }
     if (!this.o.transcribe) {
       this.o.onUtterance?.({ text: "", pcm: audio, sec, bargeIn });
       this.set("listening");

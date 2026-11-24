@@ -28,3 +28,4 @@ export {
 } from "./ort.js";
 export { PINS, RUNTIME_SHA256, transformersUrls, ortUrls, ortWasmPaths, runtimeLoader, loadTransformers, loadOrt } from "./runtime.js";
 export { classifyError, ortLadder, walkLadder, type ErrorKind } from "@hackbuild/models";
+export { humanError, type FailureKind } from "./human.js";

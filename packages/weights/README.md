@@ -62,6 +62,21 @@ line; other URLs go through transformers.js's own fetch and are stored on
 licence is the one on its model card (Apache-2.0 for the small variant,
 vendor stated).
 
+## Rows, cancel, persist and other pages
+
+`store.downloads()` lists the downloads in flight with their bytes, and
+`store.onDownloads(fn)` calls back when one starts, moves or ends, so
+each row of a manager has its own bar. `store.cancel(key)` stops one
+download for every caller waiting on it and keeps its parts for resume.
+`store.persist()` asks the browser not to clear this origin's storage
+and `store.persisted()` says whether it will (null when the browser
+cannot say).
+
+Pages of one origin share the store's backends. Each download runs under
+a Web Lock named for its key (`navigator.locks`; `locks: false` turns it
+off), so a second page or tab asking for the same key waits and then
+reads what the first stored, instead of fetching it again.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -79,7 +94,19 @@ vendor stated).
   backends; repo fetch with an optional 404; ORT external data; the
   transformers.js cache object.
 
+- 2026-11-24: rows with progress, cancel for every waiter with parts
+  kept, persist and persisted with and without the browser call, one
+  fetch for two stores on one backend under a fake lock, abort while
+  waiting on the lock (`test/weights.test.ts`).
+- 2026-11-24: `npm run check:origin` in headless Chrome 150: store
+  entries on opfs, idb and cache, a WebLLM entry and a
+  `transformersCache` put are read from another path of the same host,
+  and two pages asking for one key at once fetch it once (measured; rows
+  58 to 60 of docs/browser-checks.md).
+
 ### Not verified by anything
+
+- The Web Lock in Safari and Firefox, and across a worker and a page.
 
 - A real browser. Not run: OPFS, Cache Storage and IndexedDB in Chrome or
   Safari; a multi GB GGUF download; resume against Hugging Face's CDN
@@ -94,8 +121,8 @@ vendor stated).
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 8,723 bytes | 9,159 bytes |
-| `dist/single/index.iife.js` (single file build) | 8,639 bytes | 9,070 bytes |
+| `dist/index.js` (main entry, imports external) | 9,195 bytes | 9,654 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,115 bytes | 9,570 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

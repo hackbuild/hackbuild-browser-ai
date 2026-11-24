@@ -72,6 +72,33 @@ remote engine never loads WebLLM.
   The Anthropic engine sends `anthropic-dangerous-direct-browser-access`
   so a page can call the API directly; the key then lives in that page.
 
+## Stats, prewarm and sessions
+
+Every `ChatResult` carries `stats`: `tokens` (from the runtime's usage,
+"measured", or one per streamed chunk, "inferred"), `firstTokenMs`,
+`tokensPerSecond` after the first token and `totalMs`, on the clock
+passed as `now` (default `performance.now`).
+
+`engine.prewarm(messages)` evaluates the system text and history into
+the runtime's prefix cache before the first send. The wllama driver runs
+a zero token completion with `cache_prompt` on; drivers with no prefix
+cache return false and call nothing. `PREWARM_DELAY_MS` (1,200 ms,
+vendor) is the wait after a prompt or model change before prewarming
+again.
+
+The session schema is one versioned JSON shape for save, export and
+import (`.hbchat.json`): `createSession`, `exportSession`,
+`importSession` (reads older and unversioned `{ messages }` exports,
+drops unknown fields, refuses a bad file with a lowercase reason),
+`sessionMessages` (raw replies back into history, failed and empty ones
+left out) and `sessionToMarkdown`.
+
+`@hackbuild/chat/webllm` adds `webllmPhase(progress)`, which maps
+WebLLM's progress text to fetch, compile and ready, and
+`webllmCache({ modelList })`, which lists, measures and evicts WebLLM's
+own IndexedDB cache per model (the 0.2.84 layout), for the "kept by
+webllm" group beside the weight store.
+
 ## With the hub
 
     hub.provide("wllama", async ({ record }) => loadWllama({ module, blobs: [await store.get(refFor(record))] }));
@@ -97,7 +124,20 @@ remote engine never loads WebLLM.
   build still constructs `new Worker(workerURL, { type: "module" })`, the
   string the file:// patch in `@hackbuild/ai-env` rewrites.
 
+- 2026-11-24: reply stats on a fake clock with and without usage, null
+  first token for an empty reply, prewarm on wllama with the send's
+  normalization and no call on a driver without a cache, session round
+  trip, history hygiene, unversioned import and refusals, markdown,
+  WebLLM phase words, and the WebLLM cache adapter over fake-indexeddb
+  (`test/session.test.ts`).
+
 ### Not verified by anything
+
+- Prewarm against a real wllama build: whether `max_tokens: 0` leaves
+  the prompt in the KV prefix and how much it saves (the 0.24 s against
+  5.9 s first token figures are vendor, from a native runtime).
+- `webllmCache` against a real WebLLM 0.2.84 cache; it was checked
+  against an entry written in the same layout (row 59).
 
 - Any real runtime or model. Not run: WebLLM 0.2.84 or 0.2.89 in Chrome,
   wllama 4.0.0 or 3.8.1 loading a GGUF from file:// or http, transformers.js
@@ -111,8 +151,8 @@ remote engine never loads WebLLM.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 4,942 bytes | 5,189 bytes |
-| `dist/single/index.iife.js` (single file build) | 4,897 bytes | 5,141 bytes |
+| `dist/index.js` (main entry, imports external) | 7,290 bytes | 7,654 bytes |
+| `dist/single/index.iife.js` (single file build) | 7,128 bytes | 7,484 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

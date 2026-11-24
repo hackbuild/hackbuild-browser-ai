@@ -44,7 +44,7 @@ export interface WllamaDriverOptions {
 }
 
 export function wllamaDriver(o: WllamaDriverOptions): Driver {
-  return {
+  const d: Driver = {
     id: `wllama:${o.id ?? "model"}`,
     provider: "wllama",
     caps: { schema: true, tools: false, systemRole: true, stop: true },
@@ -86,6 +86,23 @@ export function wllamaDriver(o: WllamaDriverOptions): Driver {
       await o.wllama.exit?.();
     },
   };
+  // with the prompt cache on, a zero token completion leaves the prompt in the KV prefix
+  if ((o.cachePrompt ?? true) === true) {
+    d.prewarm = async (req) => {
+      const opts: Record<string, unknown> = {
+        messages: req.messages.map((m) => ({ role: m.role === "tool" ? "user" : m.role, content: m.content })),
+        stream: true,
+        max_tokens: 0,
+        cache_prompt: true,
+      };
+      if (req.signal) opts.abortSignal = req.signal;
+      const it = await o.wllama.createChatCompletion(opts);
+      for await (const _ of it) {
+        /* drain: no output is wanted */
+      }
+    };
+  }
+  return d;
 }
 
 export interface LoadWllamaOptions extends EngineOptions {

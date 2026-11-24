@@ -17,7 +17,8 @@ Rerun on 2026-11-23 after the fixes below, same machine and browser:
 the speak, audio-dsp and vision pages (rows 26, 29, 31, 35, 42, 44 and
 the new 57); the other rows are from the first pass. Rows 58 to 60
 are the shared origin check of 2026-11-24 (`npm run check:origin`,
-headless, stub bytes only): 2 pass, 1 fail. Rerun again after
+headless, stub bytes only): 3 pass after the Web Lock landed; row 60
+failed before it. Rerun again after
 the audit fixes on 2026-11-23: the devices and speak pages (rows 1, 5,
 7, 24, 42, 44 and 57).
 
@@ -81,8 +82,8 @@ the audit fixes on 2026-11-23: the devices and speak pages (rows 1, 5,
 | 56 | ai-elements | the chat panel streaming a real engine (Qwen2.5 0.5B, Apache-2.0) for 500 tokens: repaint cost per token measured | browser, model | pass: 500 tokens, frame ms p95 17.4 while streaming and 17.4 idle (measured) |
 | 57 | speak | the bellows voice (bellows-voice 0.8.0 on bellowsjs 0.5.x, MIT, no weights) through the speaker: time to first audio, phoneme times, listened to by a person | browser, network | pass, rerun 2026-11-23 on bellows-voice 0.8.0 from npm: first audio 495 ms cold and 433 ms warm on a second line, at the audio clock, 67 phoneme events (measured); earlier numbers measured scheduling time; not listened to by a person |
 | 58 | weights | shared origin (suite decision D7): a blob put through the store on one path of a host is read on another path, per backend | Chrome, http | pass on opfs, idb and cache: 300,000 stub bytes put on `/a/`, read on `/b/` with sha-256 equal (measured, `node tools/check-origin.mjs`, 2026-11-24, headless Chrome 150) |
-| 59 | weights | the WebLLM 0.2.84 IndexedDB cache (`webllm/model`, store `urls`) and `transformersCache` shared across paths of one host | Chrome, http | pass: a raw `webllm/model` entry of 4,096 bytes and a `transformersCache` put both read on the other path (measured, same run); the real WebLLM runtime not run |
-| 60 | weights | two pages of one origin asking the store for one key at once download it once | Chrome, http | fail: 2 stub fetches for one key (measured, same run); bytes intact on both pages for a 524,288 byte stub, but both pages wrote the same parts. Each store dedupes in memory only, so pages and tabs do not share a flight |
+| 59 | weights | the WebLLM 0.2.84 IndexedDB cache (`webllm/model`, store `urls`) and `transformersCache` shared across paths of one host | Chrome, http | pass: a raw `webllm/model` entry of 4,096 bytes, listed on the other path through `webllmCache` since 2026-11-24, and a `transformersCache` put both read on the other path (measured); the real WebLLM runtime not run |
+| 60 | weights | two pages of one origin asking the store for one key at once download it once | Chrome, http | pass since 2026-11-24: 1 stub fetch (measured) with the store's Web Lock per key. First run the same day, before the lock: 2 stub fetches, both pages writing the same parts |
 
 ## Measured on the first pass
 

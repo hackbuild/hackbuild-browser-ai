@@ -45,6 +45,17 @@ Apache-2.0).
 The walk and error names (`walkLadder`, `classifyError`) are the models
 package's and are re-exported here.
 
+## Failure copy
+
+`humanError(e)` turns a load or run failure into one lowercase line that
+names it and the working alternative ("the model ran out of memory.
+unload another model, or pick the next row down."), through
+`classifyError` and the weight store's error codes. `humanError("mic",
+e)` and `humanError("camera", e)` read a device failure by its
+DOMException name: denied, not found, in use. An unknown failure keeps
+its message. transformers.js file progress now also reaches
+`hub.onLoad` listeners as fetch steps.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
@@ -59,7 +70,14 @@ package's and are re-exported here.
   graph file naming, and the memoized runtime loader retrying after a
   failed import.
 
+- 2026-11-24: each mic and camera error name, each runtime kind, the
+  storage codes, an unknown message, and transformers.js progress
+  reaching `hub.onLoad` (`test/human.test.ts`).
+
 ### Not verified by anything
+
+- The error names each browser really throws for a denied or busy mic
+  and camera.
 
 - The pinned CDN URLs against the real transformers.js 4.3.2 and
   onnxruntime-web 1.27.0 packages, in any browser.
@@ -71,8 +89,8 @@ package's and are re-exported here.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,426 bytes | 5,697 bytes |
-| `dist/single/index.iife.js` (single file build) | 33,476 bytes | 35,149 bytes |
+| `dist/index.js` (main entry, imports external) | 6,810 bytes | 7,150 bytes |
+| `dist/single/index.iife.js` (single file build) | 34,880 bytes | 36,624 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

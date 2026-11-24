@@ -21,7 +21,12 @@ export interface EngineOptions {
   maxTokens?: number;
   /** Start with schemas off (a runtime known to reject them). */
   noSchema?: boolean;
+  /** Clock in ms for reply stats. Default performance.now where present, else Date.now. */
+  now?: () => number;
 }
+
+/** Wait after a prompt, model or persona change before prewarming again (1.2 s, vendor). */
+export const PREWARM_DELAY_MS = 1200;
 
 const SCHEMA_ERR = /grammar|schema|response_format|json_schema|xgrammar|responseConstraint|constraint/i;
 
@@ -47,6 +52,8 @@ function withInstruction(msgs: ChatMessage[], text: string): ChatMessage[] {
 export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngine {
   let noSchema = opts.noSchema ?? !driver.caps.schema;
   const quirks = opts.quirks ?? {};
+  const perf = (globalThis as { performance?: { now(): number } }).performance;
+  const now = opts.now ?? (perf ? () => perf.now() : () => Date.now());
 
   async function* run(messages: readonly ChatMessage[], o: StreamOptions = {}): AsyncGenerator<ChatEvent, ChatResult> {
     const systemRole = (quirks.systemRole ?? true) && driver.caps.systemRole;
@@ -55,6 +62,9 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
     const schemas = o.schema ? [o.schema, ...(o.fallbackSchemas ?? [])] : [];
     let si = 0;
     let useSchema = !!o.schema && !noSchema;
+    const t0 = now();
+    let firstAt: number | null = null;
+    let chunks = 0;
     if (o.schema && !useSchema) schemaFallback = true;
 
     for (let attempt = 0; attempt <= schemas.length + 1; attempt++) {
@@ -117,6 +127,10 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
           const n = await it.next();
           if (n.done) break;
           const ev = n.value;
+          if (ev.type === "text" || ev.type === "think") {
+            if (firstAt === null && ev.text) firstAt = now();
+            if (ev.text) chunks++;
+          }
           if (ev.type === "text") {
             const s = split.push(ev.text);
             if (s.think) {
@@ -169,7 +183,18 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
         }
         yield* visible(end.text, true);
       }
-      const result: ChatResult = { text, think, finish: calls.length && finish === "stop" ? "tool" : finish, toolCalls: calls, schemaFallback, schemaIndex: useSchema ? si : -1 };
+      const end = now();
+      const measured = usage?.output !== undefined;
+      const tokens = measured ? usage!.output! : chunks;
+      const decodeMs = firstAt === null ? 0 : end - firstAt;
+      const stats = {
+        tokens,
+        tokensSource: measured ? ("measured" as const) : ("inferred" as const),
+        tokensPerSecond: firstAt !== null && tokens > 0 && decodeMs > 0 ? tokens / (decodeMs / 1000) : null,
+        firstTokenMs: firstAt === null ? null : firstAt - t0,
+        totalMs: end - t0,
+      };
+      const result: ChatResult = { text, think, finish: calls.length && finish === "stop" ? "tool" : finish, toolCalls: calls, schemaFallback, schemaIndex: useSchema ? si : -1, stats };
       if (usage) result.usage = usage;
       yield { type: "done", result };
       return result;
@@ -188,6 +213,19 @@ export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngi
         const n = await g.next();
         if (n.done) return n.value;
       }
+    },
+    async prewarm(messages, o = {}) {
+      if (!driver.prewarm) return false;
+      const systemRole = (quirks.systemRole ?? true) && driver.caps.systemRole;
+      const msgs = normalizeMessages(normalizeMessages(messages, { systemRole: true, toolAsUser: !driver.caps.tools }), {
+        systemRole,
+        strictAlternation: quirks.strictAlternation ?? false,
+        toolAsUser: !driver.caps.tools,
+      });
+      const req: DriverRequest = { messages: msgs, maxTokens: 0 };
+      if (o.signal) req.signal = o.signal;
+      await driver.prewarm(req);
+      return true;
     },
     async dispose() {
       await driver.dispose?.();

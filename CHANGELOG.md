@@ -4,6 +4,27 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Weights rows, failure copy, stats and sessions, 2026-11-24
+
+- weights: `downloads()` and `onDownloads(fn)` for one row per
+  download, `cancel(key)` for every waiter with parts kept, `persist()`
+  and `persisted()`. Each download runs under a Web Lock per key, so two
+  pages of one origin fetch a key once (row 60 of
+  docs/browser-checks.md, now pass).
+- models: `hub.onLoad(fn)` with fetch, compile, warm, ready and failed
+  steps per model, `ctx.report` for factories; `suggestDefaults(env,
+  input)` and `pickModel` with one reason per field.
+- devices: `humanError(e)`, `humanError("mic", e)` and
+  `humanError("camera", e)`; transformers.js progress reaches
+  `hub.onLoad`.
+- chat: `ChatResult.stats` (tokens with their source word, first token,
+  tokens per second, total); `engine.prewarm(messages)` with a wllama
+  zero token completion; the versioned session schema with import,
+  export, history and markdown; `webllmPhase` and `webllmCache` in
+  `@hackbuild/chat/webllm`.
+- listen: the `CONVERSATION` machine preset (900 ms, vendor) and
+  `dropWhileTalking`.
+
 ### Catalogue facts, 2026-11-24
 
 - models: `ModelRecord` gains `params`, `quant`, `vramMB` with

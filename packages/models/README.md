@@ -117,6 +117,22 @@ slow", "needs f16", "needs webgpu", "over memory", "over storage" or
 "cannot run here" with a lowercase reason. `ggufFacts(fileName)` reads
 params, quant and split part from a GGUF name for a custom row.
 
+## Load steps and defaults
+
+`hub.onLoad(fn)` tells every listener how each load moves: `{ id, phase,
+fraction, file, rung }` with phases fetch, compile, warm, then ready or
+failed. Factories report through `ctx.report(phase, fraction, file)`;
+the transformers.js provider of `@hackbuild/devices` reports file
+progress. A ladder fallback keeps the model's id and moves `rung`.
+
+`suggestDefaults(env, { catalogue, stored, estimate })` returns `{ patch,
+reasons, download, budget }`: the largest stored model that fits the
+budget, the device and thread count, and one `{ label, value, why }`
+row per field. A catalogue row is offered for download only when it is
+1.5 times the stored pick (vendor rule, proposed here) or nothing stored
+fits; with nothing that fits, the smallest stored model is picked and
+the reason says replies may be slow.
+
 ## How later packages attach
 
 A capability package (vision, transcribe, stems, notes, imagegen, speak,
@@ -144,6 +160,12 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
   budget fallback, share and cpu cap, each fit word, preset picks and
   computed totals with the weakest source word, GGUF name facts.
 
+- 2026-11-24: `test/defaults.test.ts`: fallback and cpu budgets in the
+  reasons, largest stored fit, the 1.5 times offer rule, smallest stored
+  with the slow warning, the empty pick with an offer that fits storage,
+  determinism, and `onLoad` phases for two listeners, a ladder fallback,
+  a failure and a throwing listener.
+
 ### Not verified by anything
 
 - The budget constants in a browser, and whether a "fits" row loads.
@@ -157,8 +179,8 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 35,691 bytes | 37,475 bytes |
-| `dist/single/index.iife.js` (single file build) | 35,275 bytes | 37,038 bytes |
+| `dist/index.js` (main entry, imports external) | 37,064 bytes | 38,917 bytes |
+| `dist/single/index.iife.js` (single file build) | 36,523 bytes | 38,349 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

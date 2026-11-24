@@ -134,3 +134,167 @@ export async function loadWebLLM(o: LoadWebLLMOptions): Promise<ChatEngine & { c
   }
   throw new ChatError("load", `webllm could not load ${o.modelId}: ${errors.join("; ")}`);
 }
+
+/** A load step read from WebLLM's progress text, for a row with phase words. */
+export interface WebLLMPhase {
+  phase: "fetch" | "compile" | "ready";
+  /** 0 to 1 from the runtime's own figure. */
+  fraction: number;
+  /** "3 of 24" when the text names a file count. */
+  file?: string;
+}
+
+/**
+ * Map WebLLM 0.2.84 progress text to a phase: "Fetching param cache" and
+ * "Loading model from cache" are fetch, "Loading GPU shader modules" is
+ * compile, "Finish loading" is ready. Unknown text keeps the last phase a
+ * caller saw; this returns fetch for it.
+ */
+export function webllmPhase(p: { progress: number; text: string }): WebLLMPhase {
+  const t = p.text;
+  const phase = /finish loading/i.test(t) ? "ready" : /shader|compil/i.test(t) ? "compile" : "fetch";
+  const m = /\[(\d+)\/(\d+)\]/.exec(t);
+  const out: WebLLMPhase = { phase, fraction: phase === "ready" ? 1 : Math.max(0, Math.min(1, p.progress)) };
+  if (m) out.file = `${m[1]} of ${m[2]}`;
+  return out;
+}
+
+/** One model's share of WebLLM's own IndexedDB cache. */
+export interface WebLLMCacheEntry {
+  modelId: string;
+  /** Bytes of weights, tokenizer, config and wasm stored for the model (measured by reading the entries). */
+  bytes: number;
+  files: number;
+}
+
+/** The fields of a WebLLM model_list entry the cache adapter reads. */
+export interface WebLLMModelEntry {
+  model: string;
+  model_id: string;
+  model_lib?: string;
+}
+
+export interface WebLLMCache {
+  /** Models with at least one stored entry, largest first. */
+  list(): Promise<WebLLMCacheEntry[]>;
+  has(modelId: string): Promise<boolean>;
+  /** Remove a model's weights, tokenizer, config and wasm. A wasm another stored model shares stays. */
+  evict(modelId: string): Promise<void>;
+  /** Bytes of every entry in the three databases, model or not. */
+  bytes(): Promise<number>;
+}
+
+/** WebLLM 0.2.84's IndexedDB databases, each with one store "urls" keyed by "url". */
+export const WEBLLM_DBS = ["webllm/model", "webllm/config", "webllm/wasm"] as const;
+
+/** WebLLM adds "resolve/main/" to a Hugging Face model URL that lacks it; entries are keyed under that base. */
+function modelBase(url: string): string {
+  let u = url.endsWith("/") ? url : `${url}/`;
+  if (!/\/resolve\//.test(u)) u = `${u}resolve/main/`;
+  return u;
+}
+
+const sizeOf = (data: unknown): number =>
+  data instanceof ArrayBuffer ? data.byteLength : ArrayBuffer.isView(data) ? data.byteLength : data instanceof Blob ? data.size : data == null ? 0 : JSON.stringify(data).length;
+
+/** Open an existing WebLLM database; null when it does not exist (the open creates nothing). */
+function openExisting(idb: IDBFactory, name: string): Promise<IDBDatabase | null> {
+  return new Promise((res) => {
+    const r = idb.open(name);
+    r.onupgradeneeded = () => r.transaction?.abort();
+    r.onsuccess = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains("urls")) {
+        db.close();
+        res(null);
+      } else res(db);
+    };
+    r.onerror = () => res(null);
+    r.onblocked = () => res(null);
+  });
+}
+
+/**
+ * List and evict the WebLLM cache per model, so the weights manager shows
+ * it as a second group ("kept by webllm") beside the one weight store.
+ * Reads the IndexedDB layout WebLLM 0.2.84 writes with
+ * `useIndexedDBCache: true`; nothing is imported from WebLLM. Pass the
+ * same model_list the engine was built with (prebuilt plus custom).
+ */
+export function webllmCache(o: { modelList: readonly WebLLMModelEntry[]; indexedDB?: IDBFactory }): WebLLMCache {
+  const idb = o.indexedDB ?? (globalThis as { indexedDB?: IDBFactory }).indexedDB;
+  const entryOf = (id: string) => o.modelList.find((m) => m.model_id === id);
+  /** Every stored url with its size, per database. */
+  async function scan(): Promise<{ db: string; url: string; bytes: number }[]> {
+    if (!idb) return [];
+    const out: { db: string; url: string; bytes: number }[] = [];
+    for (const name of WEBLLM_DBS) {
+      const db = await openExisting(idb, name);
+      if (!db) continue;
+      try {
+        // one entry at a time: a shard can be tens of MB, so the store is never read whole
+        await new Promise<void>((res, rej) => {
+          const c = db.transaction(["urls"], "readonly").objectStore("urls").openCursor();
+          c.onsuccess = () => {
+            const cur = c.result;
+            if (!cur) return res();
+            const v = cur.value as { url: string; data: unknown };
+            out.push({ db: name, url: v.url, bytes: sizeOf(v.data) });
+            cur.continue();
+          };
+          c.onerror = () => rej(c.error);
+        });
+      } finally {
+        db.close();
+      }
+    }
+    return out;
+  }
+  const owns = (m: WebLLMModelEntry, e: { db: string; url: string }) => (e.db === "webllm/wasm" ? e.url === m.model_lib : e.url.startsWith(modelBase(m.model)));
+  const cache: WebLLMCache = {
+    async list() {
+      const all = await scan();
+      const out: WebLLMCacheEntry[] = [];
+      for (const m of o.modelList) {
+        const mine = all.filter((e) => e.db !== "webllm/wasm" && owns(m, e));
+        if (!mine.length) continue;
+        const wasm = all.filter((e) => e.db === "webllm/wasm" && owns(m, e));
+        const files = [...mine, ...wasm];
+        out.push({ modelId: m.model_id, bytes: files.reduce((a, e) => a + e.bytes, 0), files: files.length });
+      }
+      return out.sort((a, b) => b.bytes - a.bytes);
+    },
+    async has(modelId) {
+      const m = entryOf(modelId);
+      if (!m) return false;
+      return (await scan()).some((e) => e.db === "webllm/model" && owns(m, e));
+    },
+    async evict(modelId) {
+      const m = entryOf(modelId);
+      if (!m || !idb) return;
+      const all = await scan();
+      // a wasm library shared with another stored model stays
+      const others = o.modelList.filter((x) => x.model_id !== modelId && x.model_lib === m.model_lib && all.some((e) => e.db === "webllm/model" && owns(x, e)));
+      for (const name of WEBLLM_DBS) {
+        const urls = all.filter((e) => e.db === name && owns(m, e) && !(name === "webllm/wasm" && others.length)).map((e) => e.url);
+        if (!urls.length) continue;
+        const db = await openExisting(idb, name);
+        if (!db) continue;
+        try {
+          const tx = db.transaction(["urls"], "readwrite");
+          for (const u of urls) tx.objectStore("urls").delete(u);
+          await new Promise<void>((res, rej) => {
+            tx.oncomplete = () => res();
+            tx.onerror = () => rej(tx.error);
+          });
+        } finally {
+          db.close();
+        }
+      }
+    },
+    async bytes() {
+      return (await scan()).reduce((a, e) => a + e.bytes, 0);
+    },
+  };
+  return cache;
+}

@@ -72,6 +72,20 @@ export interface DriverRequest {
   signal?: AbortSignal;
 }
 
+/** Timing of one reply, from the engine's clock. */
+export interface ReplyStats {
+  /** Output tokens: from the runtime's usage when it reports one, else one per streamed chunk. */
+  tokens: number;
+  /** "measured" when tokens came from the runtime's usage; "inferred" when counted from stream chunks. */
+  tokensSource: "measured" | "inferred";
+  /** Output tokens per second after the first token; null when the reply was empty or took no time. */
+  tokensPerSecond: number | null;
+  /** Time from the request to the first token, text or think; null for an empty reply. */
+  firstTokenMs: number | null;
+  /** Time from the request to the end of the reply. */
+  totalMs: number;
+}
+
 export interface DriverCaps {
   /** Grammar or schema constrained output. */
   schema: boolean;
@@ -88,6 +102,8 @@ export interface Driver {
   readonly provider: string;
   readonly caps: DriverCaps;
   stream(req: DriverRequest): AsyncIterable<DriverEvent>;
+  /** Evaluate the prompt into the runtime's prefix cache with no output. Drivers with no prefix cache leave it out. */
+  prewarm?(req: DriverRequest): Promise<void>;
   dispose?(): Promise<void> | void;
 }
 
@@ -108,6 +124,7 @@ export interface ChatResult {
   /** Index of the schema the runtime took: 0 for `schema`, 1 and up for `fallbackSchemas`, -1 for none. */
   schemaIndex: number;
   usage?: { input?: number; output?: number };
+  stats: ReplyStats;
 }
 
 export interface ChatEngine {
@@ -116,6 +133,12 @@ export interface ChatEngine {
   readonly caps: DriverCaps;
   stream(messages: readonly ChatMessage[], opts?: StreamOptions): AsyncGenerator<ChatEvent, ChatResult>;
   complete(messages: readonly ChatMessage[], opts?: StreamOptions): Promise<ChatResult>;
+  /**
+   * Evaluate the system prompt and history before the first send, so the
+   * first reply starts sooner. Resolves true when the driver ran it, false
+   * when it has no prefix cache and nothing was called.
+   */
+  prewarm?(messages: readonly ChatMessage[], opts?: Pick<StreamOptions, "signal">): Promise<boolean>;
   dispose(): Promise<void>;
 }
 

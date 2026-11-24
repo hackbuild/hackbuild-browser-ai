@@ -29,6 +29,24 @@ export interface FactoryContext {
   hub: Hub;
   /** True on the ladder's last rung: a failure here exhausts it, so a factory frees what it cached for the record. */
   last: boolean;
+  /** Tell every `hub.onLoad` listener how this load moves: fetch, then compile, then warm. */
+  report(phase: "fetch" | "compile" | "warm", fraction: number | null, file?: string): void;
+}
+
+export type LoadPhase = "fetch" | "compile" | "warm" | "ready" | "failed";
+
+/** One step of a load, heard by every listener; one model keeps one id across ladder rungs. */
+export interface LoadEvent {
+  id: string;
+  phase: LoadPhase;
+  /** 0 to 1, or null while unknown. */
+  fraction: number | null;
+  /** The file being fetched, when the factory names one. */
+  file?: string;
+  /** Index of the ladder rung the event belongs to. */
+  rung: number;
+  /** For "failed": the reason. */
+  error?: string;
 }
 
 /** Builds a runtime object for one rung. Throw to move to the next rung. */
@@ -106,6 +124,8 @@ export interface Hub {
   /** Called with the total busy count whenever it changes. Returns an unsubscribe. */
   onBusy(fn: (count: number) => void): () => void;
   exclusive<R>(resource: string, fn: () => Promise<R>, opts?: ExclusiveOptions): Promise<R>;
+  /** Called with every load step of every model (fetch, compile, warm, ready, failed). Returns an unsubscribe. */
+  onLoad(fn: (e: LoadEvent) => void): () => void;
   chain(name: string): <R>(fn: () => Promise<R>) => Promise<R>;
   residentMB(): number;
   status(): HubStatus[];
@@ -203,6 +223,16 @@ export function createHub(opts: HubOptions = {}): Hub {
   const lastStart = new Map<string, number>();
   const busyBy = new Map<string, number>();
   const busyFns = new Set<(n: number) => void>();
+  const loadFns = new Set<(e: LoadEvent) => void>();
+  const emitLoad = (e: LoadEvent) => {
+    for (const fn of loadFns) {
+      try {
+        fn(e);
+      } catch {
+        /* a listener's throw never breaks a load */
+      }
+    }
+  };
   const busyTotal = () => [...busyBy.values()].reduce((a, b) => a + b, 0);
   const bump = (id: string, d: number) => {
     busyBy.set(id, (busyBy.get(id) ?? 0) + d);
@@ -297,13 +327,25 @@ export function createHub(opts: HubOptions = {}): Hub {
         p = (async () => {
           await makeRoom(record.sizeMB ?? 0);
           const { rungs } = ladderFor(record, opts.env);
-          const res = await walkLadder(record.id, rungs, (rung) => {
+          let at = 0;
+          let res: Awaited<ReturnType<typeof walkLadder<unknown>>>;
+          try {
+            res = await walkLadder(record.id, rungs, (rung, index) => {
             if (o.signal?.aborted) throw new DOMException("aborted", "AbortError");
-            const go = () => factory({ record, rung, env: opts.env, signal: o.signal, hub, last: rung === rungs[rungs.length - 1] });
+            at = index;
+            emitLoad({ id: record.id, phase: "fetch", fraction: null, rung: index });
+            const report = (phase: "fetch" | "compile" | "warm", fraction: number | null, file?: string) =>
+              emitLoad({ id: record.id, phase, fraction, rung: index, ...(file !== undefined ? { file } : {}) });
+            const go = () => factory({ record, rung, env: opts.env, signal: o.signal, hub, last: rung === rungs[rungs.length - 1], report });
             const eo: ExclusiveOptions = { priority: o.priority ?? 0 };
             if (o.signal) eo.signal = o.signal;
             return rung.device === "webgpu" ? hub.exclusive("gpu", go, eo) : go();
-          });
+            });
+          } catch (e) {
+            emitLoad({ id: record.id, phase: "failed", fraction: null, rung: at, error: e instanceof Error ? e.message : String(e) });
+            throw e;
+          }
+          emitLoad({ id: record.id, phase: "ready", fraction: 1, rung: at });
           const loaded: Loaded = { id: record.id, record, rung: res.rung, value: res.value, failures: res.failures };
           entries.set(record.id, { loaded, refs: 0, lastUsed: now() });
           return loaded;
@@ -353,6 +395,10 @@ export function createHub(opts: HubOptions = {}): Hub {
     onBusy(fn) {
       busyFns.add(fn);
       return () => busyFns.delete(fn);
+    },
+    onLoad(fn) {
+      loadFns.add(fn);
+      return () => loadFns.delete(fn);
     },
     exclusive<R>(resource: string, fn: () => Promise<R>, eo: ExclusiveOptions = {}): Promise<R> {
       let q = queues.get(resource);

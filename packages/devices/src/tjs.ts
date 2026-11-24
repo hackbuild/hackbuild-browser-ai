@@ -107,7 +107,16 @@ export function tjsProvider(opts: TjsProviderOptions): TjsProvider {
     factory: async (ctx) => {
       const tjs = await opts.runtime();
       if (configured !== tjs) p.configure(tjs, ctx.env);
-      const progress = opts.onProgress ? progressMerger((m) => opts.onProgress!(ctx.record.id, m)) : undefined;
+      // merged file progress goes to hub.onLoad listeners and to the provider's own callback
+      let file: string | undefined;
+      const merge = progressMerger((m) => {
+        ctx.report?.("fetch", m.fraction, file);
+        opts.onProgress?.(ctx.record.id, m);
+      });
+      const progress = (ev: FileProgressEvent) => {
+        file = ev.file ?? ev.name ?? file;
+        merge(ev);
+      };
       const options = pipelineOptions(ctx.rung, progress);
       // the pinned commit, so transformers.js fetches resolve/<commit>/ and not main
       if (ctx.record.source.revision && options.revision === undefined) options.revision = ctx.record.source.revision;

@@ -39,6 +39,8 @@ export type VadEvent =
 
 export const IDLE: Thresholds = { positive: 0.5, negative: 0.35, minSpeechMs: 250 };
 export const TALKING: Thresholds = { positive: 0.85, negative: 0.6, minSpeechMs: 450 };
+/** Machine options for a spoken conversation: a longer pause ends a turn, so a breath mid sentence does not (900 ms, vendor). */
+export const CONVERSATION: VadOptions = { redemptionMs: 900 };
 
 export class VadMachine {
   readonly frame: number;

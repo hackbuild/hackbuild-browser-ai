@@ -6,10 +6,11 @@
 //              once per backend (opfs, idb, cache)
 //   webllm     an entry written to the WebLLM 0.2.84 IndexedDB layout
 //              ("webllm/model", store "urls", keyPath "url") on /a/ is
-//              read on /b/
+//              listed on /b/ through webllmCache from @hackbuild/chat/webllm
 //   tjs-cache  transformersCache put on /a/, match on /b/
 //   one-fetch  /a/ and /b/ ask the store for one key at the same time;
-//              a stub fetch counts the downloads
+//              a stub fetch counts the downloads; the store's Web Lock
+//              keeps it to one
 // Stub bytes only, no weight and no network beyond the local host.
 // Usage: node tools/check-origin.mjs   (HB_CHROME overrides the browser,
 // TMPDIR places the throwaway profile)
@@ -29,16 +30,22 @@ if (!chrome) {
 }
 
 // the weights package from source, as one ESM file a page imports
-const bundle = await rolldown({ input: join(root, "packages", "weights", "src", "index.ts"), logLevel: "silent" });
-const { output } = await bundle.generate({ format: "esm", codeSplitting: false });
-await bundle.close();
-const lib = output[0].code;
+async function esm(input) {
+  const bundle = await rolldown({ input, logLevel: "silent" });
+  const { output } = await bundle.generate({ format: "esm", codeSplitting: false });
+  await bundle.close();
+  return output[0].code;
+}
+const lib = await esm(join(root, "packages", "weights", "src", "index.ts"));
+// the WebLLM cache adapter, to read the WebLLM layout the way the manager will
+const webllmLib = await esm(join(root, "packages", "chat", "src", "webllm.ts"));
 
 const page = (name) =>
-  `<!doctype html><meta charset="utf-8"><title>${name}</title><script type="module">import * as W from "/lib/weights.js"; window.W = W; window.ready = true;</script>`;
+  `<!doctype html><meta charset="utf-8"><title>${name}</title><script type="module">import * as W from "/lib/weights.js"; import * as L from "/lib/webllm.js"; window.W = W; window.L = L; window.ready = true;</script>`;
 const server = createServer((req, res) => {
   const path = new URL(req.url, "http://x").pathname;
   if (path === "/lib/weights.js") return res.writeHead(200, { "content-type": "text/javascript" }).end(lib);
+  if (path === "/lib/webllm.js") return res.writeHead(200, { "content-type": "text/javascript" }).end(webllmLib);
   if (path === "/a/" || path === "/b/") return res.writeHead(200, { "content-type": "text/html" }).end(page(path));
   res.writeHead(404).end();
 });
@@ -134,21 +141,12 @@ try {
       }),
     url,
   );
-  const wl = await b.evaluate(
-    (url) =>
-      new Promise((res, rej) => {
-        const r = indexedDB.open("webllm/model", 1);
-        r.onupgradeneeded = () => r.transaction.abort();
-        r.onerror = () => res({ found: false });
-        r.onsuccess = () => {
-          const g = r.result.transaction(["urls"], "readonly").objectStore("urls").get(url);
-          g.onsuccess = () => (r.result.close(), res({ found: !!g.result, bytes: g.result?.data?.byteLength ?? 0 }));
-          g.onerror = () => rej(g.error);
-        };
-      }),
-    url,
-  );
-  row("webllm idb", wl.found && wl.bytes === 4096, wl.found ? `"webllm/model" entry written on /a/, read on /b/, ${wl.bytes} bytes (measured)` : "the webllm entry is missing on /b/");
+  const wl = await b.evaluate(async () => {
+    const c = L.webllmCache({ modelList: [{ model: "https://huggingface.co/mlc-ai/stub-MLC", model_id: "stub-MLC" }] });
+    const rows = await c.list();
+    return { found: await c.has("stub-MLC"), bytes: rows[0]?.bytes ?? 0 };
+  });
+  row("webllm idb", wl.found && wl.bytes === 4096, wl.found ? `"webllm/model" entry written on /a/, listed on /b/ through webllmCache, ${wl.bytes} bytes (measured)` : "the webllm entry is missing on /b/");
 
   // transformersCache: put on /a/, match on /b/
   const tjsUrl = "https://huggingface.co/onnx-community/stub/resolve/main/onnx/model_q4.onnx";
@@ -177,7 +175,7 @@ try {
   const want = await a.evaluate(async () => hex(new Blob([stubBytes(8 * 65536)])));
   const total = ra.fetches + rb.fetches;
   const intact = ra.hash === want && rb.hash === want;
-  row("one-fetch", total === 1 && intact, `${total} stub fetches for one key asked by two pages at once (measured); bytes ${intact ? "intact" : "corrupt"} on both pages (${ra.backend})`);
+  row("one-fetch", total === 1 && intact, `${total} stub fetch${total === 1 ? "" : "es"} for one key asked by two pages at once (measured); bytes ${intact ? "intact" : "corrupt"} on both pages (${ra.backend})`);
   rows.unshift(`headless ${ua}, ${origin}/a/ and /b/, stub bytes only (measured).`, "", "| row | result | detail |", "|---|---|---|");
 } finally {
   await browser.close();
