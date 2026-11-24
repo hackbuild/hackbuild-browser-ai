@@ -19,7 +19,8 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm install -g npm@11.21.0
-      - run: cd tools/vendor && sha256sum -c SHA256SUMS
+      # the hackbuild-ui pin: tarball, sha-256, SHA256SUMS, package.json and lockfile agree
+      - run: node tools/vendor/pin-ui.mjs --check
       - run: npm ci
       - run: npm run build
       - run: node tools/build-examples.mjs

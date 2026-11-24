@@ -21,14 +21,15 @@
     "examples:check": "node tools/check-examples.mjs",
     "build:wasm": "node tools/build-wasm.mjs --all",
     "lint:packages": "node tools/lint-packages.mjs",
-    "release:dry": "node tools/lint-packages.mjs && node tools/release-plan.mjs"
+    "release:dry": "node tools/lint-packages.mjs && node tools/release-plan.mjs",
+    "ui:check": "node tools/vendor/pin-ui.mjs --check"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@changesets/cli": "3.0.3",
     "@types/node": "22.20.5",
     "@types/three": "0.186.0",
-    "@virgilvox/hackbuild-ui": "file:tools/vendor/hackbuild-ui-0.4.3-692e0a4.tgz",
+    "@virgilvox/hackbuild-ui": "file:tools/vendor/hackbuild-ui-0.5.0-5211c3a.tgz",
     "bellows-voice": "0.8.0",
     "bellowsjs": "0.5.0",
     "fake-indexeddb": "6.2.8",

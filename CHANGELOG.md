@@ -4,6 +4,19 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### hackbuild-ui pin, 2026-11-23
+
+- examples: hackbuild-ui 0.4.3 to 0.5.0 at commit 5211c3a, pinned by
+  hackbuild-ui `tools/pin-ui.mjs`; `tools/vendor/hackbuild-ui.pin` records
+  version, commit and sha-256, and `npm run ui:check` (run in CI before
+  `npm ci`) checks the tarball, SHA256SUMS, package.json and the lockfile
+  against it.
+- ai-elements: the shadow sheet regenerated from the 0.5.0 class layer:
+  hover styles only on a fine pointer, 44 px segment buttons, fold
+  summaries and check rows on phones and touch screens. The sheet carries
+  the whole layer, minds classes included, so `dist/index.js` grows from
+  21,471 to 23,538 bytes gzip (measured); the size budget is rewritten.
+
 ### Release readiness, 2026-11-23
 
 - ci: `packages` job packs every package and runs the files allowlist,

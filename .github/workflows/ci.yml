@@ -16,8 +16,9 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm install -g npm@11.21.0
-      # hackbuild-ui is vendored pinned by commit; the tarball must be the one recorded
-      - run: cd tools/vendor && sha256sum -c SHA256SUMS
+      # hackbuild-ui is vendored pinned by commit (its tools/pin-ui.mjs writes the pin); the tarball,
+      # its sha-256, SHA256SUMS, package.json and the lockfile must all match tools/vendor/hackbuild-ui.pin
+      - run: node tools/vendor/pin-ui.mjs --check
       - run: npm ci
       # the ai-elements shadow sheet must be what the vendored class layer generates
       - run: node tools/gen-hb-sheet.mjs --check

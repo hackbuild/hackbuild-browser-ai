@@ -55,8 +55,8 @@ MIT; this README CC-BY-4.0 with the code samples also MIT.
 
 ## Styling and theming
 
-Each shadow root adopts the hackbuild-ui class layer (version 0.4.3,
-commit 692e0a4, vendored in `tools/vendor`) as one constructable
+Each shadow root adopts the hackbuild-ui class layer (version 0.5.0,
+commit 5211c3a, vendored in `tools/vendor`) as one constructable
 stylesheet shared by every element, and renders that layer's markup:
 `.hb-models` for the picker, `.hb-progress` for the download bar,
 `.hb-pill` for the pills, `.hb-chat` with `.hb-composer` for the chat
@@ -134,8 +134,8 @@ Every string a person reads is built by pure functions in `view.ts`
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 21,471 bytes | 22,544 bytes |
-| `dist/single/index.iife.js` (single file build) | 21,835 bytes | 22,926 bytes |
+| `dist/index.js` (main entry, imports external) | 23,538 bytes | 24,714 bytes |
+| `dist/single/index.iife.js` (single file build) | 23,904 bytes | 25,099 bytes |
 
 Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
