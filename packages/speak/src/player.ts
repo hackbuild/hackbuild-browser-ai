@@ -22,7 +22,7 @@ export interface SourceLike extends AudioNodeLike {
   buffer: BufferLike | null;
   start(when: number): void;
   stop(when?: number): void;
-  onended: (() => void) | null;
+  onended: ((ev: any) => unknown) | null; // any: the dom passes an Event, fakes pass nothing
 }
 export interface AudioContextLike {
   readonly currentTime: number;
