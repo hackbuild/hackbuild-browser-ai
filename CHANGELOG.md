@@ -4,6 +4,15 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Conversation core, 2026-11-24
+
+- converse: new package. `createConversation` with send, stop, redo,
+  edit, remove, speak, restore, clear, prewarm and an event stream;
+  `buildMessages` with the history rules; `createChatStore` with the
+  restored guard and a 600 ms debounce; the session schema.
+- chat: the session schema moved to `@hackbuild/converse`; chat
+  re-exports it for one version.
+
 ### Chat catalogue rows, 2026-11-24
 
 - models: `CATALOG` gains 19 chat rows (9 WebLLM, 8 GGUF, 2

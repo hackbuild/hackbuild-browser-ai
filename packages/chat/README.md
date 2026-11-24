@@ -86,8 +86,9 @@ cache return false and call nothing. `PREWARM_DELAY_MS` (1,200 ms,
 vendor) is the wait after a prompt or model change before prewarming
 again.
 
-The session schema is one versioned JSON shape for save, export and
-import (`.hbchat.json`): `createSession`, `exportSession`,
+The session schema moved to `@hackbuild/converse`; the names below are
+re-exported here for one version. It is one versioned JSON shape for
+save, export and import (`.hbchat.json`): `createSession`, `exportSession`,
 `importSession` (reads older and unversioned `{ messages }` exports,
 drops unknown fields, refuses a bad file with a lowercase reason),
 `sessionMessages` (raw replies back into history, failed and empty ones
@@ -151,8 +152,8 @@ webllm" group beside the weight store.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 7,290 bytes | 7,654 bytes |
-| `dist/single/index.iife.js` (single file build) | 7,128 bytes | 7,484 bytes |
+| `dist/index.js` (main entry, imports external) | 5,476 bytes | 5,749 bytes |
+| `dist/single/index.iife.js` (single file build) | 7,135 bytes | 7,491 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

@@ -120,7 +120,7 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
 | file | gzip (measured) | ceiling |
 |---|---|---|
 | `dist/index.js` (main entry, imports external) | 10,395 bytes | 10,914 bytes |
-| `dist/single/index.iife.js` (single file build) | 12,329 bytes | 12,945 bytes |
+| `dist/single/index.iife.js` (single file build) | 12,311 bytes | 12,926 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

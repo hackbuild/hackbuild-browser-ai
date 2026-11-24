@@ -50,6 +50,9 @@
   "scripts": {
     "build": "tsc -b"
   },
+  "dependencies": {
+    "@hackbuild/converse": "0.1.0"
+  },
   "peerDependencies": {
     "@mlc-ai/web-llm": "0.2.84",
     "@wllama/wllama": "^3.8.1 || ^4.0.0",

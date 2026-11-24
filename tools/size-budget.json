@@ -9,7 +9,7 @@
     },
     "@hackbuild/agent": {
       "main: dist/index.js bundled": 10395,
-      "dist/single/index.iife.js": 12329
+      "dist/single/index.iife.js": 12311
     },
     "@hackbuild/ai-elements": {
       "main: dist/index.js bundled": 23538,
@@ -35,8 +35,8 @@
       "dist/single/index.iife.js": 3110
     },
     "@hackbuild/chat": {
-      "main: dist/index.js bundled": 7290,
-      "dist/single/index.iife.js": 7128
+      "main: dist/index.js bundled": 5476,
+      "dist/single/index.iife.js": 7135
     },
     "@hackbuild/depth-mesh": {
       "main: dist/index.js bundled": 4562,
@@ -99,6 +99,10 @@
     "@hackbuild/weights": {
       "main: dist/index.js bundled": 9195,
       "dist/single/index.iife.js": 9115
+    },
+    "@hackbuild/converse": {
+      "main: dist/index.js bundled": 5598,
+      "dist/single/index.iife.js": 5678
     }
   }
 }

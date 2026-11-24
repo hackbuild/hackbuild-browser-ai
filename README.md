@@ -14,6 +14,7 @@ Nothing is published to npm.
 | [@hackbuild/models](packages/models) | registry records with device and dtype ladders, quirks and licences; hub with budget, gpu queue, run scheduling around rendering, busy state and stubs | 23 vitest |
 | [@hackbuild/memory](packages/memory) | bm25 plus flat cosine with rrf in a rust wasm core (simd128), linear and organic scorers, decay, merge, indexeddb, budgeted context | 47 vitest, 15 cargo |
 | [@hackbuild/chat](packages/chat) | one streaming interface over webllm, wllama, transformers.js, prompt api, openai compatible and anthropic endpoints | 33 vitest |
+| [@hackbuild/converse](packages/converse) | conversation core: turn loop, history rules, stop, redo, edit, memory and seen lines, cue replay, the chat session schema and a debounced store | 15 vitest |
 | [@hackbuild/structured](packages/structured) | constrained, prompt, native, tags and lines modes; schema sanitizer, loose fallback, json repair, guards, streaming tag parser | 27 vitest |
 | [@hackbuild/devices](packages/devices) | rung builders and hub factories for onnxruntime-web and transformers.js, pinned runtime loading, progress merging | 11 vitest |
 | [@hackbuild/audio-dsp](packages/audio-dsp) | rust wasm dsp core (simd128): biquads, noise floor, spectral subtraction, limiter, resampling, stft, onsets, tempo; gate, overlap add, txt, srt, vtt, lrc, wav, midi and zip writers | 19 vitest, 14 cargo |
