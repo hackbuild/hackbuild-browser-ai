@@ -107,3 +107,15 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   measured).
 - Speed in a browser: no timing was taken.
 - Loading the wasm from file:// in a real page.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 8,743 bytes | 9,180 bytes |
+| `wasm/audio-dsp.wasm` | 27,444 bytes | 28,816 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,563 bytes | 8,991 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

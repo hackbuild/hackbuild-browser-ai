@@ -118,3 +118,14 @@ computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as
 - Accuracy and speed of every model (no numbers measured).
 - Whether the frame budget and idle waits remove stutter in a real scene
   (needs a person looking at real frame rate).
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 11,990 bytes | 12,589 bytes |
+| `dist/single/index.iife.js` (single file build) | 41,104 bytes | 43,159 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

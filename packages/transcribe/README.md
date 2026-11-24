@@ -78,3 +78,14 @@ the audio to its service; tell the user).
 - The front end against the earlier transcription tool on the same audio file sample for sample;
   no input audio from that tool was available, only its text outputs.
 - Moonshine's licence beyond the model card line.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 8,457 bytes | 8,879 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,589 bytes | 10,068 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

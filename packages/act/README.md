@@ -107,3 +107,14 @@ not import a speech engine.
 - Timing against a real voice: cue offsets against word timestamps from a
   real engine, and the feel of the cooldown and decay defaults on an
   avatar, looked at by a person.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 7,733 bytes | 8,119 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,913 bytes | 9,358 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

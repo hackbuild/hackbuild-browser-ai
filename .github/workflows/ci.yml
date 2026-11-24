@@ -39,7 +39,47 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm run typecheck
-      - run: npm test
+      - run: npx vitest run --reporter=default --reporter=json --outputFile.json=.local/vitest.json
+      # every test that did not run is named in the job summary, so a skip never reads as a pass
+      - run: node tools/test-summary.mjs .local/vitest.json
+        if: ${{ !cancelled() }}
+      - run: node --test tools/test/*.test.mjs
+  packages:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm install -g npm@11.21.0
+      - run: npm ci
+      # the wasm cores are committed (the wasm job checks their bytes), so no rust here
+      - run: npm run build --if-present
+      # pack each package; files allowlist, publint, attw, peers, size budget and README tables
+      - run: node tools/lint-packages.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tarballs
+          path: .pack/*.tgz
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+  browser:
+    needs: packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: npm install -g npm@11.21.0
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: tarballs
+          path: .pack
+      # every single file build loads from file:// in headless chrome with no network
+      - run: node tools/check-browser.mjs
   rust:
     runs-on: ubuntu-24.04
     steps:

@@ -129,3 +129,14 @@ Every string a person reads is built by pure functions in `view.ts`
   not run.
 - The elements' DOM code (rendering, events, the key field) has no test;
   only the view model functions do.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 21,471 bytes | 22,544 bytes |
+| `dist/single/index.iife.js` (single file build) | 21,835 bytes | 22,926 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

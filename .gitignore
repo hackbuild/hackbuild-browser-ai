@@ -20,3 +20,4 @@ pkg/
 
 # example site build
 _site/
+.pack/

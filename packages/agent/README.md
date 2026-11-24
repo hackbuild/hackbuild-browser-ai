@@ -114,3 +114,14 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
   json_schema endpoints; `prefixItems` support differs between them.
 - Hints mode helping small models: not measured.
 - Time to first spoken word with `onSay` against a real voice.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 10,395 bytes | 10,914 bytes |
+| `dist/single/index.iife.js` (single file build) | 12,329 bytes | 12,945 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

@@ -51,3 +51,15 @@ models are trained in the tab.
 
 - Real EEG recordings and headsets; accuracy on any public data set.
 - EEGNet training, tflite export and the TFLite Micro sketch of earlier builds: not built.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 2,716 bytes | 2,851 bytes |
+| `wasm/biosignal.wasm` | 22,644 bytes | 23,776 bytes |
+| `dist/single/index.iife.js` (single file build) | 2,814 bytes | 2,954 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

@@ -120,3 +120,14 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
   catalog ladder loads in Chrome, Safari or Firefox; the catalog sizes
   (inferred, not measured downloads); the error patterns against current
   WebLLM 0.2.89, onnxruntime-web 1.31 and transformers.js 4.3.2 messages.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 32,640 bytes | 34,272 bytes |
+| `dist/single/index.iife.js` (single file build) | 32,182 bytes | 33,791 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

@@ -1,0 +1,104 @@
+{
+  "about": "gzip level 9 bytes (measured) per published file; CI fails when a file moves more than 5 percent from its row. Rewrite with node tools/lint-packages.mjs --update-budget after a reviewed change.",
+  "measured": "2026-11-23",
+  "margin": 0.05,
+  "packages": {
+    "@hackbuild/act": {
+      "main: dist/index.js bundled": 7733,
+      "dist/single/index.iife.js": 8913
+    },
+    "@hackbuild/agent": {
+      "main: dist/index.js bundled": 10395,
+      "dist/single/index.iife.js": 12329
+    },
+    "@hackbuild/ai-elements": {
+      "main: dist/index.js bundled": 21471,
+      "dist/single/index.iife.js": 21835
+    },
+    "@hackbuild/ai-env": {
+      "main: dist/index.js bundled": 6191,
+      "dist/single/index.iife.js": 6087
+    },
+    "@hackbuild/audio-dsp": {
+      "main: dist/index.js bundled": 8743,
+      "wasm/audio-dsp.wasm": 27444,
+      "dist/single/index.iife.js": 8563
+    },
+    "@hackbuild/biosignal": {
+      "main: dist/index.js bundled": 2716,
+      "wasm/biosignal.wasm": 22644,
+      "dist/single/index.iife.js": 2814
+    },
+    "@hackbuild/character": {
+      "main: dist/index.js bundled": 3026,
+      "wasm/character.wasm": 78262,
+      "dist/single/index.iife.js": 3110
+    },
+    "@hackbuild/chat": {
+      "main: dist/index.js bundled": 4942,
+      "dist/single/index.iife.js": 4897
+    },
+    "@hackbuild/depth-mesh": {
+      "main: dist/index.js bundled": 4562,
+      "wasm/depth-mesh.wasm": 23546,
+      "dist/single/index.iife.js": 4602
+    },
+    "@hackbuild/devices": {
+      "main: dist/index.js bundled": 5426,
+      "dist/single/index.iife.js": 33476
+    },
+    "@hackbuild/embed": {
+      "main: dist/index.js bundled": 6580,
+      "dist/single/index.iife.js": 32069
+    },
+    "@hackbuild/imagegen": {
+      "main: dist/index.js bundled": 3032,
+      "dist/single/index.iife.js": 2905
+    },
+    "@hackbuild/listen": {
+      "main: dist/index.js bundled": 4950,
+      "dist/single/index.iife.js": 6929
+    },
+    "@hackbuild/media": {
+      "main: dist/index.js bundled": 2033,
+      "dist/single/index.iife.js": 2015
+    },
+    "@hackbuild/memory": {
+      "main: dist/index.js bundled": 10443,
+      "wasm/memory.wasm": 41134,
+      "dist/single/index.iife.js": 10662
+    },
+    "@hackbuild/models": {
+      "main: dist/index.js bundled": 32640,
+      "dist/single/index.iife.js": 32182
+    },
+    "@hackbuild/notes": {
+      "main: dist/index.js bundled": 5040,
+      "dist/single/index.iife.js": 5757
+    },
+    "@hackbuild/speak": {
+      "main: dist/index.js bundled": 14182,
+      "dist/single/index.iife.js": 17333
+    },
+    "@hackbuild/stems": {
+      "main: dist/index.js bundled": 2199,
+      "dist/single/index.iife.js": 28349
+    },
+    "@hackbuild/structured": {
+      "main: dist/index.js bundled": 8979,
+      "dist/single/index.iife.js": 9310
+    },
+    "@hackbuild/transcribe": {
+      "main: dist/index.js bundled": 8457,
+      "dist/single/index.iife.js": 9589
+    },
+    "@hackbuild/vision": {
+      "main: dist/index.js bundled": 11990,
+      "dist/single/index.iife.js": 41104
+    },
+    "@hackbuild/weights": {
+      "main: dist/index.js bundled": 8723,
+      "dist/single/index.iife.js": 8639
+    }
+  }
+}

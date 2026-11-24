@@ -89,3 +89,14 @@ vendor stated).
 - SHA-256 throughput in a browser (unknown; the hash runs in plain
   TypeScript on the main thread unless the caller moves the store into a
   worker).
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 8,723 bytes | 9,159 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,639 bytes | 9,070 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

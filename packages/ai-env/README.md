@@ -84,3 +84,14 @@ code samples also MIT.
   from file://.
 - `importEsm` against a module whose imports use bare specifiers; those
   need a bundled CDN build (`+esm`) and are not rewritten.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 6,191 bytes | 6,500 bytes |
+| `dist/single/index.iife.js` (single file build) | 6,087 bytes | 6,391 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

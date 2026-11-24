@@ -71,3 +71,14 @@ A reply with no tool becomes `respond_to_user` with the text.
   sanitized strict anyOf for a given tool list, how often a 0.5B to 4B model
   stays inside each mode, and which mode works best per model; those need a
   browser run with weights and are listed for the phase C agent package.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 8,979 bytes | 9,427 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,310 bytes | 9,775 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

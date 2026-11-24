@@ -25,6 +25,8 @@
     "README.md",
     "LICENSE"
   ],
+  "unpkg": "./dist/single/index.iife.js",
+  "jsdelivr": "./dist/single/index.iife.js",
   "scripts": {
     "build": "tsc -b"
   },

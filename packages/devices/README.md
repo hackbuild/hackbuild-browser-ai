@@ -66,3 +66,14 @@ package's and are re-exported here.
 - `externalData` and `wasmPaths` against a real onnxruntime-web session.
 - `freshHeap` rungs: transformers.js offers no fresh heap, so the rung
   only retries; a true fresh heap needs a new worker (not built).
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 5,426 bytes | 5,697 bytes |
+| `dist/single/index.iife.js` (single file build) | 33,476 bytes | 35,149 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

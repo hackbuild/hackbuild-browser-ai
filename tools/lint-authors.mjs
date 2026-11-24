@@ -2,8 +2,8 @@
 // CI job house-rules: authorship of record carries no AI credit (CLAUDE.md
 // Attribution). Reads tracked files only: every package.json author,
 // contributors and maintainers, every Cargo.toml authors list, and every
-// CHANGELOG*.md line. Adapted from the hackbuild-3mf linter without its
-// 3MF reader, since this repository ships no 3MF files.
+// CHANGELOG*.md line. The same linter as the sibling hackbuild library
+// repositories.
 import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import { basename } from "node:path";
@@ -42,9 +42,17 @@ export function packageFails(path, text) {
 }
 
 export function cargoFails(path, text) {
+  // a crate names the owner itself or inherits authors.workspace = true; the
+  // workspace root that crates inherit from names the owner
   const m = /^authors\s*=\s*\[([^\]]*)\]/m.exec(text);
-  if (!m) return [];
+  const inherits = /^authors\.workspace\s*=\s*true\s*$/m.test(text);
+  if (!m) {
+    if (/^\[package\]/m.test(text) && !inherits) return [`${path}: [package] has no authors, legal is ["${OWNER}"] or authors.workspace = true`];
+    if (/^\[workspace\.package\]/m.test(text)) return [`${path}: [workspace.package] has no authors, legal is ["${OWNER}"]`];
+    return [];
+  }
   const people = [...m[1].matchAll(/"([^"]*)"/g)].map((x) => x[1]);
+  if (!people.length) return [`${path}: authors is empty, legal is ["${OWNER}"]`];
   return people.flatMap((who) =>
     AI_IDENTITY.test(who) ? [`${path}: authors names an ai tool (${who}), legal is people only`] : who !== OWNER ? [`${path}: author is "${who}", legal is "${OWNER}"`] : [],
   );

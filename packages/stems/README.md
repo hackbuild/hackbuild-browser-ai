@@ -40,3 +40,14 @@ hand a stem to transcribe or notes (an earlier lyrics tool).
   input): not built, since its STFT branch is not written here.
 - A worker path for wasm (an earlier stem splitter ran wasm in a blob module worker): not
   built; run the call inside a worker with the single file build.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 2,199 bytes | 2,308 bytes |
+| `dist/single/index.iife.js` (single file build) | 28,349 bytes | 29,766 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

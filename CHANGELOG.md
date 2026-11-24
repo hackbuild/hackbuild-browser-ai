@@ -4,6 +4,24 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Release readiness, 2026-11-23
+
+- ci: `packages` job packs every package and runs the files allowlist,
+  manifest, peer, publint, attw and gzip size budget checks
+  (`tools/lint-packages.mjs`, `tools/size-budget.json`); README size
+  tables are generated from the budget. `npm run build` now also writes
+  the single file builds, so every tarball carries `dist/single/`, and
+  unpkg and jsdelivr point at `dist/single/index.iife.js`. `browser` job
+  loads all 33 single file builds from file:// in headless Chrome. The
+  `unit` job summary names every skipped test, the two local fixture
+  suites included. lint-authors requires authors in every Cargo.toml.
+- Changesets for versions and package changelogs; `release.yml` runs on
+  manual dispatch only, packs and uploads the tarballs, and publishes
+  nothing.
+- Verified on macOS 12: publint and attw clean on all 23 tarballs, 33 of
+  33 single file builds load in headless Chrome. Not verified until the
+  push: the Linux runner.
+
 - repository scaffold: rules, hooks, voice and commit linters, CI.
 - ai-env: capability probe, file:// safe ESM import, worker ladder.
 - weights: one store over opfs, cache storage and indexeddb parts with resume, sha-256 and multi file repos.

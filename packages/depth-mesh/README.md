@@ -74,3 +74,15 @@ Rebuild the wasm and the inlined base64 with `npm run build:wasm -w
   carving with real turntable silhouettes and a real focal length.
 - Printing: no STL from here was sliced or printed.
 - Speed in a browser: no timing was taken.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 4,562 bytes | 4,790 bytes |
+| `wasm/depth-mesh.wasm` | 23,546 bytes | 24,723 bytes |
+| `dist/single/index.iife.js` (single file build) | 4,602 bytes | 4,832 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.

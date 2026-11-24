@@ -128,3 +128,15 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
   a few thousand items (inferred, not measured).
 - Prefix reuse in a real runtime's KV cache; the test checks only that the
   prompt bytes grow at the end.
+
+## Size budget
+
+| file | gzip (measured) | ceiling |
+|---|---|---|
+| `dist/index.js` (main entry, imports external) | 10,443 bytes | 10,965 bytes |
+| `wasm/memory.wasm` | 41,134 bytes | 43,190 bytes |
+| `dist/single/index.iife.js` (single file build) | 10,662 bytes | 11,195 bytes |
+
+Measured 2026-11-23 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
+5 percent from its row.
