@@ -157,3 +157,19 @@ test("tokens default to hackbuild-ui values and never shadow a page's tokens", (
   // page level rules are gone: no import, no grain overlay, no dark palette
   expect(HB_CSS).not.toMatch(/@import|body\.hb|prefers-color-scheme/);
 });
+
+describe("deprecation", () => {
+  test("define notes the deprecation once and points to ai-views", async () => {
+    const { vi } = await import("vitest");
+    const { DEPRECATION } = await import("@hackbuild/ai-elements");
+    expect(DEPRECATION).toMatch(/@hackbuild\/ai-views/);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const reg = new Map<string, unknown>();
+    const t = { get: (n: string) => reg.get(n), define: (n: string, c: unknown) => void reg.set(n, c) };
+    class B {}
+    define("dep-a", t, B as never);
+    define("dep-b", t, B as never);
+    expect(warn.mock.calls.filter((c) => c[0] === DEPRECATION).length).toBeLessThanOrEqual(1);
+    warn.mockRestore();
+  });
+});

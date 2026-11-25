@@ -1,3 +1,4 @@
+/** Deprecated: use @hackbuild/ai-views. define() says so once on the console. */
 export {
   formatSize,
   licenceLine,
@@ -33,4 +34,4 @@ export {
   type ChatPanelElement,
   type MemoryInspectorElement,
 } from "./elements.js";
-export { define, ELEMENT_NAMES, type DefineTarget } from "./define.js";
+export { define, DEPRECATION, ELEMENT_NAMES, type DefineTarget } from "./define.js";

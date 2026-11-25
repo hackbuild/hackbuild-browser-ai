@@ -2,7 +2,7 @@
 // checked by tsconfig.how.json, shipped in the tarball, never imported by the runtime entry.
 const how: HowDoc = {
   packages: ["@hackbuild/ai-elements"],
-  what: `web components for pages that run models in a tab: a model picker, a download bar, status pills, a chat panel and a memory inspector. no framework, shadow dom styled with the hack.build design system (hackbuild-ui), theming through its css custom properties, icons as inline svg. nothing registers on import; the page calls \`define()\`.`,
+  what: `deprecated: use @hackbuild/ai-views. web components for pages that run models in a tab: a model picker, a download bar, status pills, a chat panel and a memory inspector. no framework, shadow dom styled with the hack.build design system (hackbuild-ui), theming through its css custom properties, icons as inline svg. nothing registers on import; the page calls \`define()\`.`,
   how: [
     `model picker: the hackbuild-ui model list markup and its vanilla \`modelList\` behaviour, a search field, groups and one radio per row. each row carries \`fitOf\` from @hackbuild/models as { fit, ok, reason }; a row that does not fit is off with the reason, for example "no webgpu adapter here." rows show size with measured, vendor, inferred or unknown, the fit chip, and the licence as recorded.`,
     `download bar: percent and mb when the total is known, mb counted with an indeterminate bar when it is not, a resuming state, cancel and resume events, and a failed state that names the error. the moving bar stops under reduced motion.`,

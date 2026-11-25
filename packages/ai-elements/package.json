@@ -1,7 +1,7 @@
 {
   "name": "@hackbuild/ai-elements",
-  "version": "0.1.1",
-  "description": "Web components for in-tab AI pages: model picker, download bar, status pills, chat panel and memory inspector, themed by CSS custom properties, registered only when the page calls define().",
+  "version": "0.2.0",
+  "description": "Deprecated: use @hackbuild/ai-views. Web components for in-tab AI pages: model picker, download bar, status pills, chat panel and memory inspector, themed by CSS custom properties, registered only when the page calls define().",
   "type": "module",
   "license": "MIT",
   "author": "Moheeb Zara <hackbuildvideo@gmail.com>",

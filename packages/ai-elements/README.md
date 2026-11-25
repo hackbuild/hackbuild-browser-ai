@@ -1,5 +1,12 @@
 # @hackbuild/ai-elements
 
+Deprecated: use [@hackbuild/ai-views](../ai-views/README.md), whose views
+bind the same packages to hackbuild-ui and ship as Vue components and
+custom elements. `define()` writes one deprecation note to the console.
+The model picker, download bar, status pills and chat panel here are
+replaced by `<model-select>`, `<chat-pane>` and `<chat-composer>`; they
+stay until the example pages that use them move to ai-views.
+
 Web components for pages that run models in a tab: a model picker, a
 download bar, status pills, a chat panel and a memory inspector. No
 framework, shadow DOM styled with the hack.build design system
@@ -141,9 +148,9 @@ Every string a person reads is built by pure functions in `view.ts`
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 14,162 bytes | 14,870 bytes |
-| `dist/single/index.iife.js` (single file build) | 17,208 bytes | 18,068 bytes |
+| `dist/index.js` (main entry, imports external) | 14,397 bytes | 15,116 bytes |
+| `dist/single/index.iife.js` (single file build) | 17,611 bytes | 18,491 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
