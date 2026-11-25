@@ -12,8 +12,8 @@
       "dist/single/index.iife.js": 13763
     },
     "@hackbuild/ai-elements": {
-      "main: dist/index.js bundled": 48077,
-      "dist/single/index.iife.js": 51187
+      "main: dist/index.js bundled": 14162,
+      "dist/single/index.iife.js": 17208
     },
     "@hackbuild/ai-env": {
       "main: dist/index.js bundled": 6191,

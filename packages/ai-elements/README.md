@@ -58,15 +58,17 @@ MIT; this README CC-BY-4.0 with the code samples also MIT.
 
 ## Styling and theming
 
-Each shadow root adopts the hackbuild-ui class layer (version 0.9.2,
-commit 2a1876d, vendored in `tools/vendor`) as one constructable
+Each shadow root adopts the hackbuild-ui class layer (version 0.9.3,
+commit 23b6969, vendored in `tools/vendor`) as one constructable
 stylesheet shared by every element, and renders that layer's markup:
 `.hb-models` for the picker, `.hb-progress` for the download bar,
 `.hb-pill` for the pills, `.hb-chat` with `.hb-composer` for the chat
 panel, `.hb-table` with `tr.is-mark` for the inspector. The sheet is a
 string in the bundle (`src/hb-sheet.ts`, written by
-`node tools/gen-hb-sheet.mjs`), so nothing is fetched and the elements
-work from `file://`. A browser without constructable stylesheets gets
+`node tools/gen-hb-sheet.mjs` on every build), so nothing is fetched and
+the elements work from `file://`. It holds only the rules the elements
+can match: a rule naming an `hb-` class that no element source writes is
+dropped, which takes the sheet from 275 KB to 22 KB of CSS (measured). A browser without constructable stylesheets gets
 the same CSS in a style element.
 
 The page does not need the hackbuild-ui styles. The picker imports
@@ -139,8 +141,8 @@ Every string a person reads is built by pure functions in `view.ts`
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 48,077 bytes | 50,480 bytes |
-| `dist/single/index.iife.js` (single file build) | 51,187 bytes | 53,746 bytes |
+| `dist/index.js` (main entry, imports external) | 14,162 bytes | 14,870 bytes |
+| `dist/single/index.iife.js` (single file build) | 17,208 bytes | 18,068 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
