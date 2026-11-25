@@ -35,6 +35,20 @@ export interface Profile {
   actions: { moods: string[]; gestures: string[]; postures: string[]; aliases: Record<string, string> };
   behavior: { gaze: boolean; blink: boolean; breath: boolean; idle: boolean; ambientGestures: boolean };
   memory: { enabled: boolean };
+  /**
+   * Present only on a locked character: the password verifier its sealed
+   * memory and files open with. Made by makeLock in
+   * "@hackbuild/memory/seal". Holds no password. There is no recovery.
+   */
+  lock?: Lock;
+}
+
+/** A lock record: PBKDF2 SHA-256 settings and a verifier, base64 fields. */
+export interface Lock {
+  algo: "pbkdf2-sha256";
+  iterations: number;
+  salt: string;
+  hash: string;
 }
 
 export interface LoreEntry {

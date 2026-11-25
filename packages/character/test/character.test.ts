@@ -94,6 +94,22 @@ describe("character core", async () => {
     expect(again.profile).toEqual(profile);
   });
 
+  test("the lock record is optional and survives migration", () => {
+    const old = core.migrateProfile(JSON.parse(fix("loose.profile.json")));
+    expect("lock" in old.profile).toBe(false);
+    const lock = { algo: "pbkdf2-sha256", iterations: 210000, salt: "AAECAwQFBgcICQoLDA0ODw==", hash: "q83vASNFZ4mrze8BI0VniavN7wEjRWeJq83vASNFZ4k=" };
+    const locked = core.migrateProfile({ ...old.profile, lock });
+    expect(locked.notes).toEqual([]);
+    expect(locked.profile.lock).toEqual(lock);
+    const card = core.migrate(pell, { create: true }).card;
+    const prof = profileOf(card)!;
+    const again = core.migrate({ ...card, data: { ...card.data, extensions: { ...card.data.extensions, hackbuild: { ...prof, lock } } } });
+    expect(profileOf(again.card)?.lock).toEqual(lock);
+    const junk = core.migrateProfile({ ...old.profile, lock: "open sesame" });
+    expect(junk.profile.lock).toBeUndefined();
+    expect(junk.notes).toContain("lock: string where an object belongs, dropped");
+  });
+
   test("migrate inside a card, with and without create", () => {
     const a = core.migrate(pell);
     expect(profileOf(a.card)).toBeNull();

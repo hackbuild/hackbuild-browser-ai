@@ -16,6 +16,9 @@ use crate::json::Value;
 pub const KEY: &str = "hackbuild";
 pub const VERSION: f64 = 1.0;
 
+/// Lock record algorithms this version reads.
+pub const LOCK_ALGOS: [&str; 1] = ["pbkdf2-sha256"];
+
 pub const AVATAR_KINDS: [&str; 5] = ["vrm", "glb", "fbx", "mmd", "live2d"];
 
 enum S {
@@ -26,6 +29,8 @@ enum S {
     StrList,
     Map(Box<S>),
     Obj(Vec<(&'static str, S)>),
+    /// A key that is left out when absent; when present it must be an object.
+    Opt(Box<S>),
 }
 
 fn shape() -> S {
@@ -72,6 +77,15 @@ fn shape() -> S {
             ]),
         ),
         ("memory", Obj(vec![("enabled", Bool(false))])),
+        (
+            "lock",
+            Opt(Box::new(Obj(vec![
+                ("algo", Enum("pbkdf2-sha256", &LOCK_ALGOS)),
+                ("iterations", Num(210_000.0, 1.0, 1e7)),
+                ("salt", Str("")),
+                ("hash", Str("")),
+            ]))),
+        ),
     ])
 }
 
@@ -96,9 +110,11 @@ fn default_of(s: &S) -> Value {
         S::Map(_) => Value::obj(),
         S::Obj(fs) => Value::Obj(
             fs.iter()
+                .filter(|(_, f)| !matches!(f, S::Opt(_)))
                 .map(|(k, f)| (k.to_string(), default_of(f)))
                 .collect(),
         ),
+        S::Opt(inner) => default_of(inner),
     }
 }
 
@@ -207,6 +223,7 @@ fn pick(s: &S, raw: Option<&Value>, path: &str, notes: &mut Vec<String>) -> Valu
                 default_of(s)
             }
         },
+        S::Opt(inner) => pick(inner, Some(raw), path, notes),
         S::Obj(fs) => {
             let Value::Obj(kv) = raw else {
                 wrong(notes);
@@ -222,6 +239,20 @@ fn pick(s: &S, raw: Option<&Value>, path: &str, notes: &mut Vec<String>) -> Valu
                 {
                     notes.push(format!("{}: carried over from {old}", join(path, k)));
                     src = raw.get(old);
+                }
+                if let S::Opt(inner) = f {
+                    match src {
+                        None => {}
+                        Some(v) if v.is_obj() => {
+                            out.set(k, pick(inner, src, &join(path, k), notes))
+                        }
+                        Some(v) => notes.push(format!(
+                            "{}: {} where an object belongs, dropped",
+                            join(path, k),
+                            v.type_name()
+                        )),
+                    }
+                    continue;
                 }
                 out.set(k, pick(f, src, &join(path, k), notes));
             }
@@ -257,7 +288,7 @@ fn kind_name(s: &S) -> &'static str {
         S::Num(..) => "a number",
         S::Bool(_) => "a boolean",
         S::StrList => "an array of strings",
-        S::Map(_) | S::Obj(_) => "an object",
+        S::Map(_) | S::Obj(_) | S::Opt(_) => "an object",
     }
 }
 
@@ -364,6 +395,35 @@ mod tests {
         let (again, n2) = migrate(&m);
         assert_eq!(again, m);
         assert!(n2.is_empty());
+    }
+
+    #[test]
+    fn optional_lock() {
+        let d = default_profile();
+        assert!(d.get("lock").is_none());
+        let raw = parse(
+            r#"{"version":1,"lock":{"algo":"PBKDF2-SHA256","salt":"c2FsdA==","hash":"aGFzaA==","zz":1}}"#,
+        )
+        .unwrap();
+        let (m, notes) = migrate(&raw);
+        let l = m.get("lock").unwrap();
+        assert_eq!(l.get("algo").unwrap().as_str(), Some("pbkdf2-sha256"));
+        assert_eq!(l.get("iterations").unwrap().as_f64(), Some(210_000.0));
+        assert_eq!(l.get("salt").unwrap().as_str(), Some("c2FsdA=="));
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.starts_with("lock.zz: unknown key dropped"))
+        );
+        let (again, n2) = migrate(&m);
+        assert_eq!(again, m);
+        assert!(n2.is_empty(), "{n2:?}");
+        let (gone, n3) = migrate(&parse(r#"{"version":1,"lock":"x"}"#).unwrap());
+        assert!(gone.get("lock").is_none());
+        assert!(
+            n3.iter()
+                .any(|n| n.starts_with("lock: string where an object belongs"))
+        );
     }
 
     #[test]

@@ -77,7 +77,8 @@ along untouched. Version 1:
       voice:    { engine, voiceId, rate (0.25 to 4), pitch (0 to 2), cloneRef },
       actions:  { moods: [], gestures: [], postures: [], aliases: { word: name } },
       behavior: { gaze, blink, breath, idle, ambientGestures },
-      memory:   { enabled } }
+      memory:   { enabled },
+      lock?:    { algo: "pbkdf2-sha256", iterations, salt, hash } }
 
 - `migrate` picks every field from the default shape: unknown keys are
   dropped, missing keys take the default, a value of the wrong type takes
@@ -91,6 +92,12 @@ along untouched. Version 1:
 - `voice.cloneRef` points at a reference clip the caller supplies, a CHARX
   path or a URL. This package never bundles a voice reference or an
   avatar.
+- `lock` is present only on a locked character: the record `makeLock`
+  in `@hackbuild/memory/seal` returns, a PBKDF2 SHA-256 salt and
+  iteration count and a verifier, base64. It holds no password. Absent,
+  `migrate` leaves it out, so files written before it stay valid; a
+  value that is not an object is dropped with a note. There is no
+  recovery for a lost password.
 - `actions` is the per avatar vocabulary that `@hackbuild/act` constrains
   tags to.
 
@@ -132,6 +139,10 @@ along untouched. Version 1:
 - The inflater against Node's zlib (fixed and dynamic Huffman blocks).
 - Card fixtures are written for this repository (CC0); no third party
   character content is used.
+
+- 2026-11-24: the optional `lock` record: absent stays absent, present
+  survives `migrate` twice with no notes, a string is dropped with a note
+  (crate test `optional_lock` and `test/character.test.ts`).
 
 ### Not verified by anything
 
