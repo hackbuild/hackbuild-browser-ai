@@ -1,5 +1,6 @@
 import { importEsm, probe } from "@hackbuild/ai-env";
-import { maskKey, type ChatEngine, type ChatMessage } from "@hackbuild/chat";
+import { define, type ChatPanelElement, type DownloadBarElement, type StatusPillsElement } from "@hackbuild/ai-elements";
+import { scripted, type ChatEngine, type ChatMessage } from "@hackbuild/chat";
 import { getLanguageModel, promptApi, promptLanguages } from "@hackbuild/chat/prompt-api";
 import { anthropicMessages, openaiCompatible } from "@hackbuild/chat/remote";
 import { loadTransformers as loadTjsChat } from "@hackbuild/chat/transformers";
@@ -7,12 +8,15 @@ import { loadWebLLM, type WebLLMModule } from "@hackbuild/chat/webllm";
 import { loadWllama, wllamaUrls } from "@hackbuild/chat/wllama";
 import { loadTransformers } from "@hackbuild/devices";
 import { openWeightStore } from "@hackbuild/weights";
-import { $, auto, check, finish, quantile, readout, result, status } from "../shared/ui.js";
+import { $, auto, check, finish, fixture, quantile, readout, result, status } from "../shared/ui.js";
 
 const r = result("chat");
+define();
 const webllmUrl = (v: string) => [`https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@${v}/+esm`, `https://esm.run/@mlc-ai/web-llm@${v}`];
+const SCRIPT = ["a rain shell, a warm layer, a dry pair of socks. this reply is scripted; load a model engine for a real one.", "this page answers from a script until you load a model engine."];
 const QWEN_GGUF = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
 const ENGINES: Record<string, string> = {
+  scripted: "scripted replies, no model and no download",
   webllm: "webllm 0.2.84, qwen2.5 0.5b instruct q4f16, weights Apache-2.0, 290 MB (vendor, repo file sizes)",
   tjs: "transformers.js 4.3.2, smollm2 360m instruct q4f16, weights Apache-2.0, about 260 MB (inferred)",
   wllama: "wllama 4.0.0, qwen2.5 0.5b instruct q4_k_m gguf, weights Apache-2.0, 491 MB (vendor)",
@@ -23,25 +27,28 @@ const ENGINES: Record<string, string> = {
 $("#controls").innerHTML = `
 <label class="hb-ctl">engine <select class="hb-select" id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
 <input class="hb-input" id="url" type="url" placeholder="server url, for openai compatible" value="http://localhost:11434/v1" aria-label="server url">
-<input class="hb-input" id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms" style="flex:0 1 12em">
-<input class="hb-input" id="key" type="password" placeholder="api key: stays in this tab, never stored" aria-label="api key" autocomplete="off">
-<span class="pg-note" id="keyv"></span>
-<button class="hb-btn" type="button" id="load">load</button>
-<input class="hb-input" id="msg" type="text" value="Name three things to pack for a rainy hike, one line each." aria-label="message">
-<button class="hb-btn hb-btn-2" type="button" id="send" disabled>send</button>
-<button class="hb-btn hb-btn-2" type="button" id="stop" disabled>stop</button>`;
-// the reply streams into one model turn of a hackbuild-ui chat log
+<input class="hb-input" id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms">
+<button class="hb-btn" type="button" id="load">load</button>`;
+// the five ai-elements: state pills, the gguf download bar and the chat panel; the key field shows for a remote engine
 const box = document.createElement("section");
-box.className = "hb-chat pg-out";
-box.setAttribute("aria-label", "reply");
-box.innerHTML = `<div class="hb-chat-log" role="log" aria-live="polite"><div class="hb-msg pg-reply"><span class="hb-msg-who">reply</span></div></div>`;
-const out = document.createElement("div");
-out.className = "hb-msg-text";
-box.querySelector(".hb-msg")!.append(out);
+box.className = "hb-panel";
+box.setAttribute("aria-label", "chat");
+box.innerHTML = `<h2 class="hb-panel-hd-inst">chat</h2><hb-status-pills id="pills"></hb-status-pills><hb-download-bar id="bar" hidden></hb-download-bar><hb-chat-panel id="chat"></hb-chat-panel>`;
 $("#status").before(box);
+const pills = $("#pills") as StatusPillsElement;
+const bar = $("#bar") as DownloadBarElement;
+const chat = $("#chat") as ChatPanelElement;
+chat.system = "You answer briefly.";
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
-$("#key").addEventListener("input", () => ($("#keyv").textContent = ($("#key") as HTMLInputElement).value ? maskKey(($("#key") as HTMLInputElement).value) : ""));
+const pick = $("#engine") as HTMLSelectElement;
+const remote = () => pick.value === "openai" || pick.value === "anthropic";
+const fields = () => {
+  for (const id of ["#url", "#model"]) $(id).hidden = !remote();
+  chat.keyField = remote();
+};
+pick.addEventListener("change", fields);
+fields();
 
 const env = await probe();
 if (!env.webgpu) for (const k of ["webllm", "tjs"]) {
@@ -58,16 +65,16 @@ if (promptState !== "available") {
 }
 show({ "prompt api": lm ? promptState : "absent" });
 
-let engine: ChatEngine | null = null;
-let ac: AbortController | null = null;
 const tjs = loadTransformers();
 
 async function load(kind: string, version = "0.2.84"): Promise<{ engine: ChatEngine; ms: number; ctx?: number }> {
-  status(`loading ${ENGINES[kind]}. weights download from hugging face on first use.`);
+  status(kind === "scripted" ? "scripted replies. nothing downloads." : `loading ${ENGINES[kind]}. weights download from hugging face on first use.`);
+  pills.update({ id: "engine", kind: "loading", text: `${kind} loading` });
   const t = performance.now();
   let e: ChatEngine;
   let ctx: number | undefined;
-  if (kind === "webllm") {
+  if (kind === "scripted") e = scripted({ replies: SCRIPT, chunk: 3 });
+  else if (kind === "webllm") {
     const module = await importEsm<WebLLMModule>(webllmUrl(version));
     const w = await loadWebLLM({ module, modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", contextWindow: 4096, onProgress: (p) => status(`webllm ${version}: ${p.text}`) });
     ctx = w.contextWindow;
@@ -76,77 +83,104 @@ async function load(kind: string, version = "0.2.84"): Promise<{ engine: ChatEng
     e = await loadTjsChat({ module: (await tjs()) as never, modelId: "HuggingFaceTB/SmolLM2-360M-Instruct", device: "webgpu", dtype: "q4f16" });
   } else if (kind === "wllama") {
     const store = await openWeightStore({ onNotice: (l) => status(l) });
-    const gguf = await store.get({ url: QWEN_GGUF, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, { onProgress: (p) => status(`gguf ${(p.loaded / 1e6).toFixed(0)} MB`) });
+    bar.hidden = false;
+    const gguf = await store.get({ url: QWEN_GGUF, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, { onProgress: (p) => (bar.progress = p) });
+    bar.state = "done";
     e = await loadWllama({ module: await importEsm(wllamaUrls().esm), blobs: [gguf] });
   } else if (kind === "prompt") e = promptApi();
   else if (kind === "openai") {
-    const key = ($("#key") as HTMLInputElement).value;
+    const key = chat.apiKey;
     const base = ($("#url") as HTMLInputElement).value;
     // llama.cpp and ollama take repeat_penalty; api.openai.com rejects it
     e = openaiCompatible({ base, model: ($("#model") as HTMLInputElement).value, llamaParams: !/api\.openai\.com/.test(base), ...(key ? { apiKey: key } : {}) });
-  } else e = anthropicMessages({ apiKey: ($("#key") as HTMLInputElement).value, model: ($("#model") as HTMLInputElement).value || "claude-haiku-4-5" });
+  } else e = anthropicMessages({ apiKey: chat.apiKey, model: ($("#model") as HTMLInputElement).value || "claude-haiku-4-5" });
   const ms = performance.now() - t;
-  engine = e;
-  ($("#send") as HTMLButtonElement).disabled = false;
+  chat.engine = metered(e);
+  pills.update({ id: "engine", kind: "ready", text: `${e.id} ready` });
   show({ engine: e.id, "load ms (measured)": Math.round(ms), ...(ctx ? { "context window (computed by the ladder)": ctx } : {}) });
-  status(`${e.id} loaded. weights licence in the engine list.`, "ok");
+  status(kind === "scripted" ? "scripted replies loaded. type below; pick a model engine and load it for real replies." : `${e.id} loaded. weights licence in the engine list.`, "ok");
   return ctx === undefined ? { engine: e, ms } : { engine: e, ms, ctx };
 }
 
-async function send(e: ChatEngine, text: string, o: { maxTokens?: number; stopAfterMs?: number; schema?: Record<string, unknown> } = {}) {
-  const msgs: ChatMessage[] = [{ role: "system", content: "You answer briefly." }, { role: "user", content: text }];
-  ac = new AbortController();
-  ($("#stop") as HTMLButtonElement).disabled = false;
-  out.textContent = "";
-  const t = performance.now();
-  let first = 0;
-  let chunks = 0;
-  const gaps: number[] = [];
-  let lastT = t;
-  if (o.stopAfterMs) setTimeout(() => ac?.abort(), o.stopAfterMs);
-  const it = e.stream(msgs, { maxTokens: o.maxTokens ?? 200, signal: ac.signal, ...(o.schema ? { schema: o.schema } : {}) });
-  let res: Awaited<ReturnType<ChatEngine["complete"]>> | null = null;
-  let abortedAt = 0;
-  ac.signal.addEventListener("abort", () => (abortedAt = performance.now()));
-  for (;;) {
-    const x = await it.next();
-    if (x.done) {
-      res = x.value;
-      break;
+interface Stats {
+  ttft: number;
+  tokens: number;
+  tps: number;
+  gapP95: number;
+  finish: string;
+  text: string;
+  stopMs: number;
+  schemaFallback: boolean;
+}
+
+/** The engine the chat panel streams from, timed: first token, tokens per second and the gap p95 go to the readout. */
+function metered(e: ChatEngine, extra: { maxTokens?: number; schema?: Record<string, unknown> } = {}, done?: (s: Stats) => void): ChatEngine {
+  const stream = async function* (msgs: ChatMessage[], o: Parameters<ChatEngine["stream"]>[1] = {}) {
+    const t = performance.now();
+    let first = 0;
+    let chunks = 0;
+    let text = "";
+    const gaps: number[] = [];
+    let lastT = t;
+    let abortedAt = 0;
+    o.signal?.addEventListener("abort", () => (abortedAt = performance.now()));
+    const it = e.stream(msgs, { maxTokens: 200, ...o, ...(extra.maxTokens ? { maxTokens: extra.maxTokens } : {}), ...(extra.schema ? { schema: extra.schema } : {}) });
+    let res: Awaited<ReturnType<ChatEngine["complete"]>> | null = null;
+    for (;;) {
+      const x = await it.next();
+      if (x.done) {
+        res = x.value;
+        break;
+      }
+      const ev = x.value;
+      if (ev.type === "text") {
+        const now = performance.now();
+        if (!first) first = now - t;
+        else gaps.push(now - lastT);
+        lastT = now;
+        chunks++;
+        text += ev.text;
+      }
+      if (ev.type === "done") res = ev.result;
+      yield ev;
     }
-    const ev = x.value;
-    if (ev.type === "text") {
-      const now = performance.now();
-      if (!first) first = now - t;
-      else gaps.push(now - lastT);
-      lastT = now;
-      chunks++;
-      out.textContent += ev.text;
-    }
-    if (ev.type === "done") res = ev.result;
-  }
-  const total = performance.now() - t;
-  ($("#stop") as HTMLButtonElement).disabled = true;
-  const tokens = res?.usage?.output ?? chunks;
-  const genMs = total - first;
-  const stats = {
-    ttft: first,
-    tokens,
-    tps: genMs > 0 ? ((tokens - 1) * 1000) / genMs : 0,
-    gapP95: quantile(gaps, 0.95),
-    finish: res?.finish ?? "unknown",
-    text: res?.text ?? out.textContent,
-    stopMs: abortedAt ? performance.now() - abortedAt : 0,
-    schemaFallback: res?.schemaFallback ?? false,
+    const total = performance.now() - t;
+    const tokens = res?.usage?.output ?? chunks;
+    const genMs = total - first;
+    const s: Stats = {
+      ttft: first,
+      tokens,
+      tps: genMs > 0 ? ((tokens - 1) * 1000) / genMs : 0,
+      gapP95: quantile(gaps, 0.95),
+      finish: res?.finish ?? "unknown",
+      text: res?.text ?? text,
+      stopMs: abortedAt ? performance.now() - abortedAt : 0,
+      schemaFallback: res?.schemaFallback ?? false,
+    };
+    show({ "time to first token ms (measured)": Math.round(s.ttft), "tokens (measured)": tokens, "tokens per s (measured)": s.tps.toFixed(1), finish: s.finish });
+    done?.(s);
+    return res!;
   };
-  show({ "time to first token ms (measured)": Math.round(stats.ttft), "tokens (measured)": tokens, "tokens per s (measured)": stats.tps.toFixed(1), finish: stats.finish });
+  return { ...e, id: e.id, provider: e.provider, caps: e.caps, stream } as ChatEngine;
+}
+
+/** One turn through the panel with a fresh transcript, for the checks: system plus one user turn. */
+async function send(e: ChatEngine, text: string, o: { maxTokens?: number; stopAfterMs?: number; schema?: Record<string, unknown> } = {}): Promise<Stats> {
+  chat.clear();
+  let stats: Stats | null = null;
+  chat.engine = metered(e, o, (s) => (stats = s));
+  if (o.stopAfterMs) setTimeout(() => chat.stop(), o.stopAfterMs);
+  await chat.send(text);
+  chat.engine = metered(e);
+  if (!stats) throw new Error("the reply ended with no result");
   return stats;
 }
 
-$("#load").addEventListener("click", () => void load(($("#engine") as HTMLSelectElement).value).catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
-$("#send").addEventListener("click", () => engine && void send(engine, ($("#msg") as HTMLInputElement).value).catch((e) => status(`reply failed: ${(e as Error).message}`, "bad")));
-$("#stop").addEventListener("click", () => ac?.abort());
-status(env.webgpu ? "pick an engine and load it." : "no webgpu adapter. webllm and transformers.js chat are off; wllama runs on wasm.", env.webgpu ? "info" : "warn");
+$("#load").addEventListener("click", () => void load(pick.value).catch((e) => (status(`load failed: ${(e as Error).message}`, "bad"), pills.update({ id: "engine", kind: "failed", text: "load failed" }))));
+// the stage that needs no download: scripted replies are loaded at the start
+await load("scripted");
+fixture("replies come from a script until you load a model engine.");
+if (!env.webgpu) status("no webgpu adapter. webllm and transformers.js chat are off; wllama runs on wasm. scripted replies are loaded.", "warn");
 
 if (auto) {
   const n = r.numbers;

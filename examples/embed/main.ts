@@ -1,8 +1,12 @@
 import { loadTransformers } from "@hackbuild/devices";
-import { cosine, loadStaticEmbedder, miniLM, type Embedder } from "@hackbuild/embed";
-import { $, auto, check, finish, readout, result, status } from "../shared/ui.js";
+import { define, type ModelPickerElement } from "@hackbuild/ai-elements";
+import { cosine, EMBED_RECORDS, loadStaticEmbedder, miniLM, type Embedder } from "@hackbuild/embed";
+import { hashedEmbedder } from "@hackbuild/memory";
+import { probe } from "@hackbuild/ai-env";
+import { $, auto, check, finish, fixture, readout, result, status } from "../shared/ui.js";
 
 const r = result("embed");
+define();
 // the 20 sentences the browser check compares; the same list is in docs/browser-checks.md notes
 export const SENTENCES = [
   "the mug goes on the shelf",
@@ -28,22 +32,26 @@ export const SENTENCES = [
 ];
 
 const MODELS = {
+  hashed: { label: "hashed words, no model and no download" },
   potion: { label: "potion-base-8M, static, weights MIT", url: "https://huggingface.co/minishlab/potion-base-8M/resolve/main/" },
   minilm: { label: "all-MiniLM-L6-v2, transformers.js, weights Apache-2.0", id: "Xenova/all-MiniLM-L6-v2" },
   bge: { label: "bge-small-en-v1.5, transformers.js, weights MIT", id: "Xenova/bge-small-en-v1.5" },
 };
+// the picker rows are the embed records with the fit of this machine
+const BY_RECORD: Record<string, keyof typeof MODELS> = { "potion-base-8m": "potion", "minilm-l6": "minilm", "bge-small-en": "bge" };
 $("#controls").innerHTML = `
-<label class="hb-ctl">model <select class="hb-select" id="model">
-<option value="potion">${MODELS.potion.label}</option>
-<option value="minilm">${MODELS.minilm.label}</option>
-<option value="bge">${MODELS.bge.label}</option></select></label>
 <label class="hb-ctl">device <select class="hb-select" id="device"><option value="wasm:q8">wasm q8</option><option value="webgpu:fp32">webgpu fp32</option></select></label>
 <button class="hb-btn" type="button" id="load">load</button>
 <input class="hb-input" id="q" type="text" value="where do cups go" aria-label="query">
 <button class="hb-btn hb-btn-2" type="button" id="search" disabled>search</button>`;
+$("#status").insertAdjacentHTML("beforebegin", `<section class="hb-panel"><h2 class="hb-panel-hd-inst">model</h2><hb-model-picker id="picker"></hb-model-picker></section>`);
+const picker = $("#picker") as ModelPickerElement;
+picker.label = "embedders";
+picker.records = EMBED_RECORDS.filter((x) => x.id in BY_RECORD);
+picker.selected = "potion-base-8m";
+picker.env = await probe();
 const pre = document.createElement("pre");
-pre.style.cssText = "white-space:pre-wrap;margin:0 0 16px";
-$("main").append(pre);
+$("#readout").after(pre);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -52,10 +60,11 @@ const tjs = loadTransformers();
 
 async function load(which: keyof typeof MODELS, device: string): Promise<{ e: Embedder; loadMs: number; ms20: number; vecs: Float32Array[] }> {
   const m = MODELS[which];
-  status(`loading ${m.label}. downloads from hugging face on first use.`);
+  status(which === "hashed" ? "hashed words. nothing downloads." : `loading ${m.label}. downloads from hugging face on first use.`);
   const t = performance.now();
   let e: Embedder;
-  if (which === "potion") e = await loadStaticEmbedder(MODELS.potion.url, { name: "potion-base-8M" });
+  if (which === "hashed") e = hashedEmbedder();
+  else if (which === "potion") e = await loadStaticEmbedder(MODELS.potion.url, { name: "potion-base-8M" });
   else {
     const [dev, dtype] = device.split(":") as [string, string];
     const o: Record<string, string> = { modelId: (m as { id: string }).id, device: dev, dtype };
@@ -70,7 +79,7 @@ async function load(which: keyof typeof MODELS, device: string): Promise<{ e: Em
   current = { e, vecs };
   ($("#search") as HTMLButtonElement).disabled = false;
   show({ model: m.label, id: e.id, "dim (vendor)": e.dim, "load ms (measured)": Math.round(loadMs), "20 sentences ms (measured)": ms20.toFixed(1) });
-  status(`${m.label} loaded. weights licence ${m.label.split("weights ")[1]}.`, "ok");
+  status(which === "hashed" ? "hashed words loaded. search below; pick a model and load it for real vectors." : `${m.label} loaded. weights licence ${m.label.split("weights ")[1]}.`, "ok");
   search();
   return { e, loadMs, ms20, vecs };
 }
@@ -103,9 +112,11 @@ function pairHits(vecs: Float32Array[]): number {
   return hits;
 }
 
-$("#load").addEventListener("click", () => void load(($("#model") as HTMLSelectElement).value as keyof typeof MODELS, ($("#device") as HTMLSelectElement).value).catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
+$("#load").addEventListener("click", () => void load(BY_RECORD[picker.selected ?? ""] ?? "potion", ($("#device") as HTMLSelectElement).value).catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
 $("#search").addEventListener("click", search);
-status("pick a model and load it. potion is about 30 MB (inferred), minilm q8 about 23 MB (inferred).");
+// the stage that needs no download: a hashed word embedder searches the 20 sentences at the start
+await load("hashed", "wasm:q8");
+fixture("results come from hashed words until you load a model.");
 
 if (auto) {
   const fail: string[] = [];

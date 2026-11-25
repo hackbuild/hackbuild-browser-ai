@@ -1,8 +1,10 @@
 import { runtimeLoader } from "@hackbuild/devices";
 import { bellowsEngine, createSpeaker, kokoroEngine, webSpeechEngine, type BellowsVoiceModule, type Engine, type Speaker } from "@hackbuild/speak";
-import { $, auto, check, finish, readout, result, sleep, status } from "../shared/ui.js";
+import { define, type StatusPillsElement } from "@hackbuild/ai-elements";
+import { $, auto, check, finish, readout, result, sleep, stageFrame, status } from "../shared/ui.js";
 
 const r = result("speak");
+define();
 const KOKORO = runtimeLoader<never>(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]);
 // bellows-voice 0.8.0 /engine on bellowsjs 0.5.x (MIT, no weights) from the npm CDN
 const BELLOWS = runtimeLoader<BellowsVoiceModule>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"]);
@@ -27,9 +29,12 @@ $("#controls").innerHTML = `
 <button class="hb-btn" type="button" id="say">say it</button>
 <button class="hb-btn hb-btn-2" type="button" id="stop">stop</button>`;
 const canvas = document.createElement("canvas");
-$("#stage").append(canvas);
+stageFrame("void").append(canvas);
+// engine state as ai-elements pills, from the speaker's status events
+$("#status").insertAdjacentHTML("beforebegin", `<hb-status-pills id="pills"></hb-status-pills>`);
+const pills = $("#pills") as StatusPillsElement;
 const words = document.createElement("p");
-$("main").append(words);
+$("#readout").after(words);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 if (!("gpu" in navigator)) ($("#engine option[value='kokoro-webgpu']") as HTMLOptionElement).disabled = true;
@@ -48,7 +53,7 @@ function speaker(key: string): Speaker {
   s = createSpeaker({
     ctx: ctx as never,
     engines: [ENGINES[key]!.make()],
-    onStatus: (e) => status(`${e.engine}: ${e.text}${e.progress !== undefined ? ` ${Math.round(e.progress)}%` : ""}`, e.kind === "failed" || e.kind === "watchdog" ? "bad" : "info"),
+    onStatus: (e) => (pills.update(e), status(`${e.engine}: ${e.text}${e.progress !== undefined ? ` ${Math.round(e.progress)}%` : ""}`, e.kind === "failed" || e.kind === "watchdog" ? "bad" : "info")),
     onSpeaking: (b) => {
       if (b && !firstAudio) firstAudio = performance.now() - t0;
     },

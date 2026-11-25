@@ -4,9 +4,11 @@ import { createHub, createRegistry, type Hub, type RunOptions } from "@hackbuild
 import { attachVision, caption, depth, depthToRgba, depthWorker, detect, fitSize, loadTasksVision, mediapipeProvider, segment, type DepthWorker } from "@hackbuild/vision";
 import * as THREE from "three";
 import { stage } from "../shared/three.js";
+import { define, type StatusPillsElement } from "@hackbuild/ai-elements";
 import { $, FrameTimer, auto, check, finish, quantile, readout, result, sleep, status } from "../shared/ui.js";
 
 const r = result("vision");
+define();
 $("#controls").innerHTML = `
 <button class="hb-btn" type="button" id="depth">depth</button>
 <label class="hb-ctl">device <select class="hb-select" id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
@@ -24,6 +26,9 @@ corner.className = "hb-ov hb-ov-br";
 corner.innerHTML = `<figure class="hb-inset"><div class="hb-inset-hd"><span>side</span><span class="hb-hd-aux">depth, mask</span></div><div class="hb-inset-media"></div></figure>`;
 corner.querySelector(".hb-inset-media")!.append(side);
 $("#stage").append(corner);
+// hub queue state as ai-elements pills, one per device hub
+$("#status").insertAdjacentHTML("beforebegin", `<hb-status-pills id="pills"></hb-status-pills>`);
+const pills = $("#pills") as StatusPillsElement;
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -64,15 +69,16 @@ requestAnimationFrame(frame);
 status("probing webgpu.");
 const env = await probe();
 const tjs = tjsProvider({ runtime: loadTransformers() });
-function makeHub(e: Env): Hub {
+function makeHub(e: Env, id: string): Hub {
   const hub = createHub({ registry: createRegistry(), env: e });
   attachVision(hub, tjs);
   hub.provide("tjs", tjs.factory);
   hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
-  hub.onBusy((n) => (document.title = n ? "model busy, vision" : "vision, hackbuild-browser-ai"));
+  hub.onBusy((n) => ((document.title = n ? "model busy, vision" : "vision, hackbuild-browser-ai"), pills.update({ id, busy: n })));
+  pills.update({ id, busy: 0 });
   return hub;
 }
-hubs = { gpu: makeHub(env), cpu: makeHub({ ...env, webgpu: false, f16: false }) };
+hubs = { gpu: makeHub(env, env.webgpu ? "webgpu hub" : "wasm hub"), cpu: makeHub({ ...env, webgpu: false, f16: false }, "wasm only hub") };
 if (!env.webgpu) {
   ($("#dev") as HTMLSelectElement).value = "cpu";
   ($("#dev") as HTMLSelectElement).disabled = true;

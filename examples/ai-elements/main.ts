@@ -9,7 +9,7 @@ import { CATALOG } from "@hackbuild/models";
 import { TRANSCRIBE_RECORDS } from "@hackbuild/transcribe";
 import { VISION_RECORDS } from "@hackbuild/vision";
 import { openWeightStore } from "@hackbuild/weights";
-import { $, FrameTimer, auto, check, finish, frames, readout, result, status } from "../shared/ui.js";
+import { $, FrameTimer, auto, check, finish, fixture, frames, readout, result, status } from "../shared/ui.js";
 
 const r = result("ai-elements");
 define();
@@ -17,17 +17,17 @@ $("#controls").innerHTML = `
 <button class="hb-btn" type="button" id="dl">download a 23 MB file into the bar</button>
 <button class="hb-btn hb-btn-2" type="button" id="stream">stream 500 scripted tokens into the chat panel</button>
 <button class="hb-btn hb-btn-2" type="button" id="real">stream from qwen2.5 0.5b on webllm</button>`;
-const main = $("main");
-const wrap = document.createElement("div");
-wrap.className = "pg-grid";
-// the theme select went with the dark palette: hackbuild-ui defines none
-wrap.innerHTML = `
-<section class="hb-panel"><h2 class="hb-panel-hd-inst">model picker</h2><div class="pg-scroll"><hb-model-picker id="picker"></hb-model-picker></div></section>
-<section class="hb-panel"><h2 class="hb-panel-hd-inst">download bar</h2><hb-download-bar id="bar"></hb-download-bar>
-<h2 class="hb-panel-hd-inst pg-sub">status pills</h2><hb-status-pills id="pills"></hb-status-pills></section>
-<section class="hb-panel pg-wide"><h2 class="hb-panel-hd-inst">memory inspector</h2><hb-memory-inspector id="insp"></hb-memory-inspector></section>
-<section class="hb-panel pg-wide"><h2 class="hb-panel-hd-inst">chat panel</h2><hb-chat-panel id="chat"></hb-chat-panel></section>`;
-main.insertBefore(wrap, $("#status"));
+// one panel per element, stacked; the pills and the memory rows are sample state, and the banner says so
+const panel = (title: string, body: string) => `<section class="hb-panel"><h2 class="hb-panel-hd-inst">${title}</h2>${body}</section>`;
+$("#status").insertAdjacentHTML(
+  "beforebegin",
+  panel("model picker", `<hb-model-picker id="picker"></hb-model-picker>`) +
+    panel("download bar", `<hb-download-bar id="bar"></hb-download-bar>`) +
+    panel("status pills", `<hb-status-pills id="pills"></hb-status-pills>`) +
+    panel("memory inspector", `<hb-memory-inspector id="insp"></hb-memory-inspector>`) +
+    panel("chat panel", `<hb-chat-panel id="chat"></hb-chat-panel>`),
+);
+fixture("the pills, the memory rows and the scripted chat are sample state. the picker rows are the real catalogue with the fit of this machine.");
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 type El = HTMLElement & Record<string, unknown> & { update?(s: unknown): void; streamText(src: AsyncIterable<string>): Promise<void> };
@@ -108,6 +108,7 @@ async function measure(engine: ChatEngine, prompt: string): Promise<{ tokens: nu
 
 const LONG = Array.from({ length: 500 }, (_, i) => ["the ", "kettle ", "clicks, ", "pour ", "slowly. "][i % 5]).join("");
 const scriptedEngine = () => scripted({ replies: [LONG], chunk: 6 });
+chat.engine = scriptedEngine();
 async function webllm(): Promise<ChatEngine> {
   const module = await importEsm<WebLLMModule>(["https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/+esm"]);
   status("qwen2.5 0.5b instruct q4f16 on webllm, weights Apache-2.0, about 280 MB (inferred).");
@@ -116,7 +117,7 @@ async function webllm(): Promise<ChatEngine> {
 $("#dl").addEventListener("click", () => void download().catch((e) => ((bar.error = (e as Error).message), (bar.state = "failed"))));
 $("#stream").addEventListener("click", () => void measure(scriptedEngine(), "say it"));
 $("#real").addEventListener("click", () => void webllm().then((e) => measure(e, "Write a long story about a lighthouse keeper.")).catch((e) => status(`webllm failed: ${(e as Error).message}`, "bad")));
-status(env.webgpu ? "each element is live. the chat panel answers from a scripted engine until you load a model." : "no webgpu adapter. the webllm button is off.", "info");
+status(env.webgpu ? "each element is live. the chat panel answers from a scripted engine until you load a model." : "no webgpu adapter. the webllm button is off. the chat panel answers from a scripted engine.", "info");
 if (!env.webgpu) ($("#real") as HTMLButtonElement).disabled = true;
 
 if (auto) {

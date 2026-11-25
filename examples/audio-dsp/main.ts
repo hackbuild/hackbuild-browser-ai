@@ -1,17 +1,17 @@
 import { loadDsp } from "@hackbuild/audio-dsp";
 import { AUDIO_DSP_WASM_BASE64 } from "@hackbuild/audio-dsp/inline";
-import { $, auto, check, finish, readout, result, status } from "../shared/ui.js";
+import { $, auto, check, finish, readout, result, stageFrame, status } from "../shared/ui.js";
 
 const r = result("audio-dsp");
 const SR = 16000;
 $("#controls").innerHTML = `
-<label class="hb-ctl">bpm <input class="hb-input" id="bpm" inputmode="numeric" type="number" min="60" max="200" value="120" style="width:5em"></label>
+<label class="hb-ctl">bpm <input class="hb-input" id="bpm" inputmode="numeric" type="number" min="60" max="200" value="120"></label>
 <label class="hb-ctl">noise <input class="hb-range" id="noise" type="range" min="0" max="0.3" step="0.01" value="0.08"></label>
 <button class="hb-btn" type="button" id="make">make a click track</button>
 <button class="hb-btn hb-btn-2" type="button" id="play">play it</button>
 <button class="hb-btn hb-btn-2" type="button" id="bench">time the kernels on 10 minutes</button>`;
 const canvas = document.createElement("canvas");
-$("#stage").append(canvas);
+stageFrame("void").append(canvas);
 // redraw the last spectrogram at the new size on a resize or a rotation, so it never stretches
 let last: [Float32Array, number, number] | null = null;
 new ResizeObserver(() => last && draw(...last)).observe(canvas);

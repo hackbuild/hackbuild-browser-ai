@@ -6,10 +6,10 @@ import { $, FrameTimer, auto, check, finish, frames, onDrop, readout, result, st
 
 const r = result("depth-mesh");
 $("#controls").innerHTML = `
-<label class="hb-ctl">base mm <input class="hb-input" id="base" inputmode="decimal" type="number" step="0.1" value="0.4" style="width:5em"></label>
-<label class="hb-ctl">height mm <input class="hb-input" id="height" inputmode="decimal" type="number" step="0.1" value="2.4" style="width:5em"></label>
-<label class="hb-ctl">gamma <input class="hb-input" id="gamma" inputmode="decimal" type="number" step="0.1" value="1.2" style="width:5em"></label>
-<label class="hb-ctl">background cut <input class="hb-input" id="bgcut" inputmode="decimal" type="number" step="0.02" value="0.1" style="width:5em"></label>
+<label class="hb-ctl">base mm <input class="hb-input" id="base" inputmode="decimal" type="number" step="0.1" value="0.4"></label>
+<label class="hb-ctl">height mm <input class="hb-input" id="height" inputmode="decimal" type="number" step="0.1" value="2.4"></label>
+<label class="hb-ctl">gamma <input class="hb-input" id="gamma" inputmode="decimal" type="number" step="0.1" value="1.2"></label>
+<label class="hb-ctl">background cut <input class="hb-input" id="bgcut" inputmode="decimal" type="number" step="0.02" value="0.1"></label>
 <button class="hb-btn" type="button" id="relief">relief</button>
 <button class="hb-btn hb-btn-2" type="button" id="carve">carve a box on a turntable</button>
 <button class="hb-btn hb-btn-2" type="button" id="stl" disabled>download stl</button>

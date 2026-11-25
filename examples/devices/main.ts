@@ -1,16 +1,21 @@
 import { probe } from "@hackbuild/ai-env";
 import { loadOrt, loadTransformers, PINS } from "@hackbuild/devices";
 import { openWeightStore, Sha256 } from "@hackbuild/weights";
+import { define, type DownloadBarElement } from "@hackbuild/ai-elements";
 import { $, auto, check, finish, readout, result, status } from "../shared/ui.js";
 
 // all-MiniLM-L6-v2 q8 graph, weights Apache-2.0, about 23 MB (inferred), used only for the range resume test
 const RESUME_URL = "https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model_quantized.onnx";
 
 const r = result("devices");
+define();
 $("#controls").innerHTML = `
 <button class="hb-btn" type="button" id="rt">import the runtimes</button>
 <button class="hb-btn hb-btn-2" type="button" id="resume">test a resumed download</button>
 <button class="hb-btn hb-btn-2" type="button" id="sha">time sha-256</button>`;
+// the resumed download runs through an ai-elements bar: paused at the stop, then resumed from the kept parts
+$("#status").insertAdjacentHTML("beforebegin", `<hb-download-bar id="bar"></hb-download-bar>`);
+const bar = $("#bar") as DownloadBarElement;
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => {
   Object.assign(rows, o);
@@ -81,6 +86,7 @@ async function resumeTest(): Promise<{ ok: boolean; why: string }> {
     await store.get(ref, {
       signal: ac.signal,
       onProgress: (p) => {
+        bar.progress = p;
         if (p.loaded > 5e6 && !ac.signal.aborted) {
           firstStop = p.loaded;
           ac.abort();
@@ -90,9 +96,12 @@ async function resumeTest(): Promise<{ ok: boolean; why: string }> {
   } catch {
     /* the abort */
   }
+  bar.state = "paused";
   const kept = (await store.meta(ref.key))?.parts.reduce((a, b) => a + b, 0) ?? 0;
   const t = performance.now();
-  const blob = await store.get(ref);
+  bar.state = "running";
+  const blob = await store.get(ref, { onProgress: (p) => (bar.progress = p) });
+  bar.state = "done";
   const ms = Math.round(performance.now() - t);
   const second = seen[seen.length - 1];
   show({

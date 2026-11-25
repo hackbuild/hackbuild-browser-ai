@@ -4,10 +4,12 @@ import { AUDIO_DSP_WASM_BASE64 } from "@hackbuild/audio-dsp/inline";
 import { loadTransformers, runtimeLoader, tjsProvider } from "@hackbuild/devices";
 import { createHub, createRegistry, type Hub } from "@hackbuild/models";
 import { kokoroEngine } from "@hackbuild/speak";
-import { attachTranscribe, transcribe } from "@hackbuild/transcribe";
+import { define, type ModelPickerElement, type StatusPillsElement } from "@hackbuild/ai-elements";
+import { attachTranscribe, transcribe, TRANSCRIBE_RECORDS } from "@hackbuild/transcribe";
 import { $, auto, check, finish, onDrop, readout, result, status } from "../shared/ui.js";
 
 const r = result("transcribe");
+define();
 const MODELS: Record<string, string> = {
   "whisper-base.en": "whisper base.en, weights MIT, about 90 MB (inferred)",
   "whisper-tiny.en": "whisper tiny.en, weights MIT, about 40 MB (inferred)",
@@ -15,14 +17,19 @@ const MODELS: Record<string, string> = {
   "whisper-large-v3-turbo": "whisper large v3 turbo, weights MIT, about 900 MB (inferred), webgpu",
 };
 $("#controls").innerHTML = `
-<label class="hb-ctl">model <select class="hb-select" id="model">${Object.entries(MODELS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
 <label class="hb-ctl">device <select class="hb-select" id="dev"><option value="gpu">webgpu if present</option><option value="cpu">wasm only</option></select></label>
 <span class="hb-dropzone" id="drop">drop an audio file <input id="file" type="file" accept="audio/*,video/*"></span>
 <button class="hb-btn" type="button" id="rt">speak a sentence with kokoro and transcribe it</button>
 <button class="hb-btn hb-btn-2" type="button" id="mic" disabled title="the live microphone path is in @hackbuild/listen; this page does not open the microphone">microphone: not on this page</button>`;
+// the model picker and the state pills are ai-elements; the picker rows are the transcribe records with the fit of this machine
+$("#status").insertAdjacentHTML("beforebegin", `<section class="hb-panel"><h2 class="hb-panel-hd-inst">model</h2><hb-status-pills id="pills"></hb-status-pills><hb-model-picker id="picker"></hb-model-picker></section>`);
+const picker = $("#picker") as ModelPickerElement;
+const pills = $("#pills") as StatusPillsElement;
+picker.label = "whisper models";
+picker.records = TRANSCRIBE_RECORDS.filter((x) => x.id in MODELS);
+picker.selected = "whisper-base.en";
 const out = document.createElement("pre");
-out.style.cssText = "white-space:pre-wrap;margin:0 0 16px";
-$("main").append(out);
+$("#readout").after(out);
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -37,15 +44,20 @@ const hubOf = (e: typeof env): Hub => {
   return h;
 };
 const hubs = { gpu: hubOf(env), cpu: hubOf({ ...env, webgpu: false, f16: false }) };
+const cpuEnv = { ...env, webgpu: false, f16: false };
+// the fit follows the device select: wasm only turns the webgpu rows off with the reason
+const fitTo = () => (picker.env = ($("#dev") as HTMLSelectElement).value === "cpu" ? cpuEnv : env);
+$("#dev").addEventListener("change", fitTo);
 if (!env.webgpu) {
   ($("#dev") as HTMLSelectElement).value = "cpu";
   ($("#dev") as HTMLSelectElement).disabled = true;
-  ($("#model option[value='whisper-large-v3-turbo']") as HTMLOptionElement).disabled = true;
 }
+fitTo();
 status(env.webgpu ? "drop a file or run the round trip. weights download from hugging face on first use." : "no webgpu adapter. whisper runs on wasm.", env.webgpu ? "ok" : "warn");
 
 async function run(pcm16k: Float32Array, model: string, which: "gpu" | "cpu"): Promise<{ text: string; ms: number; loadMs: number; rung: string; rtf: number }> {
   status(`${MODELS[model]}. loading.`);
+  pills.update({ id: model, kind: "loading", text: `${model} loading` });
   const h = hubs[which];
   const t = performance.now();
   const l = await h.use({ id: model });
@@ -59,6 +71,7 @@ async function run(pcm16k: Float32Array, model: string, which: "gpu" | "cpu"): P
   out.textContent = tr.segments.map((s) => `${s.start.toFixed(2)} to ${s.end.toFixed(2)}  ${s.text}`).join("\n") || "no speech found.";
   show({ model, rung, "load ms (measured)": Math.round(loadMs), "transcribe ms (measured)": Math.round(ms), "audio s (measured)": tr.stats.dur.toFixed(2), "realtime factor (measured)": tr.stats.rtf.toFixed(3), "snr db (computed)": tr.stats.snrDb.toFixed(1), dropped: tr.dropped.length });
   status("transcribed.", "ok");
+  pills.update({ id: model, kind: "ready", text: `${model} ready on ${rung.split(" ")[0]}` });
   return { text, ms, loadMs, rung, rtf: tr.stats.rtf };
 }
 
@@ -106,10 +119,10 @@ function wer(ref: string, hyp: string): number {
 
 const SENTENCE = "The library opens at nine in the morning, and the printer on the second floor is out of paper.";
 const dev = () => ($("#dev") as HTMLSelectElement).value as "gpu" | "cpu";
-onDrop($("#drop"), (f) => void decode(f[0]!).then((pcm) => run(pcm, ($("#model") as HTMLSelectElement).value, dev())).catch((e) => status(`could not read that file: ${(e as Error).message}`, "bad")), $("#file") as HTMLInputElement);
+onDrop($("#drop"), (f) => void decode(f[0]!).then((pcm) => run(pcm, (picker.selected ?? "whisper-base.en"), dev())).catch((e) => status(`could not read that file: ${(e as Error).message}`, "bad")), $("#file") as HTMLInputElement);
 $("#rt").addEventListener("click", () =>
   void speech(SENTENCE)
-    .then((pcm) => run(pcm, ($("#model") as HTMLSelectElement).value, dev()))
+    .then((pcm) => run(pcm, (picker.selected ?? "whisper-base.en"), dev()))
     .then((x) => show({ "word error rate against the spoken text (computed)": wer(SENTENCE, x.text).toFixed(3) }))
     .catch((e) => status(`round trip failed: ${(e as Error).message}`, "bad")),
 );

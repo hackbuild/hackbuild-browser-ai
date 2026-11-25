@@ -2,9 +2,11 @@ import { probe } from "@hackbuild/ai-env";
 import { loadOrt, loadTransformers, ortWasmPaths } from "@hackbuild/devices";
 import { generate, IMAGEGEN_RECORDS, type Sessions } from "@hackbuild/imagegen";
 import { openWeightStore } from "@hackbuild/weights";
-import { $, auto, check, finish, mb, readout, result, status } from "../shared/ui.js";
+import { define, type DownloadBarElement } from "@hackbuild/ai-elements";
+import { $, auto, check, finish, mb, readout, result, stageFrame, status } from "../shared/ui.js";
 
 const r = result("imagegen");
+define();
 const rec = IMAGEGEN_RECORDS[0]!;
 // file sizes from the hugging face repo listing on 2026-11-23 (vendor)
 const FILES = [
@@ -17,15 +19,17 @@ $("#controls").innerHTML = `
 <button class="hb-btn" type="button" id="load">download and load, ${FILES.reduce((a, f) => a + f.mb, 0)} MB (vendor)</button>
 <input class="hb-input" id="prompt" type="text" value="a ceramic mug on a wooden shelf, soft light" aria-label="prompt">
 <label class="hb-ctl">steps <select class="hb-select" id="steps"><option>1</option><option>2</option><option>4</option></select></label>
-<label class="hb-ctl">seed <input class="hb-input" id="seed" inputmode="numeric" type="number" value="42" style="width:6em"></label>
+<label class="hb-ctl">seed <input class="hb-input" id="seed" inputmode="numeric" type="number" value="42"></label>
 <button class="hb-btn hb-btn-2" type="button" id="go" disabled>generate</button>
-<span class="pg-note" id="phone" hidden>this model needs about ${(FILES.reduce((a, f) => a + f.mb, 0) / 1000).toFixed(1)} gb. phones usually cannot hold it.</span>`;
+<span class="hb-hint" id="phone" hidden>this model needs about ${(FILES.reduce((a, f) => a + f.mb, 0) / 1000).toFixed(1)} gb. phones usually cannot hold it.</span>`;
 // a touch screen or a small memory figure (vendor, navigator.deviceMemory) reads as a phone
 if (matchMedia("(pointer: coarse)").matches || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4) $("#phone").hidden = false;
 const canvas = document.createElement("canvas");
 canvas.width = canvas.height = 512;
-canvas.style.objectFit = "contain";
-$("#stage").append(canvas);
+stageFrame("void").append(canvas);
+// the three graphs download through the weight store into an ai-elements bar, one file at a time
+$("#status").insertAdjacentHTML("beforebegin", `<hb-download-bar id="bar"></hb-download-bar>`);
+const bar = $("#bar") as DownloadBarElement;
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -48,7 +52,7 @@ async function load(): Promise<void> {
   const base = ($("#base") as HTMLInputElement).value.replace(/\/?$/, "/");
   const made: unknown[] = [];
   for (const f of FILES) {
-    const blob = await store.get({ url: base + f.path, key: `sd-turbo:${f.path}`, licence: rec.licence }, { onProgress: (p) => status(`${f.path}: ${mb(p.loaded)}${p.total ? ` of ${mb(p.total)}` : ""}`) });
+    const blob = await store.get({ url: base + f.path, key: `sd-turbo:${f.path}`, licence: rec.licence }, { onProgress: (p) => ((bar.progress = p), status(`${f.path}: ${mb(p.loaded)}${p.total ? ` of ${mb(p.total)}` : ""}`)) });
     made.push(await ort.InferenceSession.create(new Uint8Array(await blob.arrayBuffer()), { executionProviders: ["webgpu"] }));
   }
   sessions = { textEncoder: made[0], unet: made[1], vaeDecoder: made[2] } as Sessions;
@@ -75,7 +79,7 @@ async function draw(): Promise<void> {
   show({ "image ms (measured)": Math.round(performance.now() - t), "unet step ms (measured)": ms.map((x) => Math.round(x)).join(", ") });
 }
 
-$("#load").addEventListener("click", () => void load().catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
+$("#load").addEventListener("click", () => void load().catch((e) => ((bar.error = (e as Error).message), status(`load failed: ${(e as Error).message}`, "bad"))));
 $("#go").addEventListener("click", () => void draw().catch((e) => status(`generation failed: ${(e as Error).message}`, "bad")));
 
 if (auto) {
