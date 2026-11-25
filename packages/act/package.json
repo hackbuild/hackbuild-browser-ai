@@ -35,7 +35,7 @@
     "@hackbuild/structured": "0.1.1"
   },
   "peerDependencies": {
-    "@hackbuild/memory": "0.1.1"
+    "@hackbuild/memory": "0.1.2"
   },
   "peerDependenciesMeta": {
     "@hackbuild/memory": {

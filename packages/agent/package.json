@@ -34,6 +34,6 @@
   "dependencies": {
     "@hackbuild/chat": "0.1.1",
     "@hackbuild/structured": "0.1.1",
-    "@hackbuild/memory": "0.1.1"
+    "@hackbuild/memory": "0.1.2"
   }
 }

@@ -35,7 +35,7 @@
     "@hackbuild/ai-env": "0.1.1",
     "@hackbuild/models": "0.1.1",
     "@hackbuild/chat": "0.1.1",
-    "@hackbuild/memory": "0.1.1",
+    "@hackbuild/memory": "0.1.2",
     "@hackbuild/weights": "0.1.1"
   },
   "peerDependencies": {

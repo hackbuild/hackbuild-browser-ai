@@ -32,7 +32,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/memory": "0.1.1",
+    "@hackbuild/memory": "0.1.2",
     "@hackbuild/models": "0.1.1",
     "@hackbuild/devices": "0.1.1"
   }

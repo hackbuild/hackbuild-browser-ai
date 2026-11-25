@@ -4,6 +4,22 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Sealed sinks, 2026-11-24
+
+- memory 0.1.1 to 0.1.2: `sealedSink` wraps a `MemorySink` and seals
+  item text and metadata, vectors and kv values with AES-GCM. The
+  `./seal` subpath exports `makeLock`, `verifyLock`, `deriveKey`,
+  `cachedKey`, `forgetKey`, `seal`, `open`, `sealBytes`, `openBytes`
+  and `isSealed`: PBKDF2 SHA-256 at 210,000 iterations once per session,
+  a fresh salt and iv on every write, Web Crypto only. There is no
+  recovery for a lost password. The scope table write is awaited before
+  `add` and `import` return.
+- character 0.1.1 to 0.1.2: the profile gains an optional `lock`
+  record (`algo`, `iterations`, `salt`, `hash`); `migrate` leaves it out
+  when absent, so older files stay valid.
+- act, agent, ai-elements, converse, embed: the memory pin moves to
+  0.1.2.
+
 ### Patch releases, 2026-11-24
 
 - every package 0.1.0 to 0.1.1: the tarball gains `how.ts`, the shared
