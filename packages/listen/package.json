@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/listen",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Speech in for a talking character: a VAD state machine with Silero and energy sources, a transcribe adapter, and barge in by a threshold swap while the character speaks.",
   "type": "module",
   "license": "MIT",
@@ -32,7 +32,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/models": "0.1.1",
-    "@hackbuild/transcribe": "0.1.1"
+    "@hackbuild/models": "0.2.0",
+    "@hackbuild/transcribe": "0.1.2"
   }
 }

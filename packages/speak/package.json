@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/speak",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Speech out in a tab: an engine chain over Kokoro, Pocket TTS and Web Speech, first clause streaming, gapless playback with one analyser, a watchdog, and text offsets for lip sync and action cues.",
   "type": "module",
   "license": "MIT",
@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@hackbuild/ai-env": "0.1.1",
-    "@hackbuild/models": "0.1.1",
+    "@hackbuild/models": "0.2.0",
     "@hackbuild/audio-dsp": "0.1.1"
   },
   "peerDependencies": {

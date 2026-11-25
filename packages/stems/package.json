@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/stems",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Stem separation in a tab: htdemucs tiers on onnxruntime-web through the models hub, an own overlap add runner with overlap as the speed control, a realtime factor readout and a stub.",
   "type": "module",
   "license": "MIT",
@@ -32,8 +32,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/models": "0.1.1",
-    "@hackbuild/devices": "0.1.1",
+    "@hackbuild/models": "0.2.0",
+    "@hackbuild/devices": "0.1.2",
     "@hackbuild/audio-dsp": "0.1.1"
   }
 }

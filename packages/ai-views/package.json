@@ -42,13 +42,13 @@
   "dependencies": {
     "@hackbuild/ai-env": "0.1.1",
     "@hackbuild/chat": "0.1.1",
-    "@hackbuild/embed": "0.1.1",
-    "@hackbuild/imagegen": "0.1.1",
+    "@hackbuild/embed": "0.1.2",
+    "@hackbuild/imagegen": "0.1.2",
     "@hackbuild/memory": "0.1.2",
-    "@hackbuild/models": "0.1.1",
-    "@hackbuild/speak": "0.1.1",
-    "@hackbuild/transcribe": "0.1.1",
-    "@hackbuild/vision": "0.1.1",
+    "@hackbuild/models": "0.2.0",
+    "@hackbuild/speak": "0.1.2",
+    "@hackbuild/transcribe": "0.1.2",
+    "@hackbuild/vision": "0.1.2",
     "@hackbuild/weights": "0.1.1"
   },
   "peerDependencies": {
