@@ -1,8 +1,21 @@
 {
   "repo": "hackbuild-browser-ai",
-  "intro": "ten pages over the 23 packages, one per thing to see or hear. models download from their upstream host when you ask, each page states the weight licence before it loads, and nothing is hosted here.",
+  "intro": "ten demo pages and a page per package over the 24 packages. models download from their upstream host when you ask, each page states the weight licence before it loads, and nothing is hosted here.",
   "footer": "code mit. pages built from github.com/hackbuild/hackbuild-browser-ai. no weights or model files are hosted here.",
   "source": "https://github.com/hackbuild/hackbuild-browser-ai",
+  "suite": {
+    "chat": "#/chat/chat",
+    "converse": "#/chat/chat",
+    "memory": "#/chat/memory",
+    "transcribe": "#/voice/transcribe",
+    "audio-dsp": "#/voice/transcribe",
+    "media": "#/voice/transcribe",
+    "speak": "#/voice/speak",
+    "vision": "#/image/vision",
+    "depth-mesh": "#/image/relief",
+    "imagegen": "#/image/generate",
+    "character": "#/character"
+  },
   "pages": [
     {
       "name": "chat",
