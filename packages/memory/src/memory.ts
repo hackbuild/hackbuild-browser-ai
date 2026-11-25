@@ -173,6 +173,8 @@ export class Memory {
   private readonly index: CoreIndex;
   private readonly items = new Map<number, StoredItem>();
   private scopeCodes = new Map<string, number>();
+  /** The last scope table write; awaited before a write returns, so a reopen sees it. */
+  private scopesSaved: Promise<void> = Promise.resolve();
   private nextId = 1;
   private embedder: Embedder | null;
   private readonly now: () => number;
@@ -264,7 +266,8 @@ export class Memory {
     if (c === undefined) {
       c = this.scopeCodes.size;
       this.scopeCodes.set(name, c);
-      void this.sink.putKv("scopes", Object.fromEntries(this.scopeCodes));
+      const table = Object.fromEntries(this.scopeCodes);
+      this.scopesSaved = this.scopesSaved.then(() => this.sink.putKv("scopes", table));
     }
     return c;
   }
@@ -337,6 +340,7 @@ export class Memory {
     await this.sink.putItems([item]);
     await this.sink.putKv("nextId", this.nextId);
     if (vec && this.embedder) await this.sink.putVectors(this.embedder.id, new Map([[item.id, vec]]));
+    await this.scopesSaved;
     return { id: item.id, merged: false };
   }
 
@@ -653,6 +657,7 @@ export class Memory {
     for (const it of incoming) this.index.upsert(this.coreItem(it, vecs.get(it.id)));
     for (const l of data.core) this.core.append(l);
     await this.sink.putKv("core", this.core.lines);
+    await this.scopesSaved;
     return incoming.length;
   }
 

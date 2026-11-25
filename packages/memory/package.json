@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/memory",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Memory for in-tab agents: BM25 plus vector recall fused by reciprocal rank in a wasm core, decay and merge, IndexedDB persistence, token budgeted context and prefix stable injection.",
   "type": "module",
   "license": "MIT",
@@ -22,6 +22,10 @@
     "./inline": {
       "types": "./dist/inline.d.ts",
       "import": "./dist/inline.js"
+    },
+    "./seal": {
+      "types": "./dist/seal.d.ts",
+      "import": "./dist/seal.js"
     },
     "./memory.wasm": "./wasm/memory.wasm"
   },

@@ -100,6 +100,32 @@ prefix. Code MIT; this README CC-BY-4.0 with the code samples also MIT.
 - `export()` gives JSON without vectors; `import()` re-embeds.
 - The clock is injected (`now`); nothing in the package calls Math.random.
 
+## Sealed at rest
+
+    import { makeLock, deriveKey, seal, sealedSink } from "@hackbuild/memory/seal";
+    const { lock } = await makeLock(password);         // keep lock beside the data
+    const key = await deriveKey(password, lock);       // once per session; wrong password throws
+    const mem = await open(id, { core, sink: sealedSink(await indexedDbSink(id), key) });
+    const file = await seal(key, workspaceJson, "file:workspace.json");
+
+- There is no recovery. A lost password means the sealed data is gone.
+- Lock record: `{ algo: "pbkdf2-sha256", iterations, salt, hash }`,
+  base64. PBKDF2 SHA-256 at 210,000 iterations gives a master once per
+  derivation; HKDF SHA-256 splits it into the stored verifier and, with a
+  fresh 16 byte salt on every write, an AES-GCM 256 key; every write
+  also takes a fresh 12 byte iv. `verifyLock` compares in constant time.
+  `deriveKey` caches the key per lock for the page's life (`cachedKey`,
+  `forgetKey`). Web Crypto only, so it needs a secure origin.
+- Envelope: `HBS1`, salt 16, iv 12, ciphertext, tag 16, 48 bytes over
+  the input (computed). The optional context string is bound as
+  additional data, so a blob moved to another item or file does not open.
+- `sealedSink` seals item text and metadata, vectors and kv values.
+  The inner sink still sees item ids, vector and kv key names, the
+  embedder id and sizes. The keyword index is never stored; `open`
+  rebuilds it in memory from the opened items. A plain row in a sealed
+  store throws: to lock an existing memory, export it and import it into
+  a sealed one.
+
 ## Inspector calls
 
     const t = await mem.explain("where does the mug go");   // no strengthening
@@ -142,7 +168,17 @@ drops every cached vector of the old text.
   compaction and the usage line with an injected storage manager
   included.
 
+- 2026-11-24: `test/seal.test.ts`, 11 tests: round trip, a wrong
+  password rejects, two seals of one value differ in bytes, a tampered
+  byte or another context rejects, `verifyLock` true and false, the
+  cached key, and a sealed sink whose inner rows hold none of the text.
+
 ### Not verified by anything
+
+- Sealing in a real browser; only Node 22.18.0 Web Crypto ran.
+- The cost of one key derivation in a browser. In Node 22.18.0 on this
+  Mac, PBKDF2 SHA-256 at 210,000 iterations took 57 to 59 ms over 5 runs
+  (measured, 2026-11-24).
 
 - `usage` and `persist` against a real browser's storage manager.
 
