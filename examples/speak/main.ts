@@ -1,10 +1,8 @@
 import { runtimeLoader } from "@hackbuild/devices";
 import { bellowsEngine, createSpeaker, kokoroEngine, webSpeechEngine, type BellowsVoiceModule, type Engine, type Speaker } from "@hackbuild/speak";
-import { define, type StatusPillsElement } from "@hackbuild/ai-elements";
 import { $, auto, check, finish, readout, result, sleep, stageFrame, status } from "../shared/ui.js";
 
 const r = result("speak");
-define();
 const KOKORO = runtimeLoader<never>(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]);
 // bellows-voice 0.8.0 /engine on bellowsjs 0.5.x (MIT, no weights) from the npm CDN
 const BELLOWS = runtimeLoader<BellowsVoiceModule>(["https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"]);
@@ -30,9 +28,7 @@ $("#controls").innerHTML = `
 <button class="hb-btn hb-btn-2" type="button" id="stop">stop</button>`;
 const canvas = document.createElement("canvas");
 stageFrame("void").append(canvas);
-// engine state as ai-elements pills, from the speaker's status events
-$("#status").insertAdjacentHTML("beforebegin", `<hb-status-pills id="pills"></hb-status-pills>`);
-const pills = $("#pills") as StatusPillsElement;
+// engine state shows in the status line, from the speaker's status events
 const words = document.createElement("p");
 $("#readout").after(words);
 const rows: Record<string, string | number> = {};
@@ -53,7 +49,7 @@ function speaker(key: string): Speaker {
   s = createSpeaker({
     ctx: ctx as never,
     engines: [ENGINES[key]!.make()],
-    onStatus: (e) => (pills.update(e), status(`${e.engine}: ${e.text}${e.progress !== undefined ? ` ${Math.round(e.progress)}%` : ""}`, e.kind === "failed" || e.kind === "watchdog" ? "bad" : "info")),
+    onStatus: (e) => status(`${e.engine}: ${e.text}${e.progress !== undefined ? ` ${Math.round(e.progress)}%` : ""}`, e.kind === "failed" || e.kind === "watchdog" ? "bad" : "info"),
     onSpeaking: (b) => {
       if (b && !firstAudio) firstAudio = performance.now() - t0;
     },

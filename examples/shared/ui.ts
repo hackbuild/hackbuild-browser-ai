@@ -291,3 +291,37 @@ export function stageFrame(kind: "lit" | "void", host = false): HTMLElement {
   el.prepend(h);
   return h;
 }
+
+/**
+ * A download line in hackbuild-ui's `.hb-progress` markup (HbProgress), for
+ * pages that fetch weights by hand; pages that pick a model use ai-views'
+ * model select, which shows its own progress.
+ */
+export function progressLine(before: HTMLElement, label = "download"): { set(p: { loaded: number; total: number | null; resuming?: boolean }): void; state(s: "running" | "paused" | "done" | "failed", text?: string): void } {
+  const el = document.createElement("div");
+  el.className = "hb-progress";
+  el.innerHTML = `<div class="hb-progress-hd"><span class="hb-progress-text" role="status"></span><span class="hb-progress-pct"></span></div><div class="hb-meter" role="progressbar" aria-label="${label}" aria-valuemin="0" aria-valuemax="100"><i></i></div>`;
+  before.insertAdjacentElement("beforebegin", el);
+  el.hidden = true;
+  const text = el.querySelector<HTMLElement>(".hb-progress-text")!;
+  const pct = el.querySelector<HTMLElement>(".hb-progress-pct")!;
+  const meter = el.querySelector<HTMLElement>(".hb-meter")!;
+  const fill = meter.querySelector("i")!;
+  const mb = (b: number) => (b / (1024 * 1024)).toFixed(b < 10 * 1024 * 1024 ? 1 : 0);
+  return {
+    set(p) {
+      el.hidden = false;
+      const f = p.total ? Math.min(1, p.loaded / p.total) : null;
+      text.textContent = p.resuming ? `resuming, ${mb(p.loaded)} mb on disk` : f === null ? `${mb(p.loaded)} mb, total unknown` : `${mb(p.loaded)} of ${mb(p.total!)} mb`;
+      pct.textContent = f === null ? "" : `${Math.floor(f * 100)}%`;
+      meter.setAttribute("aria-valuenow", String(f === null ? 0 : Math.floor(f * 100)));
+      fill.style.width = `${f === null ? 100 : f * 100}%`;
+    },
+    state(s, t) {
+      el.hidden = false;
+      el.dataset.state = s;
+      if (t) text.textContent = t;
+      if (s === "done") pct.textContent = "";
+    },
+  };
+}

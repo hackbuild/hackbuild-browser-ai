@@ -1,5 +1,6 @@
 import { importEsm, probe } from "@hackbuild/ai-env";
-import { define, type ChatPanelElement, type DownloadBarElement, type StatusPillsElement } from "@hackbuild/ai-elements";
+import { define } from "@hackbuild/ai-views/elements";
+import { chatThread } from "@hackbuild/ai-views";
 import { scripted, type ChatEngine, type ChatMessage } from "@hackbuild/chat";
 import { getLanguageModel, promptApi, promptLanguages } from "@hackbuild/chat/prompt-api";
 import { anthropicMessages, openaiCompatible } from "@hackbuild/chat/remote";
@@ -8,7 +9,7 @@ import { loadWebLLM, type WebLLMModule } from "@hackbuild/chat/webllm";
 import { loadWllama, wllamaUrls } from "@hackbuild/chat/wllama";
 import { loadTransformers } from "@hackbuild/devices";
 import { openWeightStore } from "@hackbuild/weights";
-import { $, auto, check, finish, fixture, quantile, readout, result, status } from "../shared/ui.js";
+import { $, auto, check, finish, fixture, progressLine, quantile, readout, result, status } from "../shared/ui.js";
 
 const r = result("chat");
 define();
@@ -28,24 +29,24 @@ $("#controls").innerHTML = `
 <label class="hb-ctl">engine <select class="hb-select" id="engine">${Object.entries(ENGINES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
 <input class="hb-input" id="url" type="url" placeholder="server url, for openai compatible" value="http://localhost:11434/v1" aria-label="server url">
 <input class="hb-input" id="model" type="text" placeholder="remote model name" value="qwen2.5:0.5b" aria-label="remote model name, its weight licence is the model card's (qwen2.5 0.5b: Apache-2.0); a hosted api is under its provider's terms">
+<label class="hb-ctl" id="keybox">key <input class="hb-input" id="key" type="password" autocomplete="off" placeholder="stays in this browser" aria-label="api key, it stays in this browser"></label>
 <button class="hb-btn" type="button" id="load">load</button>`;
-// the five ai-elements: state pills, the gguf download bar and the chat panel; the key field shows for a remote engine
+// the ai-views chat pane and composer, and a progress line for the gguf download; the key field shows for a remote engine
 const box = document.createElement("section");
 box.className = "hb-panel";
 box.setAttribute("aria-label", "chat");
-box.innerHTML = `<h2 class="hb-panel-hd-inst">chat</h2><hb-status-pills id="pills"></hb-status-pills><hb-download-bar id="bar" hidden></hb-download-bar><hb-chat-panel id="chat"></hb-chat-panel>`;
+box.innerHTML = `<h2 class="hb-panel-hd-inst">chat</h2><div id="gguf"></div><chat-pane id="chat" empty-name="say something" empty-note="load an engine, then type below."></chat-pane><chat-composer for="chat"></chat-composer>`;
 $("#status").before(box);
-const pills = $("#pills") as StatusPillsElement;
-const bar = $("#bar") as DownloadBarElement;
-const chat = $("#chat") as ChatPanelElement;
-chat.system = "You answer briefly.";
+const chat = chatThread({ system: "You answer briefly." });
+(document.getElementById("chat") as unknown as { thread: typeof chat }).thread = chat;
+const bar = progressLine($("#gguf"), "gguf download");
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 const pick = $("#engine") as HTMLSelectElement;
 const remote = () => pick.value === "openai" || pick.value === "anthropic";
 const fields = () => {
   for (const id of ["#url", "#model"]) $(id).hidden = !remote();
-  chat.keyField = remote();
+  $("#keybox").hidden = !remote();
 };
 pick.addEventListener("change", fields);
 fields();
@@ -69,7 +70,7 @@ const tjs = loadTransformers();
 
 async function load(kind: string, version = "0.2.84"): Promise<{ engine: ChatEngine; ms: number; ctx?: number }> {
   status(kind === "scripted" ? "scripted replies. nothing downloads." : `loading ${ENGINES[kind]}. weights download from hugging face on first use.`);
-  pills.update({ id: "engine", kind: "loading", text: `${kind} loading` });
+  status(`${kind} loading`);
   const t = performance.now();
   let e: ChatEngine;
   let ctx: number | undefined;
@@ -83,20 +84,19 @@ async function load(kind: string, version = "0.2.84"): Promise<{ engine: ChatEng
     e = await loadTjsChat({ module: (await tjs()) as never, modelId: "HuggingFaceTB/SmolLM2-360M-Instruct", device: "webgpu", dtype: "q4f16" });
   } else if (kind === "wllama") {
     const store = await openWeightStore({ onNotice: (l) => status(l) });
-    bar.hidden = false;
-    const gguf = await store.get({ url: QWEN_GGUF, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, { onProgress: (p) => (bar.progress = p) });
-    bar.state = "done";
+    const gguf = await store.get({ url: QWEN_GGUF, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, { onProgress: (p) => bar.set(p) });
+    bar.state("done", "gguf stored.");
     e = await loadWllama({ module: await importEsm(wllamaUrls().esm), blobs: [gguf] });
   } else if (kind === "prompt") e = promptApi();
   else if (kind === "openai") {
-    const key = chat.apiKey;
+    const key = ($("#key") as HTMLInputElement).value;
     const base = ($("#url") as HTMLInputElement).value;
     // llama.cpp and ollama take repeat_penalty; api.openai.com rejects it
     e = openaiCompatible({ base, model: ($("#model") as HTMLInputElement).value, llamaParams: !/api\.openai\.com/.test(base), ...(key ? { apiKey: key } : {}) });
-  } else e = anthropicMessages({ apiKey: chat.apiKey, model: ($("#model") as HTMLInputElement).value || "claude-haiku-4-5" });
+  } else e = anthropicMessages({ apiKey: ($("#key") as HTMLInputElement).value, model: ($("#model") as HTMLInputElement).value || "claude-haiku-4-5" });
   const ms = performance.now() - t;
-  chat.engine = metered(e);
-  pills.update({ id: "engine", kind: "ready", text: `${e.id} ready` });
+  chat.setEngine(metered(e));
+  status(`${e.id} ready`, "ok");
   show({ engine: e.id, "load ms (measured)": Math.round(ms), ...(ctx ? { "context window (computed by the ladder)": ctx } : {}) });
   status(kind === "scripted" ? "scripted replies loaded. type below; pick a model engine and load it for real replies." : `${e.id} loaded. weights licence in the engine list.`, "ok");
   return ctx === undefined ? { engine: e, ms } : { engine: e, ms, ctx };
@@ -168,15 +168,15 @@ function metered(e: ChatEngine, extra: { maxTokens?: number; schema?: Record<str
 async function send(e: ChatEngine, text: string, o: { maxTokens?: number; stopAfterMs?: number; schema?: Record<string, unknown> } = {}): Promise<Stats> {
   chat.clear();
   let stats: Stats | null = null;
-  chat.engine = metered(e, o, (s) => (stats = s));
+  chat.setEngine(metered(e, o, (s) => (stats = s)));
   if (o.stopAfterMs) setTimeout(() => chat.stop(), o.stopAfterMs);
   await chat.send(text);
-  chat.engine = metered(e);
+  chat.setEngine(metered(e));
   if (!stats) throw new Error("the reply ended with no result");
   return stats;
 }
 
-$("#load").addEventListener("click", () => void load(pick.value).catch((e) => (status(`load failed: ${(e as Error).message}`, "bad"), pills.update({ id: "engine", kind: "failed", text: "load failed" }))));
+$("#load").addEventListener("click", () => void load(pick.value).catch((e) => (status(`load failed: ${(e as Error).message}`, "bad"))));
 // the stage that needs no download: scripted replies are loaded at the start
 await load("scripted");
 fixture("replies come from a script until you load a model engine.");

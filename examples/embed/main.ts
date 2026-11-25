@@ -1,5 +1,6 @@
 import { loadTransformers } from "@hackbuild/devices";
-import { define, type ModelPickerElement } from "@hackbuild/ai-elements";
+import { define, type ModelSelectElement } from "@hackbuild/ai-views/elements";
+import { useModelPick } from "@hackbuild/ai-views";
 import { cosine, EMBED_RECORDS, loadStaticEmbedder, miniLM, type Embedder } from "@hackbuild/embed";
 import { hashedEmbedder } from "@hackbuild/memory";
 import { probe } from "@hackbuild/ai-env";
@@ -37,19 +38,16 @@ const MODELS = {
   minilm: { label: "all-MiniLM-L6-v2, transformers.js, weights Apache-2.0", id: "Xenova/all-MiniLM-L6-v2" },
   bge: { label: "bge-small-en-v1.5, transformers.js, weights MIT", id: "Xenova/bge-small-en-v1.5" },
 };
-// the picker rows are the embed records with the fit of this machine
+// the ai-views model select lists the embed records with the fit of this machine; load stays on this page
 const BY_RECORD: Record<string, keyof typeof MODELS> = { "potion-base-8m": "potion", "minilm-l6": "minilm", "bge-small-en": "bge" };
 $("#controls").innerHTML = `
 <label class="hb-ctl">device <select class="hb-select" id="device"><option value="wasm:q8">wasm q8</option><option value="webgpu:fp32">webgpu fp32</option></select></label>
 <button class="hb-btn" type="button" id="load">load</button>
 <input class="hb-input" id="q" type="text" value="where do cups go" aria-label="query">
 <button class="hb-btn hb-btn-2" type="button" id="search" disabled>search</button>`;
-$("#status").insertAdjacentHTML("beforebegin", `<section class="hb-panel"><h2 class="hb-panel-hd-inst">model</h2><hb-model-picker id="picker"></hb-model-picker></section>`);
-const picker = $("#picker") as ModelPickerElement;
-picker.label = "embedders";
-picker.records = EMBED_RECORDS.filter((x) => x.id in BY_RECORD);
-picker.selected = "potion-base-8m";
-picker.env = await probe();
+$("#status").insertAdjacentHTML("beforebegin", `<section class="hb-panel"><h2 class="hb-panel-hd-inst">model</h2><model-select job="embed" go="false" id="picker"></model-select></section>`);
+const pick = useModelPick("embed", { records: EMBED_RECORDS.filter((x) => x.id in BY_RECORD), env: await probe(), chosen: "potion-base-8m" });
+($("#picker") as ModelSelectElement).pick = pick;
 const pre = document.createElement("pre");
 $("#readout").after(pre);
 const rows: Record<string, string | number> = {};
@@ -112,7 +110,7 @@ function pairHits(vecs: Float32Array[]): number {
   return hits;
 }
 
-$("#load").addEventListener("click", () => void load(BY_RECORD[picker.selected ?? ""] ?? "potion", ($("#device") as HTMLSelectElement).value).catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
+$("#load").addEventListener("click", () => void load(BY_RECORD[pick.snapshot().chosen] ?? "potion", ($("#device") as HTMLSelectElement).value).catch((e) => status(`load failed: ${(e as Error).message}`, "bad")));
 $("#search").addEventListener("click", search);
 // the stage that needs no download: a hashed word embedder searches the 20 sentences at the start
 await load("hashed", "wasm:q8");

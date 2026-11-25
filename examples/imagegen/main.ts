@@ -2,11 +2,9 @@ import { probe } from "@hackbuild/ai-env";
 import { loadOrt, loadTransformers, ortWasmPaths } from "@hackbuild/devices";
 import { generate, IMAGEGEN_RECORDS, type Sessions } from "@hackbuild/imagegen";
 import { openWeightStore } from "@hackbuild/weights";
-import { define, type DownloadBarElement } from "@hackbuild/ai-elements";
-import { $, auto, check, finish, mb, readout, result, stageFrame, status } from "../shared/ui.js";
+import { $, auto, check, finish, mb, progressLine, readout, result, stageFrame, status } from "../shared/ui.js";
 
 const r = result("imagegen");
-define();
 const rec = IMAGEGEN_RECORDS[0]!;
 // file sizes from the hugging face repo listing on 2026-11-23 (vendor)
 const FILES = [
@@ -27,9 +25,8 @@ if (matchMedia("(pointer: coarse)").matches || ((navigator as Navigator & { devi
 const canvas = document.createElement("canvas");
 canvas.width = canvas.height = 512;
 stageFrame("void").append(canvas);
-// the three graphs download through the weight store into an ai-elements bar, one file at a time
-$("#status").insertAdjacentHTML("beforebegin", `<hb-download-bar id="bar"></hb-download-bar>`);
-const bar = $("#bar") as DownloadBarElement;
+// the three graphs download through the weight store into a hackbuild-ui progress line, one file at a time
+const bar = progressLine($("#status"), "sd-turbo download");
 const rows: Record<string, string | number> = {};
 const show = (o: Record<string, string | number>) => readout(Object.assign(rows, o));
 
@@ -52,7 +49,7 @@ async function load(): Promise<void> {
   const base = ($("#base") as HTMLInputElement).value.replace(/\/?$/, "/");
   const made: unknown[] = [];
   for (const f of FILES) {
-    const blob = await store.get({ url: base + f.path, key: `sd-turbo:${f.path}`, licence: rec.licence }, { onProgress: (p) => ((bar.progress = p), status(`${f.path}: ${mb(p.loaded)}${p.total ? ` of ${mb(p.total)}` : ""}`)) });
+    const blob = await store.get({ url: base + f.path, key: `sd-turbo:${f.path}`, licence: rec.licence }, { onProgress: (p) => (bar.set(p), status(`${f.path}: ${mb(p.loaded)}${p.total ? ` of ${mb(p.total)}` : ""}`)) });
     made.push(await ort.InferenceSession.create(new Uint8Array(await blob.arrayBuffer()), { executionProviders: ["webgpu"] }));
   }
   sessions = { textEncoder: made[0], unet: made[1], vaeDecoder: made[2] } as Sessions;
@@ -79,7 +76,7 @@ async function draw(): Promise<void> {
   show({ "image ms (measured)": Math.round(performance.now() - t), "unet step ms (measured)": ms.map((x) => Math.round(x)).join(", ") });
 }
 
-$("#load").addEventListener("click", () => void load().catch((e) => ((bar.error = (e as Error).message), status(`load failed: ${(e as Error).message}`, "bad"))));
+$("#load").addEventListener("click", () => void load().catch((e) => (bar.state("failed", (e as Error).message), status(`load failed: ${(e as Error).message}`, "bad"))));
 $("#go").addEventListener("click", () => void draw().catch((e) => status(`generation failed: ${(e as Error).message}`, "bad")));
 
 if (auto) {
