@@ -98,8 +98,9 @@ this README CC-BY-4.0 with the code samples also MIT. No model ships here.
 `createPlannerChain` tries the model planner, then a scripted planner,
 then the reflex brain, and records each step down with its reason:
 `absent`, `loading`, `error`, `invalid` (no valid plan after `tries`
-model calls, default 3), `aborted` or `no-match`. `dropLine` turns a drop
-into the line a room shows.
+model calls, default 3), `no-answer` (every reply empty, as when the
+scripted planner has nothing for the request), `aborted` or `no-match`.
+`dropLine` turns a drop into the line a room shows.
 
     import { createPlannerChain, dropLine, Reflex } from "@hackbuild/agent";
     import { scripted } from "@hackbuild/chat";

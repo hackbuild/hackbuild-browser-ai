@@ -2,7 +2,7 @@
  * The planner fallback chain: the model planner first, then a scripted
  * planner, then the reflex brain. Each step down is recorded with its
  * reason (no brain, still loading, an error, no valid plan after N tries,
- * no rule matched), so an inspector can say why the agent is on the tier
+ * no answer at all, no rule matched), so an inspector can say why the agent is on the tier
  * it is on and show the last reply that failed.
  *
  * A tier is skipped when it is not configured; that is recorded too. The
@@ -19,7 +19,12 @@ import type { Reflex } from "./reflex.js";
 export type Tier = "model" | "scripted" | "reflex";
 export const TIERS: readonly Tier[] = ["model", "scripted", "reflex"];
 
-export type DropReason = "absent" | "loading" | "error" | "invalid" | "aborted" | "no-match";
+/**
+ * Why a tier dropped. `invalid`: it replied, but no reply held a valid plan.
+ * `no-answer`: every reply was empty (a plan function returned null, or a
+ * scripted engine had nothing for the request).
+ */
+export type DropReason = "absent" | "loading" | "error" | "invalid" | "no-answer" | "aborted" | "no-match";
 
 /** One step down the chain. */
 export interface Drop {
@@ -104,6 +109,7 @@ export function dropLine(d: Drop): string {
     loading: `${who} is still loading.`,
     error: `${who} failed: ${d.detail}.`,
     invalid: `${who} returned no valid plan ${d.tries === 1 ? "once" : d.tries === 2 ? "twice" : d.tries === 3 ? "three times" : `${d.tries} times`}.`,
+    "no-answer": `${who} had no answer for that.`,
     aborted: `${who} was stopped.`,
     "no-match": `${who} had no rule for that.`,
   };
@@ -192,11 +198,13 @@ export function createPlannerChain(o: ChainOptions): PlannerChain {
         let raw = "";
         let n = 0;
         let failed: string | null = null;
+        let answered = false;
         for (; n < tries; ) {
           n++;
           try {
             const r = await ask(src, req);
             raw = r.raw;
+            if (raw.trim()) answered = true;
             if (validPlan(r.plan)) return finish({ plan: r.plan, tier, raw, drops });
           } catch (e) {
             if (req.signal?.aborted) {
@@ -208,6 +216,7 @@ export function createPlannerChain(o: ChainOptions): PlannerChain {
           }
         }
         if (failed !== null) drop(tier, "error", failed, n, raw);
+        else if (!answered) drop(tier, "no-answer", `${n} ${n === 1 ? "call" : "calls"} returned nothing`, n, raw);
         else drop(tier, "invalid", `${n} replies held no valid plan`, n, raw);
       }
 

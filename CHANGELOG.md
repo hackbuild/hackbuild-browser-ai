@@ -4,6 +4,12 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Planner no answer, 2026-11-24
+
+- agent 0.1.1 to 0.1.2: the planner chain drops a tier whose every reply
+  was empty with the new `DropReason` `no-answer` instead of `invalid`;
+  `dropLine` reads "had no answer for that". Other reasons are unchanged.
+
 ### Sealed sinks, 2026-11-24
 
 - memory 0.1.1 to 0.1.2: `sealedSink` wraps a `MemorySink` and seals

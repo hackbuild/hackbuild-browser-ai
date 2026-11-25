@@ -63,6 +63,16 @@ describe("planner chain", () => {
     expect((await c.plan({ text: "hi" }))!.plan.say).toBe("hello");
     const r = await c.plan({ text: "get the mug" });
     expect(r!.tier).toBe("reflex");
-    expect(r!.drops.map((d) => d.reason)).toEqual(["absent", "invalid"]);
+    expect(r!.drops.map((d) => d.reason)).toEqual(["absent", "no-answer"]);
+  });
+
+  test("a tier with no answer drops with no-answer, not invalid", async () => {
+    const c = createPlannerChain({ tools, model: null, scripted: scripted({ replies: [""] }), reflex });
+    const r = await c.plan({ text: "get the mug" });
+    expect(r!.tier).toBe("reflex");
+    expect(r!.drops[1]).toMatchObject({ from: "scripted", reason: "no-answer", detail: "1 call returned nothing", tries: 1, to: "reflex" });
+    expect(dropLine(r!.drops[1]!)).toBe("the scripted planner had no answer for that. reflexes took over.");
+    const c2 = createPlannerChain({ tools, model: null, scripted: scripted({ replies: ["nonsense"] }), reflex });
+    expect((await c2.plan({ text: "get the mug" }))!.drops[1]!.reason).toBe("invalid");
   });
 });
