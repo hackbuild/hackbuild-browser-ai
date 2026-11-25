@@ -81,7 +81,7 @@ export interface Quirks {
 export type Speed = "instant" | "fast" | "steady" | "slow";
 export const SPEEDS: readonly Speed[] = ["instant", "fast", "steady", "slow"];
 
-export type SizeSource = "vendor" | "measured" | "inferred" | "unknown";
+export type SizeSource = "vendor" | "measured" | "computed" | "inferred" | "unknown";
 
 export interface ModelSource {
   /** Hugging Face repo or similar. */
@@ -131,6 +131,8 @@ export interface ModelRecord {
   verdict?: string;
   /** Nothing to fetch: a script, a physical model, or a model the browser has built in. */
   noDownload?: boolean;
+  /** Why no runtime here loads this record yet; set, the record is listed and never offered to load. */
+  unrunnable?: string;
   provides: Capability[];
   provider: Provider;
   source: ModelSource;

@@ -8,6 +8,7 @@ export const VAD_RECORDS: ModelRecord[] = [
     label: "silero vad v5",
     speed: "instant",
     verdict: "hears speech start",
+    group: "start here",
     provides: ["vad"],
     provider: "ort",
     // a GitHub repo, not a Hugging Face one: pinned by commit on raw.githubusercontent.com (CORS open)

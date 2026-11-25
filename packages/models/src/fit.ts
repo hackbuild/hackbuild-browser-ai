@@ -69,6 +69,7 @@ const MISSING: Record<Need, [Fit, string]> = {
  * VRAM or download size, and the storage estimate against the download.
  */
 export function fitOf(rec: ModelRecord, env: Env | undefined, estimate?: StorageEstimate | null, budget: Budget = budgetFor(env)): FitResult {
+  if (rec.unrunnable) return { fit: "cannot run here", ok: false, reason: rec.unrunnable };
   if (rec.provider === "remote") return { fit: "fits", ok: true, reason: "runs on your endpoint. nothing is downloaded." };
   const { rungs, skipped } = ladderFor(rec, env);
   if (!rungs.length) {

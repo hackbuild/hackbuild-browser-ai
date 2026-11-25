@@ -59,7 +59,7 @@ describe("catalogue facts", () => {
     for (const r of CATALOG) {
       expect(() => validateRecord(r)).not.toThrow();
       if (r.provides.includes("chat")) expect(r.censorship).toBeDefined();
-      if (r.vramMB != null) expect(r.vramSource).toBe("vendor");
+      if (r.vramMB != null) expect(["vendor", "computed"]).toContain(r.vramSource);
     }
     expect(CATALOG.find((r) => r.id === "hermes-3-llama-3.2-3b-mlc")).toMatchObject({ params: "3B", vramMB: 2200, censorship: "uncensored", tier: "medium" });
   });
@@ -213,5 +213,12 @@ describe("ggufFacts", () => {
     expect(ggufFacts("Qwen3-Coder-26B-A4B-Q4_K_M.gguf").params).toBe("26B-A4B");
     expect(ggufFacts("repo/Big-70B-Q4_K_M-00002-of-00003.gguf")).toEqual({ params: "70B", quant: "Q4_K_M", part: { index: 2, count: 3 } });
     expect(ggufFacts("weights.gguf")).toEqual({ params: null, quant: null, part: null });
+  });
+});
+
+describe("unrunnable records", () => {
+  it("never fit, and say why", () => {
+    const r = { ...CATALOG[0]!, unrunnable: "not run yet. needs two text encoders." };
+    expect(fitOf(r, undefined)).toEqual({ fit: "cannot run here", ok: false, reason: "not run yet. needs two text encoders." });
   });
 });

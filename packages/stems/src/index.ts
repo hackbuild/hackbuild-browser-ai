@@ -24,6 +24,7 @@ const rec = (id: string, file: string, mb: number, overlap: number, label: strin
   label,
   speed: "slow",
   verdict: "four stems",
+  group: "start here",
   provides: ["stems"],
   provider: "ort",
   source: { url: base + file },
