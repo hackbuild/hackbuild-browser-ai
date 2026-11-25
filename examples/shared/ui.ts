@@ -262,3 +262,32 @@ export function onDrop(zone: HTMLElement, cb: (files: File[]) => void, input?: H
 export function mb(bytes: number): string {
   return `${(bytes / 1e6).toFixed(1)} MB`;
 }
+
+/**
+ * The fixture banner of the class layer, first in main: every page that
+ * shows sample state says so in words.
+ */
+export function fixture(text: string, tag = "sample"): HTMLElement {
+  const p = document.createElement("p");
+  p.className = "hb-fixture";
+  const b = document.createElement("b");
+  b.textContent = tag;
+  p.append(b, document.createTextNode(` ${text}`));
+  document.querySelector("main")?.prepend(p);
+  return p;
+}
+
+/**
+ * Dresses #stage as a class layer stage, lit (the paper instrument) or
+ * void (black with the pink rule), and returns it. With `host`, a
+ * .hb-viewport-host goes inside for a renderer that sizes its own canvas.
+ */
+export function stageFrame(kind: "lit" | "void", host = false): HTMLElement {
+  const el = $("#stage");
+  el.classList.add(`hb-stage-${kind}`);
+  if (!host) return el;
+  const h = document.createElement("div");
+  h.className = "hb-viewport-host";
+  el.prepend(h);
+  return h;
+}

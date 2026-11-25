@@ -1,7 +1,8 @@
 // A small three.js stage in #stage: renderer, camera, orbit controls, lights.
+// The canvas sits in the class layer's .hb-viewport-host on a lit stage.
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { $ } from "./ui.js";
+import { stageFrame } from "./ui.js";
 
 export interface Stage {
   renderer: THREE.WebGLRenderer;
@@ -11,8 +12,7 @@ export interface Stage {
 }
 
 export function stage(target: [number, number, number] = [0, 0, 0], distance = 2): Stage {
-  const host = $("#stage");
-  host.classList.add("is-orbit");
+  const host = stageFrame("lit", true);
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   host.append(renderer.domElement);
