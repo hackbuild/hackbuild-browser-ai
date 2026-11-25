@@ -28,6 +28,7 @@
   "files": [
     "dist",
     "wasm/memory.wasm",
+    "how.ts",
     "README.md",
     "LICENSE"
   ],

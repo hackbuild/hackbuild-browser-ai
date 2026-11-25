@@ -28,6 +28,7 @@
   "files": [
     "dist",
     "wasm/character.wasm",
+    "how.ts",
     "README.md",
     "LICENSE"
   ],

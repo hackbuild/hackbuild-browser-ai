@@ -28,6 +28,7 @@
   "files": [
     "dist",
     "wasm/depth-mesh.wasm",
+    "how.ts",
     "README.md",
     "LICENSE"
   ],

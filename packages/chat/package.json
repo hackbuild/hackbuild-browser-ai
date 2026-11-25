@@ -42,6 +42,7 @@
   },
   "files": [
     "dist",
+    "how.ts",
     "README.md",
     "LICENSE"
   ],
