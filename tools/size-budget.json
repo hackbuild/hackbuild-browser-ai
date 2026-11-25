@@ -56,8 +56,8 @@
       "dist/single/index.iife.js": 5276
     },
     "@hackbuild/listen": {
-      "main: dist/index.js bundled": 5090,
-      "dist/single/index.iife.js": 7083
+      "main: dist/index.js bundled": 7038,
+      "dist/single/index.iife.js": 8899
     },
     "@hackbuild/media": {
       "main: dist/index.js bundled": 2033,

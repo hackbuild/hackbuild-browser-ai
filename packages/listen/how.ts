@@ -7,6 +7,8 @@ const how: HowDoc = {
     `frames: input is brought to 16 khz (the transcribe package's fir decimator for 32 and 48 khz, its windowed sinc resampler for 44.1, 24 and 22.05 khz) and cut into 512 sample frames (32 ms, computed).`,
     `machine: an utterance starts on a frame at or over the positive threshold, keeps 300 ms of audio from before the start, is confirmed after 250 ms of speech frames and ends after 600 ms under the negative threshold; too little speech is a misfire. utterances are cut at 24 s.`,
     `barge in: while \`setTalking(true)\`, thresholds swap to positive 0.85 and 450 ms of speech (from 0.5 and 250 ms), so the character's own voice from the speakers does not count. the confirmed event in that state calls \`onBargeIn\`; the utterance is still transcribed and carries \`bargeIn: true\`.`,
+    `interim: with \`onInterim\`, the growing utterance window is decoded again every 0.8 s of new audio (computed, settable) with at most one decode in flight; each result carries \`text\`, \`stable\` (the leading words unchanged since the last one) and \`t\`, and a result that lands after the utterance ended is dropped. \`speechEngine\` gives the same event from the browser's system recognizer, which sends audio to the browser vendor's service.`,
+    `self hearing gate: \`dropWhileTalking\` with \`gateMs\` drops speech that began while the character talked or within that many ms after; \`selfGate\` does the same for the system recognizer. \`dictate(input)\` writes interim words after what was typed and commits on the final.`,
   ],
   install: "npm install @hackbuild/listen",
   today: `git clone https://github.com/hackbuild/hackbuild-browser-ai

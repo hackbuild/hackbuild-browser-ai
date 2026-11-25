@@ -9,6 +9,7 @@
 import type { Hub, RunOptions } from "@hackbuild/models";
 import { cleanup, toSixteenK, type Asr } from "@hackbuild/transcribe";
 import { VadMachine, type VadOptions, type VadSource } from "./vad.js";
+import { stablePrefix, type Interim } from "./interim.js";
 
 /** Turns 16 kHz mono speech into text. */
 export type Transcriber = (pcm16k: Float32Array, signal?: AbortSignal) => Promise<string>;
@@ -33,6 +34,18 @@ export interface ListenerOptions {
   machine?: VadOptions;
   /** Drop an utterance that began while the character talked, for when barge in is off. Default false. */
   dropWhileTalking?: boolean;
+  /** With dropWhileTalking, also drop one that began within this many ms after the voice stopped (audio time). Default 0. */
+  gateMs?: number;
+  /**
+   * Interim text while the person speaks: the growing utterance window is
+   * decoded again every `everySec` of new audio (default 0.8) once it holds
+   * `minSec` (default 0.5), at most one decode in flight. Needs onInterim
+   * and a transcriber; `transcribe` here overrides the final one, for a
+   * smaller model.
+   */
+  interim?: { everySec?: number; minSec?: number; transcribe?: Transcriber };
+  /** Words heard so far; results for an utterance that already ended are dropped. */
+  onInterim?(i: Interim): void;
   /** Run the phantom filter on transcripts. Default true. */
   filter?: boolean;
   onUtterance?(u: Utterance): void;
@@ -53,6 +66,13 @@ export class Listener {
   private barged = false;
   private overVoice = false;
   private running = false;
+  /** 16 kHz samples processed, the audio clock. */
+  private clock = 0;
+  private talkEnd = -Infinity;
+  private utt = 0;
+  private lastDecode = 0;
+  private prevInterim = "";
+  private inFlight: Promise<void> | null = null;
 
   constructor(o: ListenerOptions) {
     this.o = o;
@@ -85,6 +105,7 @@ export class Listener {
 
   /** Tell the listener the character started or stopped talking (speak's onSpeaking). */
   setTalking(b: boolean): void {
+    if (this.machine.isTalking && !b) this.talkEnd = this.clock;
     this.machine.setTalking(b);
   }
 
@@ -106,7 +127,7 @@ export class Listener {
 
   /** Resolves when every pushed block has been processed and transcribed. */
   idle(): Promise<void> {
-    return this.chain;
+    return this.chain.then(() => this.inFlight ?? undefined);
   }
 
   /** End any utterance in progress (for push to talk release). */
@@ -123,9 +144,13 @@ export class Listener {
       if (!this.running) return;
       const p = await this.o.vad.prob(f);
       this.o.onProb?.(p);
+      this.clock += f.length;
       for (const ev of this.machine.process(p, f)) {
         if (ev.type === "start") {
-          this.overVoice = this.machine.isTalking;
+          this.overVoice = this.machine.isTalking || this.clock - this.talkEnd < ((this.o.gateMs ?? 0) * 16000) / 1000;
+          this.utt++;
+          this.lastDecode = 0;
+          this.prevInterim = "";
           this.set("hearing");
         }
         else if (ev.type === "confirmed" && ev.talking) {
@@ -133,10 +158,39 @@ export class Listener {
           this.o.onBargeIn?.();
         } else if (ev.type === "misfire") {
           this.barged = false;
+          this.utt++;
           this.set("listening");
-        } else if (ev.type === "end") await this.utter(ev.audio, ev.speech);
+        } else if (ev.type === "end") {
+          this.utt++;
+          await this.utter(ev.audio, ev.speech);
+        }
       }
+      this.maybeInterim();
     }
+  }
+
+  /** Decode the growing window again when enough new audio came in and no decode is running. */
+  private maybeInterim(): void {
+    const t = this.o.interim?.transcribe ?? this.o.transcribe;
+    if (!this.o.onInterim || !t || this.inFlight || !this.machine.inSpeech) return;
+    if (this.overVoice && this.o.dropWhileTalking) return;
+    const audio = this.machine.current;
+    if (!audio) return;
+    const every = (this.o.interim?.everySec ?? 0.8) * 16000;
+    if (audio.length < (this.o.interim?.minSec ?? 0.5) * 16000 || audio.length - this.lastDecode < every) return;
+    this.lastDecode = audio.length;
+    const id = this.utt;
+    this.inFlight = t(audio)
+      .then((raw) => {
+        const text = raw.trim();
+        if (id !== this.utt || !this.running || !text) return;
+        this.o.onInterim?.({ text, stable: stablePrefix(this.prevInterim, text), t: audio.length / 16000 });
+        this.prevInterim = text;
+      })
+      .catch((e) => this.o.onError?.(e))
+      .finally(() => {
+        this.inFlight = null;
+      });
   }
 
   private async utter(audio: Float32Array, speech: [number, number][]): Promise<void> {

@@ -53,6 +53,34 @@ code samples also MIT. No weights ship here.
   control. `micBlocks` runs a capture AudioWorklet loaded from a Blob URL
   with a data: URL fallback.
 
+## Interim text and dictation
+
+    import { createListener, speechEngine, selfGate, dictate } from "@hackbuild/listen";
+
+    const d = dictate(textarea, { onCommit: (v) => handsFree && send(v) });
+    // whisper path: the growing window is decoded again while the person speaks
+    const listener = createListener({ vad, transcribe, dropWhileTalking: true, gateMs: 400,
+      onInterim: (i) => d.interim(i), onUtterance: (u) => d.final(u.text) });
+    // system recognizer path, same event
+    const gate = selfGate({ tailMs: 400 });
+    const engine = speechEngine({ gate, onInterim: (i) => d.interim(i), onFinal: (t) => d.final(t),
+      onState: (s) => mic.state = s }); // off, listening, unsupported, denied
+    speaker = createSpeaker({ ..., onSpeaking: (b) => (listener.setTalking(b), gate.setSpeaking(b)) });
+
+- An `Interim` is `{ text, stable, t }`: the whole hypothesis so far, the
+  leading words unchanged since the previous one, and seconds since the
+  utterance began. Each one replaces the last.
+- Window path: every 0.8 s of new audio (computed, `interim.everySec`)
+  once the window holds 0.5 s, at most one decode in flight; a result
+  that lands after the utterance ended is dropped. `interim.transcribe`
+  can name a smaller model than the final one. The phantom filter runs
+  on the final only.
+- System recognizer: interim results on, restart 150 ms after it ends on
+  its own, "denied" when the microphone is refused, "unsupported" with
+  no recognizer. Chrome sends the audio to its own service; say so.
+- Gate: results that arrive while the character speaks or within
+  `tailMs` (default 400 ms, inferred) after are dropped.
+
 ## Conversation settings
 
 `CONVERSATION` is a machine preset for spoken turns: 900 ms of quiet ends
@@ -75,7 +103,17 @@ is off.
   `dropWhileTalking` dropping speech that began over the voice and
   keeping it after (`test/listen.test.ts`).
 
+- 2026-11-25: interim text on both paths against stub engines
+  (`test/interim.test.ts`, 9 tests): the window decode throttle, the
+  stable prefix, a late decode dropped, the gate after the voice stops,
+  the system recognizer's joined interim results, gate, 150 ms restart,
+  denied and unsupported states, and `dictate` writes, commits and
+  restores.
+
 ### Not verified by anything
+
+- Interim text from a real Whisper model or a real browser recognizer,
+  and whether 0.8 s between decodes keeps up on a phone.
 
 - The 900 ms preset in a real conversation.
 
@@ -91,8 +129,8 @@ is off.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,090 bytes | 5,344 bytes |
-| `dist/single/index.iife.js` (single file build) | 7,083 bytes | 7,437 bytes |
+| `dist/index.js` (main entry, imports external) | 7,038 bytes | 7,389 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,899 bytes | 9,343 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

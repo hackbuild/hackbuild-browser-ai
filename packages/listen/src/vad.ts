@@ -83,6 +83,13 @@ export class VadMachine {
   get inSpeech(): boolean {
     return this.active;
   }
+  /** Audio of the utterance in progress, pre pad included; null outside one. */
+  get current(): Float32Array | null {
+    if (!this.active) return null;
+    const a = new Float32Array(this.frames.length * this.frame);
+    this.frames.forEach((f, i) => a.set(f, i * this.frame));
+    return a;
+  }
 
   reset(): void {
     this.active = false;
