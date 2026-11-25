@@ -1,5 +1,6 @@
 export {
   ladderFor,
+  SPEEDS,
   needsOf,
   ortLadder,
   classifyError,
@@ -14,6 +15,7 @@ export {
   type Rung,
   type Quirks,
   type SizeSource,
+  type Speed,
   type ModelSource,
   type ModelRecord,
   type Censorship,

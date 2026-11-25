@@ -77,6 +77,10 @@ export interface Quirks {
   processorImagesFirst?: boolean;
 }
 
+/** How quick a model feels where it fits, slowest last. */
+export type Speed = "instant" | "fast" | "steady" | "slow";
+export const SPEEDS: readonly Speed[] = ["instant", "fast", "steady", "slow"];
+
 export type SizeSource = "vendor" | "measured" | "inferred" | "unknown";
 
 export interface ModelSource {
@@ -121,6 +125,12 @@ export interface ModelRecord {
   group?: string;
   /** The owner's label for the row, verbatim from the tool that listed it, e.g. "best", "default", "fast, capable". */
   badge?: string;
+  /** One word for how quick it feels on a machine it fits: instant, fast, steady or slow. */
+  speed?: Speed;
+  /** Two to four words a person picks by, in the owner's voice: "best all round", "likes json", "fast, dim". */
+  verdict?: string;
+  /** Nothing to fetch: a script, a physical model, or a model the browser has built in. */
+  noDownload?: boolean;
   provides: Capability[];
   provider: Provider;
   source: ModelSource;

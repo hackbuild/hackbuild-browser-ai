@@ -47,8 +47,9 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
   strict alternation (Gemma 3), think tags, repetition penalty, native
   tools (WebLLM Hermes), `<tool_call>` tags (Hermes, Qwen), warnings such
   as Kokoro's q8 on webgpu.
-- `CATALOG` holds 31 records (computed): 26 chat rows, which cover the
-  suite design's chat catalogue, and 5 starter records for embed, depth,
+- `CATALOG` holds 45 records (computed): 40 chat rows, which cover the
+  suite design's chat catalogue and every chat model the earlier tools
+  named, and 5 starter records for embed, depth,
   transcribe, speak and stems. Chat sizes are measured: the Content-Length of a HEAD request
   on every file the runtime loads, summed in MiB, at the repo head of
   2026-11-24 (WebLLM rows leave out the model library wasm). The other
@@ -57,7 +58,14 @@ README CC-BY-4.0 with the code samples also MIT. No weights ship here.
   added 2026-11-24 they are the model card licence field the Hugging Face
   API returns, or the design harvest's string marked "inferred,
   unverified", and `commercial` is "unknown". The abliterated and
-  uncensored GGUF builds are kept and carry `censorship`.
+  uncensored GGUF builds are kept and carry `censorship`. The 14 chat
+  rows added 2026-11-25 (Qwen3 1.7B, Phi-4 mini, SmolLM2 1.7B and the
+  WebLLM models an earlier tool listed) take their size from the Hugging
+  Face file listing (vendor, no download), in MiB.
+- Every record carries `speed` (instant, fast, steady or slow) and a
+  `verdict` of one to four words, the words a person picks by; `validateRecord`
+  rejects any other speed and a longer verdict. `noDownload` marks a
+  record with nothing to fetch.
 
 ## Hub
 

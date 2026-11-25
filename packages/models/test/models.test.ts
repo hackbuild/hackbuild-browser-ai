@@ -12,6 +12,8 @@ import {
   ladderFor,
   ortLadder,
   RegistryError,
+  SPEEDS,
+  validateRecord,
   sizeClass,
   stubFactory,
   walkLadder,
@@ -395,3 +397,19 @@ describe("pinned commits", () => {
   });
 });
 
+
+describe("speed and verdict", () => {
+  it("every catalogue record carries a speed word and a verdict of one to four words", () => {
+    for (const r of CATALOG) {
+      expect(SPEEDS, r.id).toContain(r.speed);
+      expect(r.verdict?.split(/[\s,]+/).filter(Boolean).length, r.id).toBeLessThanOrEqual(4);
+    }
+    expect(CATALOG.filter((r) => r.provides.includes("chat")).length).toBeGreaterThanOrEqual(26);
+    expect(CATALOG.filter((r) => r.noDownload).map((r) => r.id)).toEqual(["gemini-nano"]);
+  });
+  it("rejects a speed outside the four words and a verdict over four words", () => {
+    const base = CATALOG[0]!;
+    expect(() => validateRecord({ ...base, speed: "quick" as never })).toThrow(RegistryError);
+    expect(() => validateRecord({ ...base, verdict: "one two three four five" })).toThrow(RegistryError);
+  });
+});

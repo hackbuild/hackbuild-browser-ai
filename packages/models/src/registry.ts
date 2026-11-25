@@ -1,5 +1,5 @@
 import type { Env } from "@hackbuild/ai-env";
-import { ladderFor, type Capability, type ModelRecord, type Provider } from "./record.js";
+import { SPEEDS, ladderFor, type Capability, type ModelRecord, type Provider } from "./record.js";
 import { withPin } from "./pinning.js";
 
 export type SizeClass = "tiny" | "small" | "medium" | "large";
@@ -47,6 +47,11 @@ export function validateRecord(r: ModelRecord): void {
   if (!r.provides.length) throw new RegistryError(`${r.id}: provides is empty`);
   if (!r.ladder.length) throw new RegistryError(`${r.id}: ladder is empty`);
   if (r.vramMB != null && !r.vramSource) throw new RegistryError(`${r.id}: vramMB needs its source word in vramSource`);
+  if (r.speed !== undefined && !SPEEDS.includes(r.speed)) throw new RegistryError(`${r.id}: speed is one of ${SPEEDS.join(", ")}`);
+  if (r.verdict !== undefined) {
+    const words = r.verdict.trim().split(/[\s,]+/).filter(Boolean).length;
+    if (words < 1 || words > 4) throw new RegistryError(`${r.id}: a verdict is one to four words, got "${r.verdict}"`);
+  }
   if (r.censorship !== undefined && !CENSORSHIP.includes(r.censorship)) throw new RegistryError(`${r.id}: censorship is one of ${CENSORSHIP.join(", ")}`);
 }
 
