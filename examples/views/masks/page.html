@@ -1,5 +1,5 @@
 <!-- title: cut out -->
-<!-- what: mask studio in the canvas and rail layout, after an earlier mask studio: click to cut, wand, brush, lasso, find every object, undo, zoom, png exports. -->
+<!-- what: mask studio in the canvas and rail layout, after an earlier mask studio: click to cut, wand, brush, eraser, lasso, polygon, rectangle, ellipse, flood, pan, find every object, smooth, saved masks, undo, zoom, png exports. -->
 <div class="hb-lay hb is-canvas-rail" data-layout="canvas-rail" id="lay">
   <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>cut out<span>.</span></h1><div class="hb-header-end"><model-select job="masks" variant="chip" id="chip"></model-select><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
   <div class="hb-lay-body">
@@ -9,9 +9,10 @@
       <div class="hb-lay-verbs" data-ux="verbs" role="toolbar" aria-label="actions"><mask-verbs for="studio"></mask-verbs></div>
     </section>
     <aside class="hb-rack" aria-label="cut out" data-ux="rack">
-      <nav class="hb-tabs" role="tablist" aria-label="cut out tabs"><button type="button" class="hb-tab" role="tab" data-value="found" aria-selected="true">found</button><button type="button" class="hb-tab" role="tab" data-value="mask" aria-selected="false">mask</button><button type="button" class="hb-tab" role="tab" data-value="export" aria-selected="false">export</button></nav>
+      <nav class="hb-tabs" role="tablist" aria-label="cut out tabs"><button type="button" class="hb-tab" role="tab" data-value="found" aria-selected="true">found</button><button type="button" class="hb-tab" role="tab" data-value="mask" aria-selected="false">mask</button><button type="button" class="hb-tab" role="tab" data-value="saved" aria-selected="false">saved</button><button type="button" class="hb-tab" role="tab" data-value="export" aria-selected="false">export</button></nav>
       <section class="hb-rack-pane"><section class="hb-panel"><div class="hb-panel-hd-inst">found</div><mask-rack for="studio" part="found"></mask-rack></section></section>
       <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">mask</div><mask-rack for="studio" part="mask"></mask-rack></section></section>
+      <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">saved masks</div><mask-rack for="studio" part="saved"></mask-rack></section></section>
       <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">export</div><mask-rack for="studio" part="export"></mask-rack></section></section>
       <details class="hb-rack-detail" data-ux="detail"><summary>detail</summary><div><p class="hb-fixture">fixture: the sample is a drawing and the cut and find models are stubs that know its two shapes.</p></div></details>
     </aside>

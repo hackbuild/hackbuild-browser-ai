@@ -1,5 +1,5 @@
 <!-- title: chat -->
-<!-- what: chat pane and composer in the conversation layout, after clevis: thread, reasoning fold, memory used, send as the one pink. -->
+<!-- what: chat pane and composer in the conversation layout, after clevis: thread, reasoning fold, memory used, the chats list and the context meter, send as the one pink. -->
 <div class="hb-lay hb is-conversation has-rack" data-layout="conversation" id="lay">
   <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>chat<span>.</span></h1><div class="hb-header-end"><model-select job="chat" variant="chip" id="chip"></model-select><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
   <div class="hb-lay-body">
@@ -8,8 +8,9 @@
       <div class="hb-lay-composer"><div class="hb-lay-thread"><chat-composer for="chat"></chat-composer></div></div>
     </section>
     <aside class="hb-rack" aria-label="chat" data-ux="rack">
-      <nav class="hb-tabs" role="tablist" aria-label="chat tabs"><button type="button" class="hb-tab" role="tab" data-value="memory" aria-selected="true">memory</button><button type="button" class="hb-tab" role="tab" data-value="persona" aria-selected="false">persona</button><button type="button" class="hb-tab" role="tab" data-value="model" aria-selected="false">model</button></nav>
-      <section class="hb-rack-pane"><section class="hb-panel"><div class="hb-panel-hd-inst">what memory found</div><memory-inspector id="mem"></memory-inspector></section></section>
+      <nav class="hb-tabs" role="tablist" aria-label="chat tabs"><button type="button" class="hb-tab" role="tab" data-value="memory" aria-selected="true">memory</button><button type="button" class="hb-tab" role="tab" data-value="chats" aria-selected="false">chats</button><button type="button" class="hb-tab" role="tab" data-value="persona" aria-selected="false">persona</button><button type="button" class="hb-tab" role="tab" data-value="model" aria-selected="false">model</button></nav>
+      <section class="hb-rack-pane"><section class="hb-panel"><div class="hb-panel-hd-inst">context</div><chat-context for="chat" budget="4096" id="ctx"></chat-context></section><section class="hb-panel"><div class="hb-panel-hd-inst">what memory found</div><memory-inspector id="mem"></memory-inspector></section></section>
+      <section class="hb-rack-pane" hidden><chat-list for="chat"></chat-list></section>
       <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">persona</div><label class="hb-field"><span class="hb-label">who it is</span><textarea class="hb-input" rows="5" id="persona">you are a terse helper in a workshop. short answers.</textarea></label></section></section>
       <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">model</div><model-select job="chat" id="line"></model-select></section></section>
       <details class="hb-rack-detail" data-ux="detail"><summary>detail</summary><div><p class="hb-fixture">fixture: replies are scripted and memory is three lines; no model runs here.</p></div></details>

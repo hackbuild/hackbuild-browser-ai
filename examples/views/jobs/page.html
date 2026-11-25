@@ -1,0 +1,22 @@
+<!-- title: wake the room -->
+<!-- what: model jobs on the gate, after an earlier room: a line per job, presets with their totals, one pink load all. -->
+<div class="hb-lay hb is-gate" data-layout="gate" id="lay">
+  <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>room<span>.</span></h1><div class="hb-header-end"><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
+  <div class="hb-lay-body">
+    <section class="hb-lay-stage">
+      <div class="hb-lay-subject" data-ux="subject"><div class="hb-lay-empty"><span class="hb-lay-empty-name" id="awake">asleep</span><p class="hb-lay-empty-note" id="awake-note">the room thinks, hears and speaks with three models. pick them, then wake it.</p></div></div>
+      <div class="hb-lay-verbs" data-ux="verbs" role="toolbar" aria-label="actions" id="verbs" hidden><button type="button" class="hb-btn hb-btn-go" id="talk">talk to it</button></div>
+      <div class="hb-gate-wrap" id="gate">
+        <section class="hb-gate-card" aria-label="wake the room">
+          <div class="hb-gate-head"><span>room</span><span>local</span></div>
+          <div class="hb-gate-body">
+            <h2 class="hb-gate-name">wake the room</h2>
+            <p class="hb-gate-note">a line per job. a preset fills all three.</p>
+            <model-jobs jobs="chat,transcribe,voice" required="chat" go="false" id="jobs"></model-jobs>
+            <div class="hb-gate-acts"><button type="button" class="hb-btn hb-btn-go hb-btn-lg hb-gate-go" id="go">load all</button></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+</div>

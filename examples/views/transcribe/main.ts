@@ -30,7 +30,7 @@ const sample = () => drop.queue.add([Object.assign(new Blob([new Uint8Array(3200
 drop.addEventListener("sample", sample);
 document.getElementById("add")!.addEventListener("click", () => drop.pick());
 drop.queue.subscribe((s) => {
-  document.getElementById("verbs")!.style.display = s.channels.length ? "" : "none";
+  document.getElementById("verbs")!.hidden = !s.channels.length;
   document.getElementById("none")!.hidden = s.channels.some((c) => c.segments.length);
 });
 layout(document.getElementById("lay")!);

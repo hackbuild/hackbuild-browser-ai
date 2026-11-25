@@ -18,9 +18,11 @@ const HOSTS = ["huggingface.co", "*.huggingface.co", "hf.co", "*.hf.co", "storag
 /** Per page: what the first view must hold, and what the sample must leave. */
 const PAGES = {
   models: { first: () => !!document.querySelector(".hb-msel-line") && /^load, /.test(document.getElementById("go").textContent), after: () => document.getElementById("gate").hidden && document.getElementById("awake").textContent === "awake" },
-  chat: { first: () => !!document.querySelector(".hb-lay-convempty") && !!document.querySelector(".hb-convbox .hb-btn-go"), after: () => document.querySelectorAll(".hb-msg").length === 2 && !!document.querySelector(".hb-think") && !!document.querySelector(".hb-msg-used") && /tok/.test(document.querySelector(".hb-msg-stats")?.textContent ?? "") },
+  jobs: { first: () => document.querySelectorAll(".hb-msel-job").length === 3 && document.querySelectorAll(".hb-msel-presets .hb-chip").length === 3 && /^load all, /.test(document.getElementById("go").textContent), after: () => document.getElementById("gate").hidden && /smollm2 360m|SmolLM2/i.test(document.getElementById("awake-note").textContent) && [...document.querySelectorAll(".hb-msel-job .hb-msel-state")].every((s) => s.textContent === "ready") },
+  chat: { first: () => !!document.querySelector(".hb-lay-convempty") && !!document.querySelector(".hb-convbox .hb-btn-go") && !!document.querySelector(".hb-ctxmeter") && !!document.querySelector("chat-list .hb-convs"), after: () => document.querySelectorAll(".hb-msg").length === 2 && !!document.querySelector(".hb-think") && !!document.querySelector(".hb-msg-used") && /tok/.test(document.querySelector(".hb-msg-stats")?.textContent ?? "") && /what can you do/.test(document.querySelector("chat-list .hb-convs-title")?.textContent ?? "") },
   transcribe: { first: () => !!document.querySelector(".hb-lay-drop .hb-btn-go"), after: () => document.querySelectorAll(".hb-transcript .hb-tseg").length === 4 && !!document.querySelector("[data-ex='srt']") },
-  masks: { first: () => !!document.querySelector(".hb-lay-empty .hb-btn-go") && document.querySelectorAll(".hb-lay-tools [data-tool]").length === 4, after: () => !!document.querySelector(".hb-mask-canvas") && document.querySelector("[data-studio]").style.display !== "none" && !!document.querySelector("mask-rack [data-all]") },
+  masks: { first: () => !!document.querySelector(".hb-lay-empty .hb-btn-go") && document.querySelectorAll(".hb-lay-tools [data-tool]").length === 10, after: () => !!document.querySelector(".hb-mask-canvas") && !document.querySelector("[data-studio]").hidden && !!document.querySelector("mask-rack [data-all]"),
+    deep: () => window.hbMaskCheck() },
   frame: { first: () => !!document.querySelector(".hb-camtile") && !!document.querySelector("#camera.hb-btn-go"), after: () => document.querySelector(".hb-camtile-tag").textContent === "2 found" && !document.getElementById("look").hidden },
 };
 
@@ -52,7 +54,8 @@ try {
     const first = await page.evaluate(check.first);
     await page.evaluate(() => window.hbSample());
     await new Promise((r) => setTimeout(r, 1800));
-    const after = await page.evaluate(check.after);
+    let after = await page.evaluate(check.after);
+    if (after && check.deep) after = await page.evaluate(check.deep);
     const ok = first && after && !errors.length;
     if (!ok) failed++;
     console.log(`${ok ? "ok  " : "FAIL"} ${name}: first view ${first ? "ok" : "wrong"}, after the sample ${after ? "ok" : "wrong"}${errors.length ? `, errors: ${errors.join(" | ")}` : ""}`);

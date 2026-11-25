@@ -1,7 +1,7 @@
 // ChatPane and Composer on a scripted engine, with a recall stub that
 // feeds both the memory used fold and the memory inspector.
 import { scripted } from "@hackbuild/chat";
-import { chatThread, useModelPick, type MemoryUsed } from "@hackbuild/ai-views";
+import { chatList, useModelPick, type MemoryUsed } from "@hackbuild/ai-views";
 import { define, type ModelSelectElement } from "@hackbuild/ai-views/elements";
 import { layout } from "@virgilvox/hackbuild-ui/vanilla";
 import { FIXTURE_ENV, exposeSample, stubLoader } from "../fixtures.js";
@@ -25,13 +25,19 @@ const recallFor = async (q: string): Promise<MemoryUsed[]> => {
 };
 
 define();
-const pick = useModelPick("chat", { env: FIXTURE_ENV, loader: stubLoader, chosen: "hermes-3-llama-3.2-3b-mlc" });
+// the stub loader stands in for webllm: it moves the bar, then hands back the scripted engine
+const pick = useModelPick("chat", { env: FIXTURE_ENV, loader: async (r, c) => (await stubLoader(r, c), engine), chosen: "hermes-3-llama-3.2-3b-mlc" });
 (document.getElementById("chip") as ModelSelectElement).pick = pick;
 (document.getElementById("line") as ModelSelectElement).pick = pick;
-const thread = chatThread({ recall: recallFor, system: (document.getElementById("persona") as HTMLTextAreaElement).value });
-(document.getElementById("chat") as unknown as { thread: typeof thread }).thread = thread;
-pick.subscribe((s) => thread.setEngine(s.row?.state === "loaded" ? engine : null));
-layout(document.getElementById("lay")!);
+const persona = document.getElementById("persona") as HTMLTextAreaElement;
+const list = chatList({ recall: recallFor, system: persona.value });
+(document.getElementById("chat") as unknown as { list: typeof list }).list = list;
+(document.getElementById("ctx") as unknown as { system: string }).system = persona.value;
+const thread = list.thread;
+pick.subscribe((s) => list.setEngine(s.row?.state === "loaded" ? (s.loaded as typeof engine) : null));
+const lay = document.getElementById("lay")!;
+layout(lay);
+
 exposeSample(async () => {
   await pick.load();
   await thread.send("what can you do for the bench?");

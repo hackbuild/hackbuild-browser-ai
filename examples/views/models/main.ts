@@ -17,14 +17,14 @@ pick.subscribe((s) => {
   go.setAttribute("aria-busy", String(s.row?.state === "loading"));
   if (s.row?.state === "loaded") {
     document.getElementById("gate")!.hidden = true;
-    document.getElementById("verbs")!.style.display = "";
+    document.getElementById("verbs")!.hidden = false;
     document.getElementById("awake")!.textContent = "awake";
     document.getElementById("awake-note")!.textContent = `${s.row.name} is loaded. fixture: nothing was downloaded.`;
   }
 });
 document.getElementById("again")!.addEventListener("click", () => {
   document.getElementById("gate")!.hidden = false;
-  document.getElementById("verbs")!.style.display = "none";
+  document.getElementById("verbs")!.hidden = true;
   document.querySelector<HTMLElement>("#select .hb-msel-line")?.click();
 });
 document.getElementById("talk")!.addEventListener("click", () => location.assign("../chat/"));

@@ -20,6 +20,28 @@ define();
 const el = document.getElementById("studio") as unknown as HTMLElement & { studio: MaskStudio; models: MaskModels };
 el.models = models;
 const sample = () => el.studio.setImage(sampleCanvas());
+// the smoke's check: every hand tool, the cut, the mask tools, a saved mask and the exports, on the sample
+async function check(): Promise<boolean> {
+  const st = el.studio;
+  for (const t of ["eraser", "polygon", "rect", "ellipse", "flood", "pan", "wand", "brush", "lasso", "point"] as const) {
+    st.setTool(t);
+    if (st.state().tool !== t) return false;
+  }
+  await st.cutAt(400, 330);
+  const cup = st.state().coverage;
+  st.expand();
+  const grown = st.state().coverage;
+  st.shrink();
+  st.smooth();
+  st.save("cup");
+  st.undo();
+  st.restore(st.state().saved[0]!.id);
+  const img = st.mask("matte");
+  const blob = await st.exportAs("cutout");
+  return cup > 0.04 && grown > cup && st.state().saved.length === 1 && img?.width === 800 && !!blob && blob.size > 0;
+}
 el.addEventListener("sample", () => void sample());
 layout(document.getElementById("lay")!);
 exposeSample(sample);
+// the smoke runs this after the sample; the screen gate only loads the sample
+(window as unknown as { hbMaskCheck: () => Promise<boolean> }).hbMaskCheck = check;
