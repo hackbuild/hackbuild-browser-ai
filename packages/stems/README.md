@@ -45,8 +45,8 @@ hand a stem to transcribe or notes (an earlier lyrics tool).
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 2,219 bytes | 2,329 bytes |
-| `dist/single/index.iife.js` (single file build) | 29,853 bytes | 31,345 bytes |
+| `dist/index.js` (main entry, imports external) | 2,231 bytes | 2,342 bytes |
+| `dist/single/index.iife.js` (single file build) | 29,868 bytes | 31,361 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

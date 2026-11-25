@@ -89,8 +89,8 @@ zero download fallback.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 6,630 bytes | 6,961 bytes |
-| `dist/single/index.iife.js` (single file build) | 33,553 bytes | 35,230 bytes |
+| `dist/index.js` (main entry, imports external) | 6,654 bytes | 6,986 bytes |
+| `dist/single/index.iife.js` (single file build) | 33,578 bytes | 35,256 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

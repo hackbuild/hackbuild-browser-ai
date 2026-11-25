@@ -129,8 +129,8 @@ is off.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 7,064 bytes | 7,417 bytes |
-| `dist/single/index.iife.js` (single file build) | 8,926 bytes | 9,372 bytes |
+| `dist/index.js` (main entry, imports external) | 7,076 bytes | 7,429 bytes |
+| `dist/single/index.iife.js` (single file build) | 8,938 bytes | 9,384 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

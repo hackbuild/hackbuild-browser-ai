@@ -191,8 +191,8 @@ engine sang (no word times; the speaker estimates those).
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 16,179 bytes | 16,987 bytes |
-| `dist/single/index.iife.js` (single file build) | 19,818 bytes | 20,808 bytes |
+| `dist/index.js` (main entry, imports external) | 16,202 bytes | 17,012 bytes |
+| `dist/single/index.iife.js` (single file build) | 19,843 bytes | 20,835 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

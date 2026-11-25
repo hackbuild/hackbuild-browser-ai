@@ -128,8 +128,8 @@ crate was written.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,957 bytes | 6,254 bytes |
-| `dist/single/index.iife.js` (single file build) | 5,605 bytes | 5,885 bytes |
+| `dist/index.js` (main entry, imports external) | 6,000 bytes | 6,300 bytes |
+| `dist/single/index.iife.js` (single file build) | 5,647 bytes | 5,929 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

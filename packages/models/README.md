@@ -201,8 +201,8 @@ factory per provider with `hub.provide`, exports a stub builder, and calls
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 42,171 bytes | 44,279 bytes |
-| `dist/single/index.iife.js` (single file build) | 41,666 bytes | 43,749 bytes |
+| `dist/index.js` (main entry, imports external) | 42,353 bytes | 44,470 bytes |
+| `dist/single/index.iife.js` (single file build) | 41,841 bytes | 43,933 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
