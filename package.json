@@ -12,7 +12,7 @@
   },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
-    "build": "node tools/gen-hb-sheet.mjs && npm run build --workspaces --if-present && node tools/bundle.mjs",
+    "build": "npm run build --workspaces --if-present && node tools/bundle.mjs",
     "test": "vitest run && node --test tools/test/*.test.mjs",
     "typecheck": "tsc -b && tsc -p examples && tsc -p tsconfig.how.json",
     "lint:voice": "git ls-files | grep -Ev '\\.(png|jpe?g|glb|bin|wasm|wav)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock' | xargs node tools/lint-voice.mjs",

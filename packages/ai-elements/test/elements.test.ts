@@ -1,175 +1,18 @@
-import { describe, expect, test } from "vitest";
-import type { Env } from "@hackbuild/ai-env";
-import type { ModelRecord } from "@hackbuild/models";
-import {
-  ELEMENT_NAMES,
-  TOKENS,
-  HB_CSS,
-  HOST_CSS,
-  appendDelta,
-  define,
-  escapeHtml,
-  finishLine,
-  formatSize,
-  licenceLine,
-  maskKey,
-  pickerFits,
-  pickerHtml,
-  pillFor,
-  progressText,
-  traceRows,
-} from "@hackbuild/ai-elements";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { DEPRECATION, ELEMENT_NAMES, define, traceRows } from "@hackbuild/ai-elements";
 
-const env = (o: Partial<Env> = {}): Env => ({
-  webgpu: false,
-  f16: false,
-  adapter: null,
-  maxBufferBytes: null,
-  isolated: false,
-  protocol: "https",
-  opfs: true,
-  cacheStorage: true,
-  indexedDB: true,
-  threads: 1,
-  deviceMemoryGB: null,
-  promptApi: false,
-  notes: [],
-  ...o,
-});
-
-const rec = (o: Partial<ModelRecord>): ModelRecord => ({
-  id: "m",
-  provides: ["chat"],
-  provider: "tjs",
-  source: {},
-  sizeMB: 300,
-  sizeSource: "inferred",
-  ladder: [{ device: "wasm", dtype: "q8" }],
-  licence: "Apache-2.0",
-  commercial: true,
-  ...o,
-});
-
-describe("model rows", () => {
-  test("sizes carry their source word", () => {
-    expect(formatSize(300, "inferred")).toBe("300 MB, inferred");
-    expect(formatSize(2.3, "vendor")).toBe("2.3 MB, vendor");
-    expect(formatSize(2048, "measured")).toBe("2.0 GB, measured");
-    expect(formatSize(null, "unknown")).toBe("size unknown");
-  });
-  test("licence line names the weights licence and commercial use", () => {
-    expect(licenceLine(rec({}))).toBe("weights Apache-2.0, commercial use allowed");
-    expect(licenceLine(rec({ licence: "LFM Open License", commercial: "unknown" }))).toBe("weights LFM Open License, commercial use unknown");
-  });
-  test("fits take the HbModelList shape and a webgpu only model is off with the reason", () => {
-    const gpu = rec({ id: "g", ladder: [{ device: "webgpu", dtype: "q4f16" }] });
-    const fits = pickerFits([gpu, rec({ id: "w" })], env());
-    expect(fits.g).toEqual({ fit: "needs webgpu", ok: false, reason: "no webgpu adapter here." });
-    expect(fits.w).toMatchObject({ fit: "fits", ok: true });
-    expect(pickerFits([gpu], env(), null, { g: { fit: "fits", ok: true, reason: "given" } }).g!.reason).toBe("given");
-  });
-  test("picker markup is HbModelList rows: radio per row, fit chip, reason, licence", () => {
-    const records = [rec({ id: "a", label: "model a", group: "start here" }), rec({ id: "g", ladder: [{ device: "webgpu", dtype: "q4f16" }], commercial: false })];
-    const html = pickerHtml(records, pickerFits(records, env()), { label: "models", selected: "a", query: "" });
-    expect(html).toContain('class="hb-modellist is-rows"');
-    expect(html).toContain('data-model="a"');
-    expect(html).toMatch(/data-model="a"[^>]*aria-checked="true"/);
-    expect(html).toMatch(/data-model="g"[^>]*aria-disabled="true"/);
-    expect(html).toContain('<span class="hb-model-fit is-err"><span class="hb-sr">fit here: </span>needs webgpu</span>');
-    expect(html).toContain('class="hb-model-why">no webgpu adapter here.</p>');
-    expect(html).toContain("licence as recorded: Apache-2.0, no commercial use");
-    expect(html).toContain('<h4 id="gh-start-here" class="hb-model-gh">start here</h4>');
-    expect(html).toContain("picked: model a, 300 mb (inferred).");
-    expect(html).not.toMatch(/class="hb-model-lic"|hb-btn-sm/);
-  });
-});
-
-test("progress text with and without a total", () => {
-  const MB = 1024 * 1024;
-  expect(progressText({ loaded: 50 * MB, total: 200 * MB, resuming: false })).toEqual({ text: "25 percent, 50 of 200 MB", fraction: 0.25 });
-  expect(progressText({ loaded: 3 * MB, total: null, resuming: false })).toEqual({ text: "3.0 MB, total unknown", fraction: null });
-  expect(progressText({ loaded: 12 * MB, total: null, resuming: true }).text).toBe("resuming, 12 MB on disk");
-});
-
-test("pills from engine and hub status", () => {
-  expect(pillFor({ engine: "pocket", kind: "patch-missed", text: "Worker patches matched nothing" })).toEqual({ id: "pocket", kind: "patch-missed", text: "worker patches matched nothing" });
-  expect(pillFor({ engine: "kokoro", kind: "watchdog", text: "no audio" }).kind).toBe("failed");
-  expect(pillFor({ id: "whisper", busy: 2 })).toEqual({ id: "whisper", kind: "busy", text: "whisper busy, 2 waiting" });
-  expect(pillFor({ id: "whisper", busy: 0 }).kind).toBe("ready");
-});
-
-test("trace rows mark the hits handed to the model", () => {
-  const t = (id: number, score: number) => ({ id, bm25Rank: id === 2 ? -1 : id - 1, vecRank: 0, bm25: 1.23456, cos: 0.5, rrf: 0.0325, rel: 1, rec: 1, imp: 0.5, ret: 1, score, text: `item ${id} ${"x".repeat(id === 3 ? 100 : 0)}`, kind: "episode" as const });
-  const rows = traceRows({ trace: [t(1, 0.9), t(2, 0.5), t(3, 0.1)], hits: [{ item: { id: 1 } } as never] });
-  expect(rows.map((r) => r.used)).toEqual([true, false, false]);
-  expect(rows[0]).toMatchObject({ rank: 1, bm25: "#1 1.235", cos: "#1 0.500", rrf: "0.033", score: "0.900" });
-  expect(rows[1]!.bm25).toBe("none 1.235");
-  expect(rows[2]!.text.length).toBe(80);
-  expect(rows[2]!.text.endsWith("...")).toBe(true);
-});
-
-test("keys show first and last four only", () => {
-  expect(maskKey("sk-abcdefghijkl1234")).toBe("sk-a...1234");
-  expect(maskKey("short")).toBe("*****");
-  expect(maskKey("sk-12345678")).toBe("***********");
-});
-
-test("chat lines stream into one assistant line and close with a note", () => {
-  let l = appendDelta([{ role: "user", text: "hi", think: "", done: true }], { think: "plan" });
-  l = appendDelta(l, { text: "hel" });
-  l = appendDelta(l, { text: "lo" });
-  expect(l).toHaveLength(2);
-  expect(l[1]).toMatchObject({ role: "assistant", text: "hello", think: "plan", done: false });
-  l = finishLine(l, "stopped.");
-  expect(l[1]).toMatchObject({ done: true, note: "stopped." });
-  expect(appendDelta(l, { text: "x" })).toHaveLength(3);
-});
-
-test("html is escaped", () => {
-  expect(escapeHtml(`<b a="1">&'`)).toBe("&lt;b a=&quot;1&quot;&gt;&amp;&#39;");
-});
-
-test("define registers each element once under a prefix and nothing on import", () => {
-  const reg = new Map<string, unknown>();
-  const target = { get: (n: string) => reg.get(n), define: (n: string, c: unknown) => void reg.set(n, c) };
-  class FakeBase {}
-  const tags = define("x", target, FakeBase as never);
-  expect(tags).toEqual(ELEMENT_NAMES.map((n) => `x-${n}`));
-  const first = reg.get("x-chat-panel");
-  define("x", target, FakeBase as never);
-  expect(reg.get("x-chat-panel")).toBe(first);
-  expect(() => define("hb", undefined, undefined)).toThrow(/no custom elements/);
-});
-
-test("tokens default to hackbuild-ui values and never shadow a page's tokens", () => {
-  // --hb-ok and --hb-warn once held other values on :host and shadowed the design system inside the elements
-  expect(TOKENS["--hb-ok"]).toBe("#1f9d55");
-  expect(TOKENS["--hb-warn"]).toBe("#c77700");
-  expect(TOKENS["--hb-pink"]).toBe("#FE0386");
-  // no token is declared on :host or :root, so a page's value on the element or an ancestor reaches in;
-  // a part may scope its own (.hb-instrument tightens the spacing tokens inside it)
-  const declares = [...`${HB_CSS}\n${HOST_CSS}`.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((m) => /(^|[;\s])--hb-[a-z0-9-]+\s*:/.test(m[2]!)).map((m) => m[1]!.trim());
-  expect(declares.filter((sel) => /(^|,)\s*(:host|:root)\s*(,|$)/.test(sel))).toEqual([]);
-  // every token use carries its hackbuild-ui fallback; a bare var() is a part's own inline value (--hb-level, --hb-pc-src)
-  expect([...HB_CSS.matchAll(/var\((--hb-[a-z0-9-]+)\)/g)].map((m) => m[1]).filter((n) => n! in TOKENS)).toEqual([]);
-  expect(HB_CSS).toContain("var(--hb-ok, #1f9d55)");
-  expect(HB_CSS).toContain("var(--hb-shadow, 3px 3px 0 var(--hb-ink, #1a1a1a))");
-  // page level rules are gone: no import, no grain overlay, no dark palette
-  expect(HB_CSS).not.toMatch(/@import|body\.hb|prefers-color-scheme/);
-});
-
-describe("deprecation", () => {
-  test("define notes the deprecation once and points to ai-views", async () => {
-    const { vi } = await import("vitest");
-    const { DEPRECATION } = await import("@hackbuild/ai-elements");
-    expect(DEPRECATION).toMatch(/@hackbuild\/ai-views/);
+describe("ai-elements, deprecated", () => {
+  afterEach(() => vi.restoreAllMocks());
+  test("define registers the ai-views elements under hb and notes the deprecation once", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const reg = new Map<string, unknown>();
-    const t = { get: (n: string) => reg.get(n), define: (n: string, c: unknown) => void reg.set(n, c) };
+    const target = { get: (n: string) => reg.get(n), define: (n: string, c: unknown) => void reg.set(n, c) };
     class B {}
-    define("dep-a", t, B as never);
-    define("dep-b", t, B as never);
-    expect(warn.mock.calls.filter((c) => c[0] === DEPRECATION).length).toBeLessThanOrEqual(1);
-    warn.mockRestore();
+    expect(define("hb", target, B as never)).toEqual(ELEMENT_NAMES.map((n) => `hb-${n}`));
+    define("x", target, B as never);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toBe(DEPRECATION);
+    expect(DEPRECATION).toMatch(/@hackbuild\/ai-views/);
+    expect(typeof traceRows).toBe("function");
   });
 });

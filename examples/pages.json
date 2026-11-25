@@ -63,12 +63,6 @@
     {
       "name": "imagegen",
       "what": "sd-turbo on onnxruntime-web webgpu with a seeded euler loop. 2.5 GB of weights you download on request."
-    },
-    {
-      "name": "ai-elements",
-      "what": "model picker, download bar, status pills, chat panel and memory inspector as web components.",
-      "stage": false,
-      "timeoutS": 600
     }
   ]
 }
