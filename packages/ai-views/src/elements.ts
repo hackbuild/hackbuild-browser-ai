@@ -1,8 +1,8 @@
 /**
  * @hackbuild/ai-views/elements: the views as custom elements for a plain
  * HTML page, and the mount functions they sit on. Light DOM, drawn with
- * the page's hackbuild-ui stylesheet; each element shows as `display:
- * contents`, so a layout region of hackbuild-ui places its parts. Nothing
+ * the page's hackbuild-ui stylesheet; each element carries `.hb-view`
+ * (display contents), so a layout region of hackbuild-ui places its parts. Nothing
  * registers on import: the page calls define().
  *
  *   <model-select job="chat" variant="chip"></model-select>
@@ -15,11 +15,11 @@
 import type { ChatEngine } from "@hackbuild/chat";
 import type { Env } from "@hackbuild/ai-env";
 import type { ModelRecord } from "@hackbuild/models";
-import { chatThread, type ChatThread } from "./chat.js";
+import { chatList, type ChatList, type ChatThread } from "./chat.js";
 import type { Mounted } from "./dom.js";
 import { isJob, type Job } from "./jobs.js";
-import { useJobsPick, useModelPick, type Loader, type ModelPick } from "./pick.js";
-import { mountChatPane, mountComposer } from "./mount-chat.js";
+import { useJobsPick, useModelPick, type JobsPick, type Loader, type ModelPick, type PickPreset } from "./pick.js";
+import { mountChatList, mountChatPane, mountComposer, mountContextMeter } from "./mount-chat.js";
 import { mountCameraFeed, mountFrameView, type CameraFeed, type FrameView } from "./mount-frame.js";
 import { mountMaskRack, mountMaskStudio, mountMaskTools, mountMaskVerbs, type MaskModels, type MaskStudio } from "./mount-mask.js";
 import { mountModelJobs, mountModelSelect } from "./mount-model.js";
@@ -28,7 +28,7 @@ import { transcribeQueue, type TranscribeQueue, type Transcriber } from "./trans
 import { mountMemoryInspector, type MemoryInspector, type RecallLike } from "./memory.js";
 
 export { mountModelSelect, mountModelJobs, pickSheet, gateWords, type ModelSelectOptions } from "./mount-model.js";
-export { mountChatPane, mountComposer, turnHtml, type ChatPaneOptions, type ComposerOptions } from "./mount-chat.js";
+export { mountChatPane, mountComposer, mountChatList, mountContextMeter, turnHtml, type ChatPaneOptions, type ComposerOptions } from "./mount-chat.js";
 export { mountTranscribeDrop, mountTranscriptView, mountTranscribeQueue, mountTranscriptExports, transcriptHtml, type TranscribeDropOptions, type TranscribeDropHandle, type TranscriptViewOptions } from "./mount-transcribe.js";
 export { mountMaskStudio, mountMaskTools, mountMaskVerbs, mountMaskRack, type MaskStudio, type MaskModels, type MaskStudioOptions, type FoundMask, type StudioState, type StudioTool } from "./mount-mask.js";
 export { mountFrameView, mountCameraFeed, type FrameView, type FrameViewOptions, type CameraFeed, type CameraFeedOptions } from "./mount-frame.js";
@@ -42,6 +42,8 @@ export const ELEMENT_NAMES = [
   "model-jobs",
   "chat-pane",
   "chat-composer",
+  "chat-list",
+  "chat-context",
   "transcribe-drop",
   "transcript-view",
   "transcribe-queue",
@@ -69,7 +71,8 @@ function shell(B: Base) {
   return class extends B {
     protected mounted: Mounted | null = null;
     connectedCallback() {
-      this.style.display = "contents";
+      // .hb-view: display contents, so a layout region of hackbuild-ui places the view's parts
+      this.classList.add("hb-view");
       void this.mount();
     }
     disconnectedCallback() {
@@ -101,19 +104,31 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
       if (!this.#pick) {
         const job = this.getAttribute("job");
         this.#pick = useModelPick(isJob(job) ? job : "chat", { ...(this.#env ? { env: this.#env } : {}), ...(this.#loader ? { loader: this.#loader } : {}), ...(this.#records ? { records: this.#records } : {}), ...(this.getAttribute("chosen") ? { chosen: this.getAttribute("chosen")! } : {}) });
-        let last = "";
-        this.#pick.subscribe((s) => {
-          if (s.chosen !== last) this.emit("choose", { id: s.chosen });
-          last = s.chosen;
-          const st = s.row?.state;
-          if (st === "loaded" || st === "error") this.emit(st === "loaded" ? "loaded" : "failed", { id: s.chosen, error: this.#pick?.error(s.chosen) });
-        });
+        this.watch(this.#pick);
       }
       return this.#pick;
     }
     set pick(p: ModelPick) {
       this.#pick = p;
+      this.watch(p);
       if (this.isConnected) void this.remount();
+    }
+    #off: (() => void) | null = null;
+    /** choose on a new choice; loaded and failed once per load, when a row leaves loading. */
+    private watch(p: ModelPick) {
+      this.#off?.();
+      let chosen = p.snapshot().chosen;
+      const was = new Map(p.snapshot().rows.map((r) => [r.id, r.state]));
+      this.#off = p.subscribe((s) => {
+        if (s.chosen !== chosen) this.emit("choose", { id: s.chosen });
+        chosen = s.chosen;
+        for (const r of s.rows) {
+          const before = was.get(r.id);
+          if (before === "loading" && r.state === "loaded") this.emit("loaded", { id: r.id, result: p.result(r.id) });
+          if (before === "loading" && r.state === "error") this.emit("failed", { id: r.id, error: p.error(r.id) });
+          was.set(r.id, r.state);
+        }
+      });
     }
     get env() {
       return this.#env;
@@ -145,16 +160,51 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
     }
   }
   class ModelJobsEl extends S {
+    #jobs: JobsPick | null = null;
+    #opts: { env?: Env; loader?: Loader; records?: readonly ModelRecord[]; presets: readonly PickPreset[] } = { presets: [] };
+    /** One pick per job in the jobs attribute, built on first use with the properties set so far. */
+    get jobs(): JobsPick {
+      if (!this.#jobs) {
+        const names = (this.getAttribute("jobs") ?? "chat").split(",").map((s) => s.trim()).filter(isJob) as Job[];
+        const required = new Set((this.getAttribute("required") ?? "").split(",").map((s) => s.trim()));
+        const { presets, ...shared } = this.#opts;
+        this.#jobs = useJobsPick(names.map((job) => ({ job, required: required.has(job) })), presets, shared);
+      }
+      return this.#jobs;
+    }
+    set env(v: Env) {
+      this.#opts.env = v;
+      this.#jobs?.update({ env: v });
+    }
+    set loader(v: Loader) {
+      this.#opts.loader = v;
+      this.#jobs?.update({ loader: v });
+    }
+    set records(v: readonly ModelRecord[]) {
+      this.#opts.records = v;
+      this.#jobs?.update({ records: v });
+    }
+    set presets(v: readonly PickPreset[]) {
+      this.#opts.presets = v;
+      this.#jobs?.setPresets(v);
+    }
     protected override async mount() {
-      const jobs = (this.getAttribute("jobs") ?? "chat").split(",").map((s) => s.trim()).filter(isJob) as Job[];
-      const required = new Set((this.getAttribute("required") ?? "").split(",").map((s) => s.trim()));
-      this.mounted = mountModelJobs(this, useJobsPick(jobs.map((job) => ({ job, required: required.has(job) }))), { go: this.getAttribute("go") !== "false" });
+      this.mounted = mountModelJobs(this, this.jobs, { go: this.getAttribute("go") !== "false" });
     }
   }
   class ChatPaneEl extends S {
     #thread: ChatThread | null = null;
+    #list: ChatList | null = null;
+    /** The chats this pane shows, the open one in the pane; a chat-list element switches between them. */
+    get list(): ChatList {
+      return (this.#list ??= chatList());
+    }
+    set list(l: ChatList) {
+      this.#list = l;
+      this.thread = l.thread;
+    }
     get thread(): ChatThread {
-      return (this.#thread ??= chatThread());
+      return (this.#thread ??= this.list.thread);
     }
     set thread(t: ChatThread) {
       this.#thread = t;
@@ -164,13 +214,27 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
       }
     }
     set engine(e: ChatEngine | null) {
-      this.thread.setEngine(e);
+      if (this.#list) this.#list.setEngine(e);
+      else this.thread.setEngine(e);
     }
     protected override async mount() {
       const name = this.getAttribute("name");
       const en = this.getAttribute("empty-name");
       const note = this.getAttribute("empty-note");
       this.mounted = mountChatPane(this, this.thread, { ...(name ? { name } : {}), ...(en ? { emptyName: en } : {}), ...(note ? { emptyNote: note } : {}) });
+    }
+  }
+  class ChatListEl extends S {
+    protected override async mount() {
+      const l = await target<ChatList>(this, "list");
+      if (l) this.mounted = mountChatList(this, l, this.getAttribute("label") ? { label: this.getAttribute("label")! } : {});
+    }
+  }
+  class ChatContextEl extends S {
+    protected override async mount() {
+      const t = await target<ChatThread>(this, "thread");
+      const budget = () => Number(this.getAttribute("budget") ?? 4096);
+      if (t) this.mounted = mountContextMeter(this, t, { budget, system: () => (this as unknown as { system?: string }).system ?? "" });
     }
   }
   class ComposerEl extends S {
@@ -285,6 +349,8 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
     "model-jobs": ModelJobsEl,
     "chat-pane": ChatPaneEl,
     "chat-composer": ComposerEl,
+    "chat-list": ChatListEl,
+    "chat-context": ChatContextEl,
     "transcribe-drop": TranscribeDropEl,
     "transcript-view": forQueue((h, q) => mountTranscriptView(h, q)),
     "transcribe-queue": forQueue(mountTranscribeQueue),
@@ -292,7 +358,7 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
     "mask-studio": MaskStudioEl,
     "mask-tools": forStudio(mountMaskTools),
     "mask-verbs": forStudio(mountMaskVerbs),
-    "mask-rack": forStudio((h, s, el) => mountMaskRack(h, s, (el.getAttribute("part") as "found" | "mask" | "export") ?? "found")),
+    "mask-rack": forStudio((h, s, el) => mountMaskRack(h, s, (el.getAttribute("part") as "found" | "mask" | "saved" | "export") ?? "found")),
     "frame-view": FrameViewEl,
     "camera-feed": CameraFeedEl,
     "memory-inspector": MemoryInspectorEl,

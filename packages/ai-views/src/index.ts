@@ -7,6 +7,9 @@ export {
   useModelPick,
   useJobsPick,
   weightsLoader,
+  weightsRemover,
+  weightKeys,
+  defaultPick,
   ownRecord,
   type ModelPick,
   type PickOptions,
@@ -17,7 +20,7 @@ export {
   type JobLine,
   type PickPreset,
 } from "./pick.js";
-export { chatThread, NO_ENGINE, type ChatThread, type ThreadOptions, type ThreadSnapshot, type Turn, type MemoryUsed } from "./chat.js";
+export { chatThread, chatList, contextSegments, NO_ENGINE, type ChatList, type ChatListItem, type ChatListSnapshot, type ChatThread, type ThreadOptions, type ThreadSnapshot, type Turn, type MemoryUsed } from "./chat.js";
 export { transcribeQueue, type TranscribeQueue, type Transcriber, type RunResult, type RunContext, type Channel, type ExportKind, type QueueSnapshot } from "./transcribe.js";
 export { fitMap, toView, boxWords, frameTag, labelColour, type FrameBox, type FrameLandmarks, type FrameResults } from "./frame.js";
 export { traceRows, inspectorHtml, type TraceRow, type RecallLike } from "./memory.js";

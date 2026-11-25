@@ -37,7 +37,7 @@ const css = (el: Element, name: string, fb: string) => {
 };
 
 export function mountFrameView(host: HTMLElement, o: FrameViewOptions = {}): FrameView {
-  host.innerHTML = `<figure class="hb-camtile" aria-label="frame"><div class="hb-camtile-none" role="status">${esc(o.empty ?? "no frame yet")}</div><canvas aria-hidden="true"></canvas><span class="hb-camtile-tag is-tl" hidden></span></figure><p class="hb-lay-empty-note" data-caption aria-live="polite" hidden></p>`;
+  host.innerHTML = `<div class="hb-frameview"><figure class="hb-camtile" aria-label="frame"><div class="hb-camtile-none" role="status">${esc(o.empty ?? "no frame yet")}</div><canvas aria-hidden="true"></canvas><span class="hb-camtile-tag is-tl" hidden></span></figure><p class="hb-frameview-cap" data-caption aria-live="polite" hidden></p></div>`;
   const fig = host.querySelector("figure")!;
   const canvas = host.querySelector("canvas")!;
   const none = host.querySelector<HTMLElement>(".hb-camtile-none")!;

@@ -9,7 +9,7 @@
  * stubs run the studio with no weights.
  */
 
-import { INSTANCE_COLOURS, MASK_TOOLS, maskEditor, type MaskEditorHandle, type MaskEditorState, type MaskMode, type MaskOutput, type MaskPixels } from "@virgilvox/hackbuild-ui/vanilla";
+import { INSTANCE_COLOURS, MASK_TOOLS, maskEditor, strokeIcon, type MaskEditorHandle, type MaskEditorState, type MaskMode, type MaskOutput, type MaskPixels, type MaskTool } from "@virgilvox/hackbuild-ui/vanilla";
 import { ICON, download, esc, listeners, type Mounted, show } from "./dom.js";
 
 /** One object a segment model found: a mask in image pixels (0 or 255), its word and score. */
@@ -26,7 +26,7 @@ export interface MaskModels {
   everything?: (image: MaskPixels) => Promise<FoundMask[]>;
 }
 
-export type StudioTool = "point" | "wand" | "brush" | "lasso";
+export type StudioTool = "point" | MaskTool;
 
 export interface StudioState {
   ready: boolean;
@@ -40,6 +40,8 @@ export interface StudioState {
   zoom: number;
   busy: string;
   found: (FoundMask & { on: boolean; colour: string })[];
+  /** Masks put aside with a name and a small preview, newest first. */
+  saved: { id: number; name: string; thumb: string; coverage: number }[];
   width: number;
   height: number;
   /** The last failure, in words. */
@@ -56,11 +58,24 @@ export interface MaskStudio extends Mounted {
   redo(): void;
   invert(): void;
   clear(): void;
+  /** Grow, shrink or round off the mask, one undo step each. */
+  expand(px?: number): void;
+  shrink(px?: number): void;
+  smooth(r?: number): void;
+  /** Put the current mask aside; restore puts it back as one undo step. */
+  save(name?: string): void;
+  restore(id: number): void;
+  forget(id: number): void;
+  /** The current mask as ImageData (alpha by default), null before an image. */
+  mask(kind?: MaskOutput): ImageData | null;
   zoom(dir: 1 | -1 | 0): void;
   everything(): Promise<void>;
+  /** The click segment model at a point in image pixels, as a press with the point tool. */
+  cutAt(x: number, y: number, mode?: MaskMode): Promise<void>;
   /** Add or take out one found object. */
   toggleFound(index: number): void;
-  exportAs(kind: MaskOutput, name?: string): Promise<void>;
+  /** The mask, matte or cutout as a png Blob. */
+  exportAs(kind: MaskOutput): Promise<Blob | null>;
   hasEverything: boolean;
   hasSegment: boolean;
   state(): StudioState;
@@ -93,12 +108,25 @@ function pixelsOf(src: CanvasImageSource & { width: number; height: number }): M
   return { width: d.width, height: d.height, data: d.data };
 }
 
+/** A 48 px wide preview of a matte, as a data url. */
+function thumbOf(img: ImageData): string {
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  c.getContext("2d")?.putImageData(img, 0, 0);
+  const t = document.createElement("canvas");
+  t.width = 48;
+  t.height = Math.max(1, Math.round((48 * img.height) / Math.max(1, img.width)));
+  t.getContext("2d")?.drawImage(c, 0, 0, t.width, t.height);
+  return t.toDataURL("image/png");
+}
+
 export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): MaskStudio {
   let models = o.models ?? {};
   const l = listeners();
   host.innerHTML =
     `<div class="hb-lay-empty" data-empty><span class="hb-lay-empty-name">${esc(o.title ?? "drop an image")}</span><p class="hb-lay-empty-note">${esc(o.note ?? "press a thing to cut it out. the picture stays on this machine.")}</p><div class="hb-lay-empty-acts"><button type="button" class="hb-btn hb-btn-go" data-pick>open an image</button>${o.sampleLabel ? `<button type="button" class="hb-btn" data-sample>${esc(o.sampleLabel)}</button>` : ""}</div></div>` +
-    `<div class="hb-mask" data-studio style="display:none"><div class="hb-mask-well"><div class="hb-mask-frame"><canvas class="hb-mask-canvas" tabindex="0" role="img" aria-label="image and mask"></canvas><p class="hb-mask-hint" aria-live="polite"></p></div></div></div>` +
+    `<div class="hb-mask is-fill" data-studio hidden><div class="hb-mask-well"><div class="hb-mask-frame"><canvas class="hb-mask-canvas" tabindex="0" role="img" aria-label="image and mask"></canvas><p class="hb-mask-hint" aria-live="polite"></p></div></div></div>` +
     `<input type="file" accept="image/*" hidden>`;
   const empty = host.querySelector<HTMLElement>("[data-empty]")!;
   const studio = host.querySelector<HTMLElement>("[data-studio]")!;
@@ -114,6 +142,8 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
   let error = "";
   let pixels: MaskPixels | null = null;
   let found: StudioState["found"] = [];
+  let saved: (StudioState["saved"][number] & { bytes: Uint8Array })[] = [];
+  let savedSeq = 0
   let ed: MaskEditorState | null = null;
 
   const state = (): StudioState => ({
@@ -128,6 +158,7 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
     zoom,
     busy,
     found,
+    saved: saved.map(({ bytes: _b, ...rest }) => rest),
     width: ed?.width ?? 0,
     height: ed?.height ?? 0,
     error,
@@ -139,22 +170,13 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
   };
   const editor: MaskEditorHandle = maskEditor(canvas, { tool: tool === "point" ? "wand" : tool, onError: (e) => ((error = `the image did not load: ${e.message}`), emit()) });
   l.add(editor.subscribe((s) => ((ed = s), emit())));
-  // the well fills the subject; at fit the frame is as large as the well holds at the image's ratio
-  studio.style.height = "100%";
-  well.style.height = "100%";
-  well.style.alignItems = "center";
+  // the well fills the subject (.hb-mask.is-fill); at fit the frame is as large as the well holds at the image's ratio
   const applyZoom = () => {
     const ratio = ed && ed.height ? ed.width / ed.height : 4 / 3;
-    frame.style.aspectRatio = String(ratio);
-    frame.style.setProperty("--hb-mask-ratio", String(ratio));
     const fitW = Math.max(1, Math.min(well.clientWidth, well.clientHeight * ratio));
-    frame.style.width = `${Math.round(fitW * zoom)}px`;
-    frame.style.maxWidth = "none";
-    frame.style.flex = "none";
-    // past fit the frame grows and the well scrolls
-    well.style.overflow = zoom > 1 ? "auto" : "hidden";
-    well.style.justifyContent = zoom > 1 ? "flex-start" : "center";
-    well.style.alignItems = zoom > 1 ? "flex-start" : "center";
+    studio.style.setProperty("--hb-mask-ratio", String(ratio));
+    studio.style.setProperty("--hb-mask-w", `${Math.round(fitW * zoom)}px`);
+    studio.classList.toggle("is-zoomed", zoom > 1);
   };
   const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => applyZoom()) : null;
   ro?.observe(well);
@@ -162,29 +184,34 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
 
 
   // a press with the point tool asks the click segment model, before the editor sees it
-  const onPoint = (e: Event) => {
-      if (tool !== "point") return;
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      const pe = e as PointerEvent;
-      const r = canvas.getBoundingClientRect();
-      if (!ed?.ready || !pixels || !models.segment) return;
-      const x = Math.round(((pe.clientX - r.left) / r.width) * ed.width);
-      const y = Math.round(((pe.clientY - r.top) / r.height) * ed.height);
-      const erase = (ed.mode === "erase") !== pe.shiftKey;
-      busy = "cutting it out";
-      error = "";
+  const cut = async (x: number, y: number, erase: boolean) => {
+    if (!ed?.ready || !pixels || !models.segment) return;
+    busy = "cutting it out";
+    error = "";
+    emit();
+    try {
+      const m = await models.segment(pixels, { x, y });
+      if (!m) return;
+      const cur = editor.mask();
+      for (let i = 0; i < cur.length; i++) cur[i] = erase ? (m[i] ? 0 : cur[i]!) : m[i] || cur[i] ? 255 : 0;
+      editor.setMask(cur);
+    } catch (err) {
+      error = `the cut failed: ${err instanceof Error ? err.message : String(err)}`;
+    } finally {
+      busy = "";
       emit();
-      void models
-        .segment(pixels, { x, y })
-        .then((m) => {
-          if (!m) return;
-          const cur = editor.mask();
-          for (let i = 0; i < cur.length; i++) cur[i] = erase ? (m[i] ? 0 : cur[i]!) : m[i] || cur[i] ? 255 : 0;
-          editor.setMask(cur);
-        })
-        .catch((err: unknown) => (error = `the cut failed: ${err instanceof Error ? err.message : String(err)}`))
-        .finally(() => ((busy = ""), emit()));
+    }
+  };
+  const onPoint = (e: Event) => {
+    if (tool !== "point") return;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    const pe = e as PointerEvent;
+    const r = canvas.getBoundingClientRect();
+    if (!ed?.ready) return;
+    const x = Math.round(((pe.clientX - r.left) / r.width) * ed.width);
+    const y = Math.round(((pe.clientY - r.top) / r.height) * ed.height);
+    void cut(x, y, (ed.mode === "erase") !== pe.shiftKey);
   };
   // capture, so it runs before the editor's own handler on the canvas
   canvas.addEventListener("pointerdown", onPoint, true);
@@ -214,6 +241,7 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
     async setImage(src) {
       error = "";
       found = [];
+      saved = [];
       let drawable: (CanvasImageSource & { width: number; height: number }) | null = null;
       if (typeof src === "string") {
         const img = new Image();
@@ -227,7 +255,7 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
       if (drawable) pixels = pixelsOf(drawable);
       show(empty, false);
       // .hb-mask sets display, so the hidden attribute would not hide it
-      studio.style.display = "";
+      show(studio, true);
       await editor.setImage(pixels!);
       zoom = 1;
       applyZoom();
@@ -248,6 +276,25 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
     redo: () => void editor.redo(),
     invert: () => editor.invert(),
     clear: () => editor.clear(),
+    expand: (px) => editor.expand(px),
+    shrink: (px) => editor.shrink(px),
+    smooth: (r) => editor.smooth(r),
+    save(name) {
+      if (!ed?.ready || !ed.coverage) return;
+      const bytes = editor.mask();
+      const id = ++savedSeq;
+      saved = [{ id, name: name ?? `mask ${id}`, thumb: thumbOf(editor.toImageData("matte")), coverage: ed.coverage, bytes }, ...saved];
+      emit();
+    },
+    restore(id) {
+      const m = saved.find((x) => x.id === id);
+      if (m && ed?.ready && m.bytes.length === ed.width * ed.height) editor.setMask(m.bytes);
+    },
+    forget(id) {
+      saved = saved.filter((x) => x.id !== id);
+      emit();
+    },
+    mask: (kind = "alpha") => (ed?.ready ? editor.toImageData(kind) : null),
     zoom(dir) {
       if (dir === 0) zoom = 1;
       else {
@@ -272,6 +319,7 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
         emit();
       }
     },
+    cutAt: (x, y, mode) => cut(x, y, (mode ?? ed?.mode) === "erase"),
     toggleFound(i) {
       const f = found[i];
       if (!f) return;
@@ -280,10 +328,9 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
       for (let p = 0; p < cur.length; p++) if (f.mask[p]) cur[p] = f.on ? 0 : 255;
       editor.setMask(cur);
     },
-    async exportAs(kind, name = o.name ?? "mask") {
-      if (!ed?.ready) return;
-      const blob = await editor.toBlob(kind);
-      download(`${name}-${kind}.png`, blob);
+    async exportAs(kind) {
+      if (!ed?.ready) return null;
+      return editor.toBlob(kind);
     },
     get hasEverything() {
       return !!models.everything;
@@ -322,23 +369,25 @@ export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): M
 /** The tool rail of a studio: point (when a click model is set), wand, brush, lasso, and segment everything (when that model is set). */
 export function mountMaskTools(host: HTMLElement, studio: MaskStudio): Mounted {
   const l = listeners();
-  const icons: Record<string, string> = { point: ICON.point, wand: ICON.wand, brush: ICON.brush, lasso: ICON.lasso };
   const draw = (s: StudioState) => {
-    const tools: { id: StudioTool; label: string; key: string }[] = [
-      ...(studio.hasSegment ? [{ id: "point" as const, label: "cut out a thing", key: "a" }] : []),
-      ...MASK_TOOLS.map((t) => ({ id: t.id as StudioTool, label: t.label, key: t.key })),
+    const tools: { id: StudioTool; label: string; key: string; icon: string }[] = [
+      ...(studio.hasSegment ? [{ id: "point" as const, label: "cut out a thing", key: "a", icon: "crosshairs" }] : []),
+      ...MASK_TOOLS.map((t) => ({ id: t.id, label: t.label, key: t.key, icon: t.icon })),
     ];
-    host.innerHTML =
-      tools.map((t) => `<button type="button" class="hb-iconbtn" data-tool="${t.id}" aria-label="${esc(t.label)} (${t.key})" title="${esc(t.label)} (${t.key})" aria-pressed="${s.tool === t.id}" aria-keyshortcuts="${t.key}">${icons[t.id] ?? ""}</button>`).join("") +
-      (studio.hasEverything && s.ready ? `<button type="button" class="hb-iconbtn" data-all aria-label="find every object" title="find every object">${ICON.all}</button>` : "");
+    host.innerHTML = tools.map((t) => `<button type="button" class="hb-iconbtn" data-tool="${t.id}" aria-label="${esc(t.label)} (${t.key})" title="${esc(t.label)} (${t.key})" aria-pressed="${s.tool === t.id}" aria-keyshortcuts="${t.key}">${strokeIcon(t.icon as never, { size: 18 })}</button>`).join("");
   };
   l.on(host, "click", (e) => {
     const t = (e.target as Element).closest<HTMLElement>("[data-tool]");
-    if (t) return studio.setTool(t.dataset.tool as StudioTool);
-    if ((e.target as Element).closest("[data-all]")) void studio.everything();
+    if (t) studio.setTool(t.dataset.tool as StudioTool);
   });
   l.on(document, "keydown", (e) => {
     const ke = e as KeyboardEvent;
+    const typing = !!(ke.target as HTMLElement).closest?.("input,textarea,[contenteditable]");
+    if (!typing && !ke.ctrlKey && !ke.metaKey && studio.state().ready) {
+      if (ke.key === "+" || ke.key === "=") return studio.zoom(1);
+      if (ke.key === "-") return studio.zoom(-1);
+      if (ke.key === "0") return studio.zoom(0);
+    }
     if (ke.key === "a" && !ke.ctrlKey && !ke.metaKey && studio.hasSegment && !(ke.target as HTMLElement).closest?.("input,textarea,[contenteditable]")) studio.setTool("point");
   });
   l.add(studio.subscribe(draw));
@@ -352,7 +401,9 @@ export function mountMaskVerbs(host: HTMLElement, studio: MaskStudio): Mounted {
   const draw = (s: StudioState) => {
     const html = s.ready
       ? `${s.canUndo ? `<button type="button" class="hb-iconbtn" data-v="undo" aria-label="undo" title="undo (ctrl z)">${ICON.undo}</button>` : ""}${s.canRedo ? `<button type="button" class="hb-iconbtn" data-v="redo" aria-label="redo" title="redo (ctrl shift z)">${ICON.redo}</button>` : ""}` +
-        `<button type="button" class="hb-iconbtn" data-v="out" aria-label="zoom out" title="zoom out">${ICON.zoomOut}</button><button type="button" class="hb-iconbtn" data-v="fit" aria-label="fit, now ${Math.round(s.zoom * 100)} percent" title="fit">${ICON.fit}</button><button type="button" class="hb-iconbtn" data-v="in" aria-label="zoom in" title="zoom in">${ICON.zoomIn}</button>`
+        // zoom out and fit show once zoomed in, so the row stays short
+        (s.zoom !== 1 ? `<button type="button" class="hb-iconbtn" data-v="out" aria-label="zoom out" title="zoom out (-)">${ICON.zoomOut}</button><button type="button" class="hb-iconbtn" data-v="fit" aria-label="fit, now ${Math.round(s.zoom * 100)} percent" title="fit (0)">${ICON.fit}</button>` : "") +
+        `<button type="button" class="hb-iconbtn" data-v="in" aria-label="zoom in" title="zoom in (+)">${ICON.zoomIn}</button>`
       : "";
     if (html !== last) host.innerHTML = last = html;
     host.hidden = !html;
@@ -370,7 +421,7 @@ export function mountMaskVerbs(host: HTMLElement, studio: MaskStudio): Mounted {
 }
 
 /** The rack parts: what was found, the mask tools' settings, and the exports once there is a mask. */
-export function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "found" | "mask" | "export"): Mounted {
+export function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "found" | "mask" | "saved" | "export", o: { name?: string } = {}): Mounted {
   const l = listeners();
   let last = "";
   const draw = (s: StudioState) => {
@@ -384,9 +435,15 @@ export function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "foun
     } else if (part === "mask") {
       html =
         `<div class="hb-seg is-toggle" role="group" aria-label="mode">${(["add", "erase"] as const).map((m) => `<button type="button" data-mode="${m}" class="${s.mode === m ? "is-on" : ""}" aria-pressed="${s.mode === m}">${m}<span class="hb-mask-key" aria-hidden="true">x</span></button>`).join("")}</div>` +
-        (s.tool === "brush" ? `<label class="hb-field"><span class="hb-label">brush, ${s.size} px</span><input class="hb-range" type="range" min="4" max="160" step="2" value="${s.size}" data-size></label>` : "") +
-        (s.tool === "wand" ? `<label class="hb-field"><span class="hb-label">reach, ${s.tolerance}</span><input class="hb-range" type="range" min="0" max="100" step="1" value="${s.tolerance}" data-tol></label>` : "") +
-        (s.coverage > 0 ? `<div class="hb-toolbar"><button type="button" class="hb-btn" data-op="invert">invert</button><button type="button" class="hb-btn" data-op="clear">clear</button></div>` : "");
+        (s.tool === "brush" || s.tool === "eraser" ? `<label class="hb-field"><span class="hb-label">brush, ${s.size} px</span><input class="hb-range" type="range" min="4" max="160" step="2" value="${s.size}" data-size></label>` : "") +
+        (s.tool === "wand" || s.tool === "flood" ? `<label class="hb-field"><span class="hb-label">reach, ${s.tolerance}</span><input class="hb-range" type="range" min="0" max="100" step="1" value="${s.tolerance}" data-tol></label>` : "") +
+        (s.coverage > 0 ? `<div class="hb-toolbar"><button type="button" class="hb-btn" data-op="smooth">smooth</button><button type="button" class="hb-btn" data-op="expand">expand</button><button type="button" class="hb-btn" data-op="shrink">shrink</button><button type="button" class="hb-btn" data-op="invert">invert</button><button type="button" class="hb-btn" data-op="clear">clear</button></div>` : "");
+    } else if (part === "saved") {
+      html =
+        (s.coverage > 0 ? `<div class="hb-toolbar"><button type="button" class="hb-btn" data-op="save">save this mask</button></div>` : "") +
+        (s.saved.length
+          ? `<div class="hb-inst"><ul class="hb-inst-list">${s.saved.map((m) => `<li class="hb-inst-row"><button type="button" class="hb-inst-pick" data-restore="${m.id}"><img class="hb-inst-sw" src="${m.thumb}" alt=""><span class="hb-inst-name">${esc(m.name)}</span><span class="hb-inst-score">${Math.round(m.coverage * 100)}%</span></button><button type="button" class="hb-inst-act" data-forget="${m.id}" aria-label="forget ${esc(m.name)}" title="forget">${ICON.x}</button></li>`).join("")}</ul></div>`
+          : `<p class="hb-lay-empty-note">no saved masks. save one to come back to it.</p>`);
     } else {
       html =
         s.coverage > 0
@@ -404,8 +461,19 @@ export function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "foun
     const op = t.closest<HTMLElement>("[data-op]")?.dataset.op;
     if (op === "invert") return studio.invert();
     if (op === "clear") return studio.clear();
+    if (op === "smooth") return studio.smooth();
+    if (op === "expand") return studio.expand();
+    if (op === "shrink") return studio.shrink();
+    if (op === "save") return studio.save();
+    const restore = t.closest<HTMLElement>("[data-restore]");
+    if (restore) return studio.restore(Number(restore.dataset.restore));
+    const forget = t.closest<HTMLElement>("[data-forget]");
+    if (forget) return studio.forget(Number(forget.dataset.forget));
     const ex = t.closest<HTMLElement>("[data-ex]");
-    if (ex) return void studio.exportAs(ex.dataset.ex as MaskOutput);
+    if (ex) {
+      const kind = ex.dataset.ex as MaskOutput;
+      return void studio.exportAs(kind).then((b) => b && download(`${o.name ?? "mask"}-${kind}.png`, b));
+    }
     if (t.closest("[data-all]")) void studio.everything();
   });
   l.on(host, "input", (e) => {

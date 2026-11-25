@@ -176,3 +176,130 @@ export function chatThread(o: ThreadOptions = {}): ChatThread {
     },
   };
 }
+
+export interface ChatListItem {
+  id: string;
+  title: string;
+  updated: number;
+  count: number;
+}
+
+export interface ChatListSnapshot {
+  items: readonly ChatListItem[];
+  current: string;
+}
+
+/**
+ * Several chats, as clevis keeps them: a list with the newest first, one
+ * open. `thread` always speaks for the open chat, so a pane and a composer
+ * bound to it follow a switch.
+ */
+export interface ChatList {
+  readonly thread: ChatThread;
+  snapshot(): ChatListSnapshot;
+  subscribe(fn: (s: ChatListSnapshot) => void): () => void;
+  create(): string;
+  open(id: string): void;
+  rename(id: string, title: string): void;
+  remove(id: string): void;
+  setEngine(engine: ChatEngine | null): void;
+}
+
+export function chatList(o: ThreadOptions = {}): ChatList {
+  const now = o.now ?? (() => Date.now());
+  let engine = o.engine ?? null;
+  let seq = 0;
+  const chats = new Map<string, { t: ChatThread; title: string; updated: number; named: boolean }>();
+  let current = "";
+  const subs = new Set<(s: ChatListSnapshot) => void>();
+  const threadSubs = new Set<(s: ThreadSnapshot) => void>();
+  let offCurrent: (() => void) | null = null;
+  const snap = (): ChatListSnapshot => ({
+    items: [...chats].map(([id, c]) => ({ id, title: c.title, updated: c.updated, count: c.t.snapshot().turns.length })).sort((a, b) => b.updated - a.updated),
+    current,
+  });
+  const emit = () => {
+    const s = snap();
+    for (const fn of subs) fn(s);
+  };
+  const follow = () => {
+    offCurrent?.();
+    const c = chats.get(current)!;
+    offCurrent = c.t.subscribe((s) => {
+      const first = s.turns.find((t) => t.role === "user");
+      if (first && !c.named) c.title = first.text.length > 40 ? `${first.text.slice(0, 37)}...` : first.text;
+      if (s.turns.length) c.updated = now();
+      for (const fn of threadSubs) fn(s);
+      emit();
+    });
+  };
+  const list: ChatList = {
+    thread: {
+      snapshot: () => chats.get(current)!.t.snapshot(),
+      subscribe(fn) {
+        threadSubs.add(fn);
+        fn(chats.get(current)!.t.snapshot());
+        return () => threadSubs.delete(fn);
+      },
+      send: (text) => chats.get(current)!.t.send(text),
+      stop: () => chats.get(current)!.t.stop(),
+      regenerate: () => chats.get(current)!.t.regenerate(),
+      remove: (id) => chats.get(current)!.t.remove(id),
+      clear: () => chats.get(current)!.t.clear(),
+      setEngine: (e) => list.setEngine(e),
+      markdown: (title) => chats.get(current)!.t.markdown(title ?? chats.get(current)!.title),
+    },
+    snapshot: snap,
+    subscribe(fn) {
+      subs.add(fn);
+      fn(snap());
+      return () => subs.delete(fn);
+    },
+    create() {
+      const id = `chat-${++seq}`;
+      chats.set(id, { t: chatThread({ ...o, engine }), title: "new chat", updated: now(), named: false });
+      current = id;
+      follow();
+      return id;
+    },
+    open(id) {
+      if (!chats.has(id) || id === current) return;
+      chats.get(current)?.t.stop();
+      current = id;
+      follow();
+    },
+    rename(id, title) {
+      const c = chats.get(id);
+      if (!c || !title.trim()) return;
+      c.title = title.trim();
+      c.named = true;
+      emit();
+    },
+    remove(id) {
+      chats.get(id)?.t.stop();
+      chats.delete(id);
+      if (!chats.size) return void list.create();
+      if (id === current) {
+        current = snap().items[0]!.id;
+        follow();
+      } else emit();
+    },
+    setEngine(e) {
+      engine = e;
+      for (const c of chats.values()) c.t.setEngine(e);
+    },
+  };
+  list.create();
+  return list;
+}
+
+/** Tokens the next request carries, by source, for a context meter: about 4 characters a token (inferred). */
+export function contextSegments(s: ThreadSnapshot, system = ""): { key: string; label: string; tokens: number }[] {
+  const tok = (t: string) => Math.ceil(t.length / 4);
+  const mem = s.turns.flatMap((t) => t.mem ?? []).reduce((n, m) => n + tok(m.label), 0);
+  return [
+    { key: "system", label: "persona", tokens: tok(system) },
+    { key: "memory", label: "memory", tokens: mem },
+    { key: "chat", label: "chat", tokens: s.turns.reduce((n, t) => n + tok(t.text), 0) },
+  ];
+}

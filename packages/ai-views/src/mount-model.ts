@@ -1,11 +1,11 @@
 /**
  * ModelSelect in the DOM: the closed line (or the bar chip) with its one
  * pink "load, <size>", and the sheet in a drawer with search, the three
- * filters, grouped rows, options and the "your own" forms. Rows come from
+ * filters, grouped rows, options and the sheet's own "your own" forms. Rows come from
  * useModelPick; hackbuild-ui modelSelect, modelSheet and drawer draw them.
  */
 
-import { OWN_FORMS, canLoad, drawer, lineWords, loadLabel, modelSelect, modelSheet, ownReady, type ModelRow, type OwnKind } from "@virgilvox/hackbuild-ui/vanilla";
+import { canLoad, drawer, lineWords, loadLabel, modelSelect, modelSheet, type ModelRow } from "@virgilvox/hackbuild-ui/vanilla";
 import { esc, listeners, type Mounted } from "./dom.js";
 import type { JobsPick, ModelPick, PickSnapshot } from "./pick.js";
 
@@ -23,65 +23,16 @@ export function pickSheet(pick: ModelPick): Mounted & { open(): void } {
     chosen: s0.chosen,
     title: s0.title,
     onChoose: (id) => pick.choose(id),
-    onLoad: (id) => void pick.load(id),
+    onLoad: (id) => void pick.load(id).catch(() => undefined),
     onCancel: (id) => pick.cancel(id),
-    onRemove: (id) => pick.remove(id),
+    onRemove: (id) => void pick.remove(id),
     onOption: (id, k, v) => pick.option(id, k, v),
+    onCustom: (kind, values) => void pick.custom(kind, values),
   });
-  // the "your own" forms, as the Vue sheet has them, above the foot
-  const own = doc.createElement("details");
-  own.className = "hb-msheet-own";
-  let kind: OwnKind = "gguf";
-  const values: Record<string, string> = {};
-  const drawOwn = () => {
-    const form = OWN_FORMS.find((f) => f.kind === kind)!;
-    own.innerHTML =
-      `<summary>your own</summary><form><div class="hb-seg" role="group" aria-label="kind">${OWN_FORMS.map((f) => `<button type="button" data-kind="${f.kind}" class="${f.kind === kind ? "is-on" : ""}" aria-pressed="${f.kind === kind}">${esc(f.label)}</button>`).join("")}</div>` +
-      form.fields.map((f) => `<label class="hb-field"><span class="hb-label">${esc(f.label)}</span><input class="hb-input" data-own="${f.key}" type="${f.secret ? "password" : "text"}" placeholder="${esc(f.placeholder)}" autocomplete="off" spellcheck="false" value="${esc(values[f.key] ?? "")}"></label>`).join("") +
-      (ownReady(kind, values) ? `<button type="submit" class="hb-btn">add</button>` : "") +
-      `</form>`;
-    own.open = true;
-  };
-  own.innerHTML = `<summary>your own</summary>`;
-  body.querySelector(".hb-msheet-foot")?.before(own);
   const l = listeners();
-  l.on(own, "toggle", () => {
-    if (own.open && !own.querySelector("form")) drawOwn();
-  });
-  l.on(own, "click", (e) => {
-    const b = (e.target as Element).closest<HTMLElement>("[data-kind]");
-    if (!b) return;
-    kind = b.dataset.kind as OwnKind;
-    for (const k of Object.keys(values)) delete values[k];
-    drawOwn();
-  });
-  l.on(own, "input", (e) => {
-    const i = (e.target as HTMLInputElement).dataset.own;
-    if (!i) return;
-    const had = ownReady(kind, values);
-    values[i] = (e.target as HTMLInputElement).value;
-    if (had !== ownReady(kind, values)) {
-      const at = (e.target as HTMLInputElement).selectionStart;
-      drawOwn();
-      const again = own.querySelector<HTMLInputElement>(`[data-own="${i}"]`);
-      again?.focus();
-      if (again && at !== null) again.setSelectionRange(at, at);
-    }
-  });
-  l.on(own, "submit", (e) => {
-    e.preventDefault();
-    if (!ownReady(kind, values)) return;
-    pick.custom(kind, { ...values });
-    for (const k of Object.keys(values)) delete values[k];
-    own.open = false;
-    own.innerHTML = `<summary>your own</summary>`;
-  });
   const handle = drawer(root, { side: "auto", breakpoint: 641, label: s0.title });
   l.add(
-    pick.subscribe((s) => {
-      sheet.update(s.rows, s.chosen);
-      if (!body.contains(own)) body.querySelector(".hb-msheet-foot")?.before(own);
-    }),
+    pick.subscribe((s) => sheet.update(s.rows, s.chosen)),
   );
   return {
     open: () => handle.open(),
@@ -124,7 +75,7 @@ export function mountModelSelect(host: HTMLElement, pick: ModelPick, o: ModelSel
     const inner = document.createElement("div");
     host.replaceChildren(inner);
     const s0 = pick.snapshot();
-    const sel = modelSelect(inner, { rows: s0.rows, chosen: s0.chosen, go: o.go ?? true, empty: s0.empty, onOpen: () => sheet.open(), onLoad: (id) => void pick.load(id) });
+    const sel = modelSelect(inner, { rows: s0.rows, chosen: s0.chosen, go: o.go ?? true, empty: s0.empty, onOpen: () => sheet.open(), onLoad: (id) => void pick.load(id).catch(() => undefined) });
     l.add(pick.subscribe((s) => sel.update(s.rows, s.chosen)));
     l.add(() => sel.dispose());
   }

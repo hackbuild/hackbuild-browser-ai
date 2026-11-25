@@ -6,8 +6,8 @@
  * action and turns into stop while a reply streams.
  */
 
-import { composerKey, coarsePointer, autosize, pinned } from "@virgilvox/hackbuild-ui/vanilla";
-import type { ChatThread, ThreadSnapshot, Turn } from "./chat.js";
+import { composerKey, coarsePointer, autosize, pinned, contextUse, listMeta } from "@virgilvox/hackbuild-ui/vanilla";
+import { contextSegments, type ChatList, type ChatListSnapshot, type ChatThread, type ThreadSnapshot, type Turn } from "./chat.js";
 import { ICON, esc, listeners, scroller, type Mounted } from "./dom.js";
 
 export interface ChatPaneOptions {
@@ -127,5 +127,65 @@ export function mountComposer(host: HTMLElement, thread: ChatThread, o: Composer
       drawAct();
     }),
   );
+  return { dispose: () => l.off() };
+}
+
+/** The chat list rail (hackbuild-ui HbConversationList markup): new, open, rename, delete with a second press. */
+export function mountChatList(host: HTMLElement, list: ChatList, o: { label?: string } = {}): Mounted {
+  const l = listeners();
+  let armed = "";
+  let renaming = "";
+  const head = o.label ?? "chats";
+  const draw = (s: ChatListSnapshot) => {
+    host.innerHTML =
+      `<nav class="hb-convs" aria-label="${esc(head)}"><div class="hb-convs-hd"><span>${esc(head)}</span><button type="button" class="hb-convs-new" data-new aria-label="new chat">${ICON.plus}</button></div><ul class="hb-convs-list">` +
+      s.items
+        .map((c) =>
+          renaming === c.id
+            ? `<li class="hb-convs-item"><form class="hb-convs-rename" data-rename="${esc(c.id)}"><input class="hb-input" aria-label="chat name" value="${esc(c.title)}"></form></li>`
+            : `<li class="hb-convs-item"${c.id === s.current ? ' aria-current="true"' : ""}><button type="button" class="hb-convs-open" data-open="${esc(c.id)}"><span class="hb-convs-title">${esc(c.title)}</span><span class="hb-convs-meta">${esc(listMeta({ updated: c.updated, count: c.count }))}</span></button><span class="hb-convs-acts"><button type="button" class="hb-convs-act" data-ren="${esc(c.id)}" aria-label="rename ${esc(c.title)}" title="rename">${ICON.pen}</button><button type="button" class="hb-convs-act is-del${armed === c.id ? " is-armed" : ""}" data-del="${esc(c.id)}" aria-label="${armed === c.id ? `press again to delete ${esc(c.title)}` : `delete ${esc(c.title)}`}">${armed === c.id ? "delete?" : ICON.trash}</button></span></li>`,
+        )
+        .join("") +
+      `</ul></nav>`;
+    host.querySelector<HTMLInputElement>(".hb-convs-rename input")?.focus();
+  };
+  const redraw = () => draw(list.snapshot());
+  l.on(host, "click", (e) => {
+    const t = e.target as Element;
+    if (t.closest("[data-new]")) return void list.create();
+    const open = t.closest<HTMLElement>("[data-open]")?.dataset.open;
+    if (open) return list.open(open);
+    const ren = t.closest<HTMLElement>("[data-ren]")?.dataset.ren;
+    if (ren) return ((renaming = ren), redraw());
+    const del = t.closest<HTMLElement>("[data-del]")?.dataset.del;
+    if (del) {
+      if (armed === del) return ((armed = ""), list.remove(del));
+      armed = del;
+      redraw();
+    }
+  });
+  l.on(host, "submit", (e) => {
+    e.preventDefault();
+    const f = (e.target as HTMLElement).closest<HTMLFormElement>("[data-rename]");
+    if (f) list.rename(f.dataset.rename!, f.querySelector("input")!.value);
+    renaming = "";
+    redraw();
+  });
+  l.add(list.subscribe(draw));
+  return { dispose: () => l.off() };
+}
+
+/** The context meter (hackbuild-ui `.hb-ctxmeter`): what the next request carries against the model's context. */
+export function mountContextMeter(host: HTMLElement, thread: ChatThread, o: { budget?: number | (() => number); system?: string | (() => string) } = {}): Mounted {
+  const l = listeners();
+  const val = <T,>(v: T | (() => T) | undefined, d: T) => (typeof v === "function" ? (v as () => T)() : (v ?? d));
+  const draw = (s: ThreadSnapshot) => {
+    const use = contextUse(contextSegments(s, val(o.system, "")), val(o.budget, 4096));
+    host.innerHTML =
+      `<div class="hb-ctxmeter is-${use.tone}"><div class="hb-ctxmeter-hd"><span class="hb-ctxmeter-label">context</span><span class="hb-ctxmeter-words">${esc(use.words)}</span></div>` +
+      `<div class="hb-ctxmeter-bar" role="meter" aria-label="context used" aria-valuemin="0" aria-valuemax="${use.budget}" aria-valuenow="${use.used}" aria-valuetext="${esc(use.words)}">${use.rows.map((r, n) => `<i class="hb-ctxmeter-p${n % 6}" style="width:${Math.min(100, r.fraction * 100)}%"></i>`).join("")}</div>` +
+      `<ul class="hb-ctxmeter-legend">${use.rows.map((r, n) => `<li><i class="hb-ctxmeter-p${n % 6}" aria-hidden="true"></i>${esc(r.label)} <b>${r.tokens.toLocaleString("en-US")}</b></li>`).join("")}</ul></div>`;
+  };
+  l.add(thread.subscribe(draw));
   return { dispose: () => l.off() };
 }

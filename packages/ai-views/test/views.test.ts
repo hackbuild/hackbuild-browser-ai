@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Env } from "@hackbuild/ai-env";
 import { scripted } from "@hackbuild/chat";
 import {
+  chatList,
+  contextSegments,
   JOBS,
   JOB_NAMES,
   boxWords,
@@ -75,7 +77,7 @@ describe("useModelPick", () => {
     };
     const pick = useModelPick("transcribe", { env: env(), loader });
     pick.subscribe((s) => s.row?.state === "loading" && seen.push(s.row.progress ?? 0));
-    expect(pick.snapshot().chosen).toBe("whisper-large-v3-turbo");
+    expect(pick.snapshot().chosen).toBe("whisper-base");
     pick.choose("whisper-tiny.en");
     await pick.load();
     expect(seen).toContain(0.5);
@@ -90,9 +92,40 @@ describe("useModelPick", () => {
     await p;
     expect(pick.snapshot().row?.state).toBe("none");
     pick.update({ loader: async () => Promise.reject(new Error("http 404")) });
-    await pick.load();
+    await expect(pick.load()).rejects.toThrow("http 404");
     expect(pick.snapshot().row?.state).toBe("error");
     expect(pick.error(pick.snapshot().chosen)).toBe("http 404");
+  });
+  it("needs a loader, keeps what it returned, and runs it for a row with nothing to fetch", async () => {
+    const none = useModelPick("voice", { env: env() });
+    await expect(none.load("web-speech")).rejects.toThrow(/no loader/);
+    expect(none.snapshot().rows.find((r) => r.id === "web-speech")?.state).toBe("error");
+    const ran: string[] = [];
+    const pick = useModelPick("voice", { env: env(), loader: async (r) => (ran.push(r.id), { speaker: r.id }), chosen: "web-speech" });
+    await pick.load();
+    expect(ran).toEqual(["web-speech"]);
+    expect(pick.snapshot().loaded).toEqual({ speaker: "web-speech" });
+  });
+  it("removes a stored model through onRemove", async () => {
+    const gone: string[] = [];
+    const pick = useModelPick("masks", { env: env(), stored: ["slimsam-77-uniform"], onRemove: (r) => void gone.push(r.id) });
+    expect(pick.snapshot().row?.state).toBe("stored");
+    await pick.remove("slimsam-77-uniform");
+    expect(gone).toEqual(["slimsam-77-uniform"]);
+    expect(pick.snapshot().row?.state).toBe("none");
+  });
+  it("starts on a start here record of every job", () => {
+    for (const j of JOB_NAMES) {
+      const recs = jobRecords(j);
+      if (!recs.length) continue;
+      expect([j, recs.every((r) => !!r.group)]).toEqual([j, true]);
+      const chosen = useModelPick(j, { env: env() }).snapshot().chosen;
+      expect([j, jobRecords(j).find((r) => r.id === chosen)?.group]).toEqual([j, "start here"]);
+    }
+  });
+  it("greys a record that does not run yet", () => {
+    const sdxl = jobRecords("image").find((r) => r.id === "sdxl-turbo")!;
+    expect(rowOf(sdxl, { env: env() })).toMatchObject({ verdict: "not run yet", unfit: expect.stringMatching(/not run yet/) });
   });
   it("adds a model from a your own form and picks it", () => {
     const pick = useModelPick("chat", { env: env() });
@@ -182,5 +215,23 @@ describe("memory inspector rows and elements", () => {
     expect(define("", target, B as never)).toEqual([...ELEMENT_NAMES]);
     expect(define("hb", target, B as never)[0]).toBe("hb-model-select");
     expect(reg.size).toBe(ELEMENT_NAMES.length * 2);
+  });
+});
+
+describe("chatList", () => {
+  it("keeps several chats, names them from the first message, and the thread follows the open one", async () => {
+    const list = chatList({ engine: scripted({ replies: ["ok."] }) });
+    await list.thread.send("plan the bench night");
+    const first = list.snapshot().current;
+    expect(list.snapshot().items[0]!.title).toBe("plan the bench night");
+    const second = list.create();
+    expect(list.thread.snapshot().turns).toEqual([]);
+    list.open(first);
+    expect(list.thread.snapshot().turns.length).toBe(2);
+    list.rename(first, "bench");
+    list.remove(second);
+    expect(list.snapshot().items.map((i) => i.title)).toEqual(["bench"]);
+    const seg = contextSegments(list.thread.snapshot(), "be terse");
+    expect(seg.map((x) => x.key)).toEqual(["system", "memory", "chat"]);
   });
 });

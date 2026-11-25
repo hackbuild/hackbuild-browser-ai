@@ -103,7 +103,7 @@ export function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o
   host.replaceChildren(zone, result, input);
   zone.className = "hb-lay-drop";
   // the result scrolls inside the subject, as the drop first layout's transcript does
-  result.style.cssText = "height:100%;overflow:auto;padding:12px";
+  result.className = "hb-lay-scroll";
   zone.innerHTML =
     `<div class="hb-lay-empty"><span class="hb-lay-empty-name">${esc(o.title ?? "drop audio or video")}</span>` +
     `<p class="hb-lay-empty-note">${esc(o.note ?? "any length. the words are worked out on this machine and the file never leaves it.")}</p>` +

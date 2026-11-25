@@ -29,8 +29,21 @@ export type Loader = (rec: ModelRecord, ctx: LoadContext) => Promise<unknown>;
  * SHA-256 when the record has one. Records a runtime fetches itself (WebLLM,
  * transformers.js model ids) need the app's loader.
  */
+/** The cache keys of a record's files in a weight store, as weightsLoader writes them. */
+export function weightKeys(rec: ModelRecord): string[] {
+  const s = rec.source;
+  if (s.url && !s.repo) return [s.url];
+  const base = s.repo ? hfResolve(s.repo, s.revision ?? "main") : "";
+  const files = s.files?.length ? s.files.map((f) => f.path) : s.file ? [s.file] : [];
+  return base ? files.map((f) => base + f) : [];
+}
+
 export function weightsLoader(store: WeightStore): Loader {
   return async (rec, { signal, onProgress }) => {
+    if (rec.noDownload || rec.sizeMB === 0) {
+      onProgress(1);
+      return null;
+    }
     const s = rec.source;
     if (s.url && !s.repo) {
       return store.get({ url: s.url, licence: rec.licence, ...(s.sha256 ? { sha256: s.sha256 } : {}) }, { signal, onProgress: (p) => onProgress(p.fraction) });
@@ -43,12 +56,22 @@ export function weightsLoader(store: WeightStore): Loader {
   };
 }
 
+/** Deletes a stored model's files from a weight store: the remove of a picker. */
+export function weightsRemover(store: WeightStore): (rec: ModelRecord) => Promise<void> {
+  return async (rec) => {
+    for (const k of weightKeys(rec)) await store.evict(k);
+  };
+}
+
 export interface PickOptions {
   /** Records to pick from; default every record the views know. */
   records?: readonly ModelRecord[];
   env?: Env;
   estimate?: StorageEstimate | null;
+  /** Loads a model; required to load. weightsLoader(store) fetches files; a page with a runtime passes its own. */
   loader?: Loader;
+  /** Deletes a stored model's weights; weightsRemover(store) does it through @hackbuild/weights. */
+  onRemove?: (rec: ModelRecord) => Promise<void> | void;
   /** Ids already on this machine. */
   stored?: Iterable<string>;
   chosen?: string;
@@ -63,6 +86,8 @@ export interface PickSnapshot {
   rows: ModelRow[];
   chosen: string;
   row: ModelRow | undefined;
+  /** What the loader returned for the chosen model, once it is loaded (an engine, a session). */
+  loaded: unknown;
 }
 
 export interface ModelPick {
@@ -70,18 +95,20 @@ export interface ModelPick {
   snapshot(): PickSnapshot;
   subscribe(fn: (s: PickSnapshot) => void): () => void;
   choose(id: string): void;
-  /** Load the chosen model, or `id`. Resolves when it is loaded or failed. */
+  /** Load the chosen model, or `id`, through the loader. Rejects when there is no loader or the load fails; the row shows it. */
   load(id?: string): Promise<void>;
   cancel(id?: string): void;
-  /** Forget a stored model; the page removes its files. */
-  remove(id: string): void;
+  /** Delete a stored model through onRemove, then forget it. */
+  remove(id: string): Promise<void>;
   option(id: string, key: string, value: string): void;
   /** Options set on a row. */
   optionsOf(id: string): Record<string, string>;
   /** Add a model from a "your own" form; returns its id. */
   custom(kind: OwnKind, values: Record<string, string>): string;
   /** New machine facts (env, storage) or records. */
-  update(o: { env?: Env | undefined; estimate?: StorageEstimate | null | undefined; records?: readonly ModelRecord[] | undefined; loader?: Loader | undefined }): void;
+  update(o: { env?: Env | undefined; estimate?: StorageEstimate | null | undefined; records?: readonly ModelRecord[] | undefined; loader?: Loader | undefined; onRemove?: PickOptions["onRemove"] }): void;
+  /** What the loader returned for a model. */
+  result(id: string): unknown;
   record(id: string): ModelRecord | undefined;
   /** The error of the last failed load of a row. */
   error(id: string): string | undefined;
@@ -106,12 +133,24 @@ export function ownRecord(job: Job, kind: OwnKind, v: Record<string, string>): M
   }
 }
 
+/**
+ * The row a picker starts on: the first "start here" record that fits this
+ * machine, else the first that fits and is fast or steady, else the first
+ * that fits, else the first.
+ */
+export function defaultPick(records: readonly ModelRecord[], env?: Env, estimate?: StorageEstimate | null): string {
+  const fits = records.filter((r) => rowOf(r, { env, estimate }).unfit === undefined);
+  return (fits.find((r) => r.group === "start here") ?? fits.find((r) => r.speed === "fast" || r.speed === "steady") ?? fits[0] ?? records[0])?.id ?? "";
+}
+
 export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
   const def = JOBS[job];
   let records = jobRecords(job, o.records ?? ALL_RECORDS);
   let env = o.env;
   let estimate = o.estimate ?? null;
   let loader = o.loader;
+  let onRemove = o.onRemove;
+  const results = new Map<string, unknown>();
   const own: ModelRecord[] = [];
   const state = new Map<string, ModelPickState>();
   const progress = new Map<string, number>();
@@ -120,11 +159,7 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
   const aborts = new Map<string, AbortController>();
   for (const id of o.stored ?? []) state.set(id, "stored");
   const all = () => [...records, ...own];
-  let chosen = o.chosen ?? "";
-  if (!chosen) {
-    const first = all().find((r) => rowOf(r, { env, estimate }).unfit === undefined);
-    chosen = first?.id ?? all()[0]?.id ?? "";
-  }
+  let chosen = o.chosen ?? defaultPick(all(), env, estimate);
   const subs = new Set<(s: PickSnapshot) => void>();
 
   const rows = () =>
@@ -133,7 +168,7 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
     );
   const snapshot = (): PickSnapshot => {
     const rs = rows();
-    return { job, title: def.title, empty: def.empty, rows: rs, chosen, row: rs.find((r) => r.id === chosen) };
+    return { job, title: def.title, empty: def.empty, rows: rs, chosen, row: rs.find((r) => r.id === chosen), loaded: results.get(chosen) };
   };
   const emit = () => {
     const s = snapshot();
@@ -157,6 +192,12 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
       const rec = all().find((r) => r.id === id);
       const row = rec && rowOf(rec, { env, estimate, state: state.get(id) });
       if (!rec || !canLoad(row)) return;
+      if (!loader) {
+        state.set(id, "error");
+        errors.set(id, "no loader. the page passes one to load a model.");
+        emit();
+        throw new Error(`no loader for ${rec.id}: pass one to useModelPick, such as weightsLoader(store)`);
+      }
       const ac = new AbortController();
       aborts.set(id, ac);
       state.set(id, "loading");
@@ -164,21 +205,21 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
       errors.delete(id);
       emit();
       try {
-        if (loader && !row!.noDownload) {
-          await loader(rec, {
-            signal: ac.signal,
-            options: options.get(id) ?? {},
-            onProgress: (f) => {
-              progress.set(id, f ?? progress.get(id) ?? 0);
-              emit();
-            },
-          });
-        }
+        const out = await loader(rec, {
+          signal: ac.signal,
+          options: options.get(id) ?? {},
+          onProgress: (f) => {
+            progress.set(id, f ?? progress.get(id) ?? 0);
+            emit();
+          },
+        });
+        results.set(id, out);
         state.set(id, "loaded");
       } catch (e) {
         const aborted = ac.signal.aborted;
         state.set(id, aborted ? "none" : "error");
         if (!aborted) errors.set(id, e instanceof Error ? e.message : String(e));
+        if (!aborted) throw e;
       } finally {
         aborts.delete(id);
         progress.delete(id);
@@ -188,8 +229,12 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
     cancel(id = chosen) {
       aborts.get(id)?.abort();
     },
-    remove(id) {
-      if (state.get(id) === "stored") state.delete(id);
+    async remove(id) {
+      const rec = all().find((r) => r.id === id);
+      if (!rec) return;
+      await onRemove?.(rec);
+      state.delete(id);
+      results.delete(id);
       emit();
     },
     option(id, key, value) {
@@ -211,8 +256,10 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
       if ("estimate" in n) estimate = n.estimate ?? null;
       if (n.records) records = jobRecords(job, n.records);
       if (n.loader) loader = n.loader;
+      if (n.onRemove) onRemove = n.onRemove;
       emit();
     },
+    result: (id) => results.get(id),
     record: (id) => all().find((r) => r.id === id),
     error: (id) => errors.get(id),
   };
@@ -243,9 +290,14 @@ export interface JobsPick {
   all(): { ids: string[]; label: string };
   loadAll(): Promise<void>;
   subscribe(fn: () => void): () => void;
+  /** New machine facts, records or loader for every job. */
+  update(o: Parameters<ModelPick["update"]>[0]): void;
+  setPresets(p: readonly PickPreset[]): void;
 }
 
-export function useJobsPick(jobs: readonly { job: Job; required?: boolean; options?: PickOptions }[], presets: readonly PickPreset[] = [], shared: PickOptions = {}): JobsPick {
+export function useJobsPick(jobs: readonly { job: Job; required?: boolean; options?: PickOptions }[], initialPresets: readonly PickPreset[] = [], shared: PickOptions = {}): JobsPick {
+  let presets = initialPresets;
+  const extra = new Set<() => void>();
   const picks = new Map<Job, ModelPick>(jobs.map((j) => [j.job, useModelPick(j.job, { ...shared, ...j.options })]));
   const required = new Map(jobs.map((j) => [j.job, !!j.required]));
   const chosenRows = () => [...picks.values()].map((p) => p.snapshot().row);
@@ -268,11 +320,19 @@ export function useJobsPick(jobs: readonly { job: Job; required?: boolean; optio
     },
     all: () => loadAll(chosenRows()),
     async loadAll() {
-      await Promise.all([...picks.values()].map((p) => p.load()));
+      await Promise.all([...picks.values()].map((p) => p.load().catch(() => undefined)));
     },
     subscribe(fn) {
       const offs = [...picks.values()].map((p) => p.subscribe(() => fn()));
-      return () => offs.forEach((off) => off());
+      extra.add(fn);
+      return () => (offs.forEach((off) => off()), extra.delete(fn));
+    },
+    update(o) {
+      for (const p of picks.values()) p.update(o);
+    },
+    setPresets(p) {
+      presets = p;
+      for (const fn of extra) fn();
     },
   };
 }

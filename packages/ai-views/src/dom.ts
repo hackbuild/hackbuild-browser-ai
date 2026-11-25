@@ -4,10 +4,9 @@ export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
-/** Shows or hides a part. Kit classes set display, which beats the hidden attribute, so this writes display. */
+/** Shows or hides a part; inside a layout hackbuild-ui's `.hb-lay [hidden]` makes it hold on parts that set display. */
 export function show(el: HTMLElement, on: boolean): void {
   el.hidden = !on;
-  el.style.display = on ? "" : "none";
 }
 
 /** One handle per mount: redraw with new data, then tear down. */
@@ -72,4 +71,7 @@ export const ICON = {
   all: svg('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>', 18),
   camera: svg('<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/>'),
   menu: svg('<path d="M4 6h16M4 12h16M4 18h16"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>', 14),
+  pen: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/>', 13),
+  trash: svg('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', 13),
 } as const;
