@@ -1,0 +1,23 @@
+<!-- title: look -->
+<!-- what: frame view and camera feed in the canvas and rail layout, after the eyes view of an earlier room: boxes, landmarks and a caption over a frame. -->
+<div class="hb-lay hb is-canvas-rail" data-layout="canvas-rail" id="lay">
+  <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>look<span>.</span></h1><div class="hb-header-end"><model-select job="detect" variant="chip" id="chip"></model-select><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
+  <div class="hb-lay-body">
+    <nav class="hb-lay-tools" aria-label="what to find" id="tools">
+      <button type="button" class="hb-iconbtn" data-tool="boxes" aria-label="things" title="things" aria-pressed="true"><svg class="hb-icon is-stroke" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="6" width="10" height="10"/><rect x="11" y="10" width="9" height="9"/></svg></button>
+      <button type="button" class="hb-iconbtn" data-tool="points" aria-label="faces and hands" title="faces and hands" aria-pressed="false"><svg class="hb-icon is-stroke" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="6" cy="7" r="1.5"/><circle cx="18" cy="7" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M7 18h10"/></svg></button>
+      <button type="button" class="hb-iconbtn" data-tool="caption" aria-label="say what it sees" title="say what it sees" aria-pressed="false"><svg class="hb-icon is-stroke" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
+    </nav>
+    <section class="hb-lay-stage">
+      <div class="hb-lay-subject" data-ux="subject"><frame-view id="frame" empty="no frame yet. start the camera or try the sample."></frame-view><camera-feed for="frame" id="cam" fps="4"></camera-feed></div>
+      <div class="hb-lay-verbs" data-ux="verbs" role="toolbar" aria-label="actions"><button type="button" class="hb-btn hb-btn-go" id="camera">start camera</button><button type="button" class="hb-btn" id="sample">try a sample</button><button type="button" class="hb-btn" id="look" hidden>look</button></div>
+    </section>
+    <aside class="hb-rack" aria-label="look" data-ux="rack">
+      <nav class="hb-tabs" role="tablist" aria-label="look tabs"><button type="button" class="hb-tab" role="tab" data-value="found" aria-selected="true">found</button><button type="button" class="hb-tab" role="tab" data-value="eyes" aria-selected="false">eyes</button><button type="button" class="hb-tab" role="tab" data-value="camera" aria-selected="false">camera</button></nav>
+      <section class="hb-rack-pane"><section class="hb-panel"><div class="hb-panel-hd-inst">found</div><div id="found"><p class="hb-lay-empty-note">nothing yet.</p></div></section></section>
+      <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">eyes</div><model-select job="vision" id="eyes"></model-select></section></section>
+      <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">camera</div><p class="hb-lay-empty-note" id="camstate">camera off.</p></section></section>
+      <details class="hb-rack-detail" data-ux="detail"><summary>detail</summary><div><p class="hb-fixture">fixture: the sample is a drawing; boxes, points and the caption come from a stub that knows it.</p></div></details>
+    </aside>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<!-- title: pick a model -->
+<!-- what: model select on the gate, after ferrule: one line, the sheet with filters and groups, one pink load. the vue component. -->
+<div class="hb-lay hb is-gate" data-layout="gate" id="lay">
+  <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>brain<span>.</span></h1><div class="hb-header-end"><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
+  <div class="hb-lay-body">
+    <section class="hb-lay-stage">
+      <div class="hb-lay-subject" data-ux="subject"><div class="hb-lay-empty"><span class="hb-lay-empty-name" id="awake">asleep</span><p class="hb-lay-empty-note" id="awake-note">pick a model to think with. it runs on this machine.</p></div></div>
+      <div class="hb-lay-verbs" data-ux="verbs" role="toolbar" aria-label="actions" id="verbs" style="display:none"><button type="button" class="hb-btn hb-btn-go" id="talk">talk to it</button><button type="button" class="hb-btn" id="again">pick another</button></div>
+      <div class="hb-gate-wrap" id="gate">
+        <section class="hb-gate-card" aria-label="pick a brain">
+          <div class="hb-gate-head"><span>brain</span><span>local</span></div>
+          <div class="hb-gate-body">
+            <h2 class="hb-gate-name">pick a brain</h2>
+            <p class="hb-gate-note">the list shows what fits this machine. open it for uncensored models and your own.</p>
+            <div id="select"></div>
+            <div class="hb-gate-acts"><button type="button" class="hb-btn hb-btn-go hb-btn-lg hb-gate-go" id="go">load</button></div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+</div>

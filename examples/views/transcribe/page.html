@@ -1,0 +1,18 @@
+<!-- title: transcribe -->
+<!-- what: transcribe drop and transcript view in the drop first layout, after scribe: drop, queue, lines with times, edit, exports. -->
+<div class="hb-lay hb is-drop-first" data-layout="drop-first" id="lay">
+  <div class="hb-lay-bar" data-ux="bar"><header class="hb-header">{{mark}}<h1>transcribe<span>.</span></h1><div class="hb-header-end"><model-select job="transcribe" variant="chip" id="chip"></model-select><button type="button" class="hb-iconbtn" aria-label="menu"><svg class="hb-icon is-stroke" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button></div></header></div>
+  <div class="hb-lay-body">
+    <section class="hb-lay-stage">
+      <div class="hb-lay-subject" data-ux="subject"><transcribe-drop id="drop" sample-label="try a sample"></transcribe-drop></div>
+      <div class="hb-lay-verbs" data-ux="verbs" role="toolbar" aria-label="actions" id="verbs" style="display:none"><button type="button" class="hb-btn" id="add">add files</button></div>
+    </section>
+    <aside class="hb-rack" aria-label="transcribe" data-ux="rack">
+      <nav class="hb-tabs" role="tablist" aria-label="transcribe tabs"><button type="button" class="hb-tab" role="tab" data-value="text" aria-selected="true">transcript</button><button type="button" class="hb-tab" role="tab" data-value="files" aria-selected="false">files</button><button type="button" class="hb-tab" role="tab" data-value="engine" aria-selected="false">engine</button></nav>
+      <section class="hb-rack-pane"><section class="hb-panel"><div class="hb-panel-hd-inst">transcript</div><p class="hb-lay-empty-note" id="none">nothing yet. drop a file or try the sample.</p><transcript-exports for="drop" go></transcript-exports></section></section>
+      <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">files</div><transcribe-queue for="drop"></transcribe-queue></section></section>
+      <section class="hb-rack-pane" hidden><section class="hb-panel"><div class="hb-panel-hd-inst">engine</div><model-select job="transcribe" id="line"></model-select></section></section>
+      <details class="hb-rack-detail" data-ux="detail"><summary>detail</summary><div><p class="hb-fixture">fixture: the sample is silence with made up lines; no model runs here.</p></div></details>
+    </aside>
+  </div>
+</div>
