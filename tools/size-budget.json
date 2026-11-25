@@ -1,6 +1,6 @@
 {
   "about": "gzip level 9 bytes (measured) per published file; CI fails when a file moves more than 5 percent from its row. Rewrite with node tools/lint-packages.mjs --update-budget after a reviewed change.",
-  "measured": "2026-11-24",
+  "measured": "2026-11-25",
   "margin": 0.05,
   "packages": {
     "@hackbuild/act": {
@@ -8,12 +8,12 @@
       "dist/single/index.iife.js": 14268
     },
     "@hackbuild/agent": {
-      "main: dist/index.js bundled": 12081,
-      "dist/single/index.iife.js": 13763
+      "main: dist/index.js bundled": 12150,
+      "dist/single/index.iife.js": 13822
     },
     "@hackbuild/ai-elements": {
-      "main: dist/index.js bundled": 14162,
-      "dist/single/index.iife.js": 17208
+      "main: dist/index.js bundled": 14397,
+      "dist/single/index.iife.js": 17611
     },
     "@hackbuild/ai-env": {
       "main: dist/index.js bundled": 6191,
@@ -31,7 +31,7 @@
     },
     "@hackbuild/character": {
       "main: dist/index.js bundled": 3026,
-      "wasm/character.wasm": 78262,
+      "wasm/character.wasm": 78775,
       "dist/single/index.iife.js": 3110
     },
     "@hackbuild/chat": {
@@ -44,57 +44,57 @@
       "dist/single/index.iife.js": 8031
     },
     "@hackbuild/devices": {
-      "main: dist/index.js bundled": 6810,
-      "dist/single/index.iife.js": 36301
+      "main: dist/index.js bundled": 6937,
+      "dist/single/index.iife.js": 36425
     },
     "@hackbuild/embed": {
-      "main: dist/index.js bundled": 6580,
-      "dist/single/index.iife.js": 33502
+      "main: dist/index.js bundled": 6630,
+      "dist/single/index.iife.js": 33553
     },
     "@hackbuild/imagegen": {
-      "main: dist/index.js bundled": 5631,
-      "dist/single/index.iife.js": 5276
+      "main: dist/index.js bundled": 5957,
+      "dist/single/index.iife.js": 5605
     },
     "@hackbuild/listen": {
-      "main: dist/index.js bundled": 7038,
-      "dist/single/index.iife.js": 8899
+      "main: dist/index.js bundled": 7064,
+      "dist/single/index.iife.js": 8926
     },
     "@hackbuild/media": {
       "main: dist/index.js bundled": 2033,
       "dist/single/index.iife.js": 2015
     },
     "@hackbuild/memory": {
-      "main: dist/index.js bundled": 13709,
+      "main: dist/index.js bundled": 13788,
       "wasm/memory.wasm": 41134,
-      "dist/single/index.iife.js": 13960
+      "dist/single/index.iife.js": 14039
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 40309,
-      "dist/single/index.iife.js": 39789
+      "main: dist/index.js bundled": 42171,
+      "dist/single/index.iife.js": 41666
     },
     "@hackbuild/notes": {
-      "main: dist/index.js bundled": 5040,
-      "dist/single/index.iife.js": 5757
+      "main: dist/index.js bundled": 5063,
+      "dist/single/index.iife.js": 5780
     },
     "@hackbuild/speak": {
-      "main: dist/index.js bundled": 16112,
-      "dist/single/index.iife.js": 19747
+      "main: dist/index.js bundled": 16179,
+      "dist/single/index.iife.js": 19818
     },
     "@hackbuild/stems": {
-      "main: dist/index.js bundled": 2199,
-      "dist/single/index.iife.js": 29830
+      "main: dist/index.js bundled": 2219,
+      "dist/single/index.iife.js": 29853
     },
     "@hackbuild/structured": {
       "main: dist/index.js bundled": 8979,
       "dist/single/index.iife.js": 9310
     },
     "@hackbuild/transcribe": {
-      "main: dist/index.js bundled": 15804,
-      "dist/single/index.iife.js": 17609
+      "main: dist/index.js bundled": 15968,
+      "dist/single/index.iife.js": 17772
     },
     "@hackbuild/vision": {
-      "main: dist/index.js bundled": 21326,
-      "dist/single/index.iife.js": 51302
+      "main: dist/index.js bundled": 22943,
+      "dist/single/index.iife.js": 53001
     },
     "@hackbuild/weights": {
       "main: dist/index.js bundled": 9195,
@@ -103,6 +103,10 @@
     "@hackbuild/converse": {
       "main: dist/index.js bundled": 5598,
       "dist/single/index.iife.js": 5678
+    },
+    "@hackbuild/ai-views": {
+      "main: dist/index.js bundled": 10633,
+      "dist/single/elements.iife.js": 77473
     }
   }
 }

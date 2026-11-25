@@ -79,6 +79,6 @@ A reply with no tool becomes `respond_to_user` with the text.
 | `dist/index.js` (main entry, imports external) | 8,979 bytes | 9,427 bytes |
 | `dist/single/index.iife.js` (single file build) | 9,310 bytes | 9,775 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

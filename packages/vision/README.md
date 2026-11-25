@@ -199,9 +199,9 @@ signals and the lowercase note do.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 21,326 bytes | 22,392 bytes |
-| `dist/single/index.iife.js` (single file build) | 51,302 bytes | 53,867 bytes |
+| `dist/index.js` (main entry, imports external) | 22,943 bytes | 24,090 bytes |
+| `dist/single/index.iife.js` (single file build) | 53,001 bytes | 55,651 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

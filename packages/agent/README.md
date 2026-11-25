@@ -155,9 +155,9 @@ raw reply.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 12,081 bytes | 12,685 bytes |
-| `dist/single/index.iife.js` (single file build) | 13,763 bytes | 14,451 bytes |
+| `dist/index.js` (main entry, imports external) | 12,150 bytes | 12,757 bytes |
+| `dist/single/index.iife.js` (single file build) | 13,822 bytes | 14,513 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

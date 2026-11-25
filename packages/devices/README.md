@@ -89,9 +89,9 @@ its message. transformers.js file progress now also reaches
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 6,810 bytes | 7,150 bytes |
-| `dist/single/index.iife.js` (single file build) | 36,301 bytes | 38,116 bytes |
+| `dist/index.js` (main entry, imports external) | 6,937 bytes | 7,283 bytes |
+| `dist/single/index.iife.js` (single file build) | 36,425 bytes | 38,246 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

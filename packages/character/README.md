@@ -158,9 +158,9 @@ along untouched. Version 1:
 | file | gzip (measured) | ceiling |
 |---|---|---|
 | `dist/index.js` (main entry, imports external) | 3,026 bytes | 3,177 bytes |
-| `wasm/character.wasm` | 78,262 bytes | 82,175 bytes |
+| `wasm/character.wasm` | 78,775 bytes | 82,713 bytes |
 | `dist/single/index.iife.js` (single file build) | 3,110 bytes | 3,265 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

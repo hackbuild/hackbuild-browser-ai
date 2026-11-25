@@ -54,9 +54,9 @@ weights ship here.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,040 bytes | 5,292 bytes |
-| `dist/single/index.iife.js` (single file build) | 5,757 bytes | 6,044 bytes |
+| `dist/index.js` (main entry, imports external) | 5,063 bytes | 5,316 bytes |
+| `dist/single/index.iife.js` (single file build) | 5,780 bytes | 6,069 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

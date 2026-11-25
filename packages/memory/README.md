@@ -195,10 +195,10 @@ drops every cached vector of the old text.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 13,709 bytes | 14,394 bytes |
+| `dist/index.js` (main entry, imports external) | 13,788 bytes | 14,477 bytes |
 | `wasm/memory.wasm` | 41,134 bytes | 43,190 bytes |
-| `dist/single/index.iife.js` (single file build) | 13,960 bytes | 14,658 bytes |
+| `dist/single/index.iife.js` (single file build) | 14,039 bytes | 14,740 bytes |
 
-Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
