@@ -35,6 +35,11 @@ const withFallbacks = (css, depth = 0) =>
 
 let css = strip(readFileSync(join(styles, "hackbuild.css"), "utf8"));
 css = css.replace(/@import[^;]+;/g, "");
+// a :root block in the class layer holds more tokens: they join the fallbacks, and the block goes, as no shadow root matches :root
+css = css.replace(/:root\s*\{([^}]*)\}/g, (_, decl) => {
+  for (const m of decl.matchAll(/(--hb-[a-z0-9-]+)\s*:\s*([^;]+);?/g)) tokens[m[1]] = m[2].trim().replace(/\s+/g, " ");
+  return "";
+});
 css = css.replace(/body\.hb::before\s*\{[^}]*\}/g, "");
 css = css.replace(/html,body\{[^}]*\}/g, "");
 css = css.replace(/body\.hb\b/g, ":host");
