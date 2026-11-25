@@ -34,12 +34,15 @@ MIT; this README CC-BY-4.0 with the code samples also MIT.
 
 ## Elements
 
-- Model picker: a record whose ladder has no rung this env can run is
-  disabled with the reason, for example "no webgpu adapter. this model
-  needs it." Rows show size (with measured, vendor, inferred or unknown),
-  devices, the first rung this device would try, and the weight licence
-  with commercial use.
-- Download bar: percent and MB when the total is known, MB counted with
+- Model picker: hackbuild-ui `HbModelList` markup (rows variant) with its
+  vanilla `modelList` behaviour: a search field, groups, one radio per
+  row, arrows and Home and End. Each row carries the fit of
+  `@hackbuild/models` `fitOf` against `env` and `estimate`, the shape
+  `{ fit, ok, reason }`; a row that does not fit is off with the reason,
+  for example "no webgpu adapter here." Set `fits` to pass fits worked
+  out elsewhere. Rows show size with measured, vendor, inferred or
+  unknown, the fit chip, and the licence as recorded.
+- Download bar: idle until a download starts, with no action; then percent and MB when the total is known, MB counted with
   an indeterminate bar when it is not, a resuming state, cancel and resume
   events, and a failed state that names the error. The moving bar stops
   under reduced motion.
@@ -55,8 +58,8 @@ MIT; this README CC-BY-4.0 with the code samples also MIT.
 
 ## Styling and theming
 
-Each shadow root adopts the hackbuild-ui class layer (version 0.5.0,
-commit 5211c3a, vendored in `tools/vendor`) as one constructable
+Each shadow root adopts the hackbuild-ui class layer (version 0.9.2,
+commit 2a1876d, vendored in `tools/vendor`) as one constructable
 stylesheet shared by every element, and renders that layer's markup:
 `.hb-models` for the picker, `.hb-progress` for the download bar,
 `.hb-pill` for the pills, `.hb-chat` with `.hb-composer` for the chat
@@ -66,11 +69,13 @@ string in the bundle (`src/hb-sheet.ts`, written by
 work from `file://`. A browser without constructable stylesheets gets
 the same CSS in a style element.
 
-The page does not need hackbuild-ui. The theming surface is the
+The page does not need the hackbuild-ui styles. The picker imports
+`modelList` and the catalogue words from `@virgilvox/hackbuild-ui/vanilla`
+(a peer; the single file builds inline it). The theming surface is the
 hackbuild-ui token set, `--hb-paper`, `--hb-ink`, `--hb-pink`, `--hb-ok`,
 `--hb-warn`, `--hb-err`, `--hb-body`, `--hb-utility`, `--hb-chat-h` and
-the rest (`TOKENS` lists all 76 with their defaults). No element declares
-a token; every `var(--hb-*)` in the sheet carries the hackbuild-ui value
+the rest (`TOKENS` lists all 101 with their defaults). No element declares
+a token on `:host`; every `var(--hb-*)` in the sheet carries the hackbuild-ui value
 as its fallback. So:
 
 - on a bare page the elements look like hackbuild-ui;
@@ -134,8 +139,8 @@ Every string a person reads is built by pure functions in `view.ts`
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 23,538 bytes | 24,714 bytes |
-| `dist/single/index.iife.js` (single file build) | 23,904 bytes | 25,099 bytes |
+| `dist/index.js` (main entry, imports external) | 48,077 bytes | 50,480 bytes |
+| `dist/single/index.iife.js` (single file build) | 51,187 bytes | 53,746 bytes |
 
 Measured 2026-11-24 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

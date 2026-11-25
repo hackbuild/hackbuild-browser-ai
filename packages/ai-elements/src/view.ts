@@ -5,7 +5,8 @@
  */
 
 import type { Env } from "@hackbuild/ai-env";
-import { ladderFor, type ModelRecord, type Need, type SizeSource } from "@hackbuild/models";
+import { fitOf, type FitResult, type ModelRecord, type SizeSource, type StorageEstimate } from "@hackbuild/models";
+import { CENSORSHIP, RESPONSIBILITY, groupRecords, licenceText, searchText, sizeText, vramText } from "@virgilvox/hackbuild-ui/vanilla";
 import type { Recall } from "@hackbuild/memory";
 import type { Progress } from "@hackbuild/weights";
 
@@ -21,54 +22,71 @@ export function licenceLine(rec: ModelRecord): string {
   return `weights ${rec.licence}, ${c}`;
 }
 
-const NEED_TEXT: Record<Need, string> = {
-  webgpu: "no webgpu adapter",
-  "shader-f16": "the gpu has no shader-f16",
-  isolated: "the page is not cross origin isolated",
-  http: "the page runs from file://",
-  promptApi: "no built in prompt api in this browser",
-};
+/** A row's fit here, the HbModelList shape: the fit word, whether it runs, the reason. */
+export type PickerFit = Pick<FitResult, "ok" | "reason"> & { fit: string };
 
-/** Why this env cannot run the record, or null when some rung fits. */
-export function disableReason(rec: ModelRecord, env: Env | undefined): string | null {
-  const { rungs, skipped } = ladderFor(rec, env);
-  if (rungs.length) return null;
-  if (!skipped.length) return "this model has no device ladder.";
-  const missing = [...new Set(skipped.flatMap((s) => s.missing))];
-  return `${missing.map((m) => NEED_TEXT[m]).join(", ")}. this model needs ${missing.length > 1 ? "them" : "it"}.`;
+/** fitOf for every record against this env and storage estimate; a fit passed in for an id wins. */
+export function pickerFits(records: readonly ModelRecord[], env: Env | undefined, estimate?: StorageEstimate | null, given: Record<string, PickerFit | undefined> = {}): Record<string, PickerFit> {
+  const out: Record<string, PickerFit> = {};
+  for (const r of records) out[r.id] = given[r.id] ?? fitOf(r, env, estimate);
+  return out;
 }
 
-/** Device needs of the record's first rung, for a short label. */
-export function needsLine(rec: ModelRecord): string {
-  const devs = [...new Set(rec.ladder.map((r) => r.device))];
-  return devs.join(" or ");
-}
-
-export interface ModelRow {
-  id: string;
+export interface PickerView {
   label: string;
-  size: string;
-  licence: string;
-  devices: string;
-  disabled: string | null;
-  /** First rung this env would try, e.g. "webgpu q4f16". */
-  first: string | null;
+  selected: string | null;
+  query: string;
+  /** The id the probe picked for this machine, and why. */
+  defaultId?: string | null;
+  defaultWhy?: string;
 }
 
-export function modelRows(records: readonly ModelRecord[], env: Env | undefined): ModelRow[] {
-  return records.map((r) => {
-    const first = ladderFor(r, env).rungs[0];
-    const dt = first?.dtype === undefined ? "" : typeof first.dtype === "string" ? ` ${first.dtype}` : " mixed";
-    return {
-      id: r.id,
-      label: r.label ?? r.id,
-      size: formatSize(r.sizeMB, r.sizeSource),
-      licence: licenceLine(r),
-      devices: needsLine(r),
-      disabled: disableReason(r, env),
-      first: first ? `${first.device}${dt}` : null,
-    };
-  });
+const fitClass = (f: PickerFit) => (!f.ok ? "is-err" : f.fit === "fits" ? "is-ok" : "is-warn");
+
+/**
+ * The HbModelList markup (hackbuild-ui, rows variant) for the records: a
+ * search field, the censorship legend, groups by size, one radio button
+ * per row with the size and its source word, the fit chip, the reason a
+ * row that does not fit is off, and the licence as recorded. The picker
+ * behaviour is hackbuild-ui/vanilla modelList over this markup.
+ */
+export function pickerHtml(records: readonly ModelRecord[], fits: Record<string, PickerFit | undefined>, v: PickerView): string {
+  const name = (r: ModelRecord) => r.label || r.id;
+  const present = (Object.keys(CENSORSHIP) as (keyof typeof CENSORSHIP)[]).filter((k) => records.some((r) => (r.censorship ?? "unknown") === k));
+  const steerable = present.some((k) => k === "uncensored" || k === "abliterated");
+  const legend = present.length && records.some((r) => r.censorship)
+    ? `<p class="hb-model-legend">${present.map((k) => `<span class="hb-model-legend-item"><b>${escapeHtml(CENSORSHIP[k].word)}</b> ${escapeHtml(CENSORSHIP[k].legend)}</span>`).join("")}${steerable ? `<span class="hb-model-legend-item">${escapeHtml(RESPONSIBILITY)}</span>` : ""}</p>`
+    : "";
+  const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, "-");
+  const row = (r: ModelRecord) => {
+    const f = fits[r.id];
+    const off = f?.ok === false;
+    const chosen = r.id === v.selected;
+    const vram = vramText(r);
+    const lic = licenceText(r.licence, r.commercial);
+    const why = `why-${slug(r.id)}`;
+    return `<li class="hb-model is-none${off ? " is-off" : ""}${chosen ? " is-chosen" : ""}" data-row>` +
+      `<button type="button" class="hb-model-pick" data-model="${escapeHtml(r.id)}" data-search="${escapeHtml(searchText(r))}" role="radio" aria-checked="${chosen}"${off ? ` aria-disabled="true" aria-describedby="${why}"` : ""}>` +
+      `<span class="hb-model-head"><span class="hb-model-name">${escapeHtml(name(r))}</span>${r.badge ? `<span class="hb-model-badge">${escapeHtml(r.badge)}</span>` : ""}${r.id === v.defaultId ? `<span class="hb-model-def">picked for this machine</span>` : ""}</span>` +
+      (r.id === v.defaultId && v.defaultWhy ? `<span class="hb-model-defwhy">${escapeHtml(v.defaultWhy)}</span>` : "") +
+      (r.note ? `<span class="hb-model-note">${escapeHtml(r.note)}</span>` : "") +
+      `<span class="hb-model-meta">${escapeHtml(sizeText(r.sizeMB, r.sizeSource))}${vram ? `. ${escapeHtml(vram)}` : ""}</span>` +
+      `<span class="hb-model-tags">${r.censorship ? `<span class="hb-model-cens is-${r.censorship}">${escapeHtml(CENSORSHIP[r.censorship].word)}</span>` : ""}${f ? `<span class="hb-model-fit ${fitClass(f)}"><span class="hb-sr">fit here: </span>${escapeHtml(f.fit)}</span>` : ""}${(r.tags ?? []).map((t) => `<span class="hb-model-tag">${escapeHtml(t)}</span>`).join("")}</span>` +
+      `</button>` +
+      (off ? `<p id="${why}" class="hb-model-why">${escapeHtml(f.reason)}</p>` : "") +
+      (lic ? `<p class="hb-licence-q">${escapeHtml(lic)}</p>` : "") +
+      `</li>`;
+  };
+  const groups = groupRecords(records);
+  const chosen = records.find((r) => r.id === v.selected);
+  const echo = chosen ? `picked: ${name(chosen)}${chosen.badge ? `, ${chosen.badge}` : ""}, ${sizeText(chosen.sizeMB, chosen.sizeSource)}.` : "nothing picked yet.";
+  return `<div class="hb-modellist is-rows">` +
+    (records.length > 1 ? `<div class="hb-modellist-tools"><label class="hb-modellist-search"><span class="hb-sr">search ${escapeHtml(v.label)}</span><input class="hb-input" type="search" placeholder="search by name, tag or size" spellcheck="false" value="${escapeHtml(v.query)}"></label></div>` : "") +
+    legend +
+    `<div class="hb-models" aria-label="${escapeHtml(v.label)}">` +
+    groups.map((g) => `<section class="hb-model-group" data-group role="group" aria-labelledby="gh-${slug(g.group)}"><h4 id="gh-${slug(g.group)}" class="hb-model-gh">${escapeHtml(g.group)}</h4><ul class="hb-model-rows">${g.rows.map(row).join("")}</ul></section>`).join("") +
+    `<p class="hb-model-empty"${groups.length ? " hidden" : ""}>${records.length ? "no model matches. clear the search." : "no models registered."}</p>` +
+    `</div><p class="hb-model-echo" role="status" aria-live="polite">${escapeHtml(echo)}</p></div>`;
 }
 
 const mb = (b: number) => (b / (1024 * 1024)).toFixed(b < 10 * 1024 * 1024 ? 1 : 0);

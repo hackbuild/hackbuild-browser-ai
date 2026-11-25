@@ -8,10 +8,11 @@
 import type { Env } from "@hackbuild/ai-env";
 import type { ChatEngine, ChatMessage } from "@hackbuild/chat";
 import type { Recall } from "@hackbuild/memory";
-import type { ModelRecord } from "@hackbuild/models";
+import type { ModelRecord, StorageEstimate } from "@hackbuild/models";
+import { modelList, type ModelListHandle } from "@virgilvox/hackbuild-ui/vanilla";
 import type { Progress } from "@hackbuild/weights";
 import { HB_CSS } from "./hb-sheet.js";
-import { appendDelta, escapeHtml as e, finishLine, maskKey, modelRows, pillFor, progressText, traceRows, type ChatLine, type Pill } from "./view.js";
+import { appendDelta, escapeHtml as e, finishLine, maskKey, pickerFits, pickerHtml, pillFor, progressText, traceRows, type ChatLine, type Pill, type PickerFit } from "./view.js";
 
 /**
  * Styling. Each shadow root adopts the hackbuild-ui class layer (hb-sheet.ts,
@@ -62,12 +63,16 @@ export const ICONS = {
 export interface ModelPickerElement extends HTMLElement {
   records: ModelRecord[];
   env: Env | undefined;
+  /** navigator.storage estimate for the over storage fit; null skips that check. */
+  estimate: StorageEstimate | null;
+  fits: Record<string, PickerFit | undefined>;
   selected: string | null;
+  label: string;
   render(): void;
 }
 export interface DownloadBarElement extends HTMLElement {
   progress: Progress | null;
-  state: "running" | "paused" | "done" | "failed";
+  state: "idle" | "running" | "paused" | "done" | "failed";
   error: string;
   render(): void;
 }
@@ -104,12 +109,23 @@ function emit(el: HTMLElement, name: string, detail?: unknown): void {
   el.dispatchEvent(new CustomEvent(name, { detail, bubbles: true, composed: true }));
 }
 
-/** hb-model-picker: records and env in, `hb-pick` { id } out. Models the env cannot run are disabled with the reason. */
+/**
+ * hb-model-picker: records and env in, `hb-pick` { id } out. The markup is
+ * hackbuild-ui HbModelList (rows variant) and the radio behaviour its
+ * vanilla modelList. Each row carries fitOf against env and `estimate`
+ * ({fit, ok, reason}); a row that does not fit is off with the reason.
+ * Set `fits` to pass fits worked out elsewhere; they win per id.
+ */
 export function modelPickerClass(B: Base): new () => ModelPickerElement {
   return class ModelPicker extends B {
     #records_: ModelRecord[] = [];
     #env_: Env | undefined;
+    #estimate_: StorageEstimate | null = null;
+    #fits_: Record<string, PickerFit | undefined> = {};
     #selected_: string | null = null;
+    #query = "";
+    #list: ModelListHandle | null = null;
+    label = "models";
     set records(v: ModelRecord[]) {
       this.#records_ = v;
       this.render();
@@ -121,6 +137,21 @@ export function modelPickerClass(B: Base): new () => ModelPickerElement {
       this.#env_ = v;
       this.render();
     }
+    get env(): Env | undefined {
+      return this.#env_;
+    }
+    set estimate(v: StorageEstimate | null) {
+      this.#estimate_ = v;
+      this.render();
+    }
+    set fits(v: Record<string, PickerFit | undefined>) {
+      this.#fits_ = v;
+      this.render();
+    }
+    /** The fit of every row, as drawn. */
+    get fits(): Record<string, PickerFit> {
+      return pickerFits(this.#records_, this.#env_, this.#estimate_, this.#fits_);
+    }
     set selected(id: string | null) {
       this.#selected_ = id;
       this.render();
@@ -131,31 +162,31 @@ export function modelPickerClass(B: Base): new () => ModelPickerElement {
     connectedCallback() {
       this.render();
     }
+    disconnectedCallback() {
+      this.#list?.dispose();
+      this.#list = null;
+    }
     render() {
-      const rows = modelRows(this.#records_, this.#env_);
       const r = shadow(this);
-      paint(
-        r,
-        `<ul class="hb-models" role="listbox" aria-label="models">${
-        rows.length
-          ? rows
-              .map(
-                  (m) => `<li class="hb-model" role="option" data-id="${e(m.id)}" aria-selected="${m.id === this.#selected_}" aria-disabled="${m.disabled !== null}">
-<span class="hb-model-name">${e(m.label)}</span><button class="hb-btn hb-btn-2 hb-btn-sm" type="button" data-id="${e(m.id)}" ${m.disabled ? "disabled" : ""}>${m.id === this.#selected_ ? "in use" : "use"}</button>
-<span class="hb-model-meta">${e(m.size)}. ${e(m.devices)}${m.first ? `, first try ${e(m.first)}` : ""}</span>
-<span class="hb-model-lic">${e(m.licence)}</span>${m.disabled ? `<span class="hb-model-why">${e(m.disabled)}</span>` : ""}</li>`,
-                )
-                .join("")
-            : `<li class="hb-model"><span class="hb-model-meta">no models registered.</span></li>`
-        }</ul>`,
-      );
-      r.querySelectorAll<HTMLButtonElement>("button[data-id]").forEach((b) =>
-        b.addEventListener("click", () => {
-          this.#selected_ = b.dataset.id ?? null;
-          emit(this, "hb-pick", { id: this.#selected_ });
+      const act = r.activeElement as HTMLElement | null;
+      const hadFocus = act ? (act.dataset?.model ?? (act.tagName === "INPUT" ? "search" : null)) : null;
+      this.#list?.dispose();
+      paint(r, pickerHtml(this.#records_, this.fits, { label: this.label, selected: this.#selected_, query: this.#query }));
+      const list = r.querySelector<HTMLElement>(".hb-models")!;
+      const search = r.querySelector<HTMLInputElement>(".hb-modellist-search input");
+      search?.addEventListener("input", () => (this.#query = search.value));
+      this.#list = modelList(list, {
+        value: this.#selected_,
+        search,
+        empty: r.querySelector<HTMLElement>(".hb-model-empty"),
+        onChange: (id) => {
+          this.#selected_ = id;
+          emit(this, "hb-pick", { id });
           this.render();
-        }),
-      );
+        },
+      });
+      if (hadFocus === "search") search?.focus();
+      else if (hadFocus) r.querySelector<HTMLElement>(`[data-model="${CSS.escape(hadFocus)}"]`)?.focus();
     }
   };
 }
@@ -164,18 +195,19 @@ export function modelPickerClass(B: Base): new () => ModelPickerElement {
 export function downloadBarClass(B: Base): new () => DownloadBarElement {
   return class DownloadBar extends B {
     #p: Progress | null = null;
-    #state_: "running" | "paused" | "done" | "failed" = "running";
+    #state_: "idle" | "running" | "paused" | "done" | "failed" = "idle";
     #error_ = "";
     set progress(v: Progress | null) {
       this.#p = v;
+      if (v && this.#state_ === "idle") this.#state_ = "running";
       if (v && v.total !== null && v.loaded >= v.total) this.#state_ = "done";
       this.render();
     }
     get progress(): Progress | null {
       return this.#p;
     }
-    /** Mark the download stopped: a paused one offers resume, a failed one shows the reason. */
-    set state(s: "running" | "paused" | "done" | "failed") {
+    /** Mark the download stopped: a paused one offers resume, a failed one shows the reason. Idle, the default, offers nothing. */
+    set state(s: "idle" | "running" | "paused" | "done" | "failed") {
       this.#state_ = s;
       this.render();
     }
@@ -188,12 +220,12 @@ export function downloadBarClass(B: Base): new () => DownloadBarElement {
       this.render();
     }
     render() {
-      const v = this.#p ? progressText(this.#p) : { text: "waiting to start", fraction: 0 };
-      const label = this.#state_ === "failed" ? `download failed. ${this.#error_}`.trim() : this.#state_ === "paused" ? `paused. ${v.text}` : this.#state_ === "done" ? "downloaded." : v.text;
+      const v = this.#p ? progressText(this.#p) : { text: this.#state_ === "idle" ? "nothing downloading." : "waiting to start", fraction: 0 };
+      const label = this.#state_ === "idle" ? v.text : this.#state_ === "failed" ? `download failed. ${this.#error_}`.trim() : this.#state_ === "paused" ? `paused. ${v.text}` : this.#state_ === "done" ? "downloaded." : v.text;
       const r = shadow(this);
       // the running download is the one pink of the view; stopped states take the meter states of the class layer
-      const state = this.#state_ === "running" ? (v.fraction === null ? " is-busy" : "") : this.#state_ === "paused" ? " is-paused" : this.#state_ === "done" ? " is-done" : " is-failed";
-      const pct = this.#state_ === "done" ? 100 : v.fraction === null ? null : Math.round(v.fraction * 100);
+      const state = this.#state_ === "idle" ? "" : this.#state_ === "running" ? (v.fraction === null ? " is-busy" : "") : this.#state_ === "paused" ? " is-paused" : this.#state_ === "done" ? " is-done" : " is-failed";
+      const pct = this.#state_ === "done" ? 100 : this.#state_ === "idle" ? 0 : v.fraction === null ? null : Math.round(v.fraction * 100);
       const act =
         this.#state_ === "running"
           ? `<button class="hb-btn hb-btn-2 hb-btn-sm" type="button" data-a="cancel">cancel</button>`
@@ -203,7 +235,7 @@ export function downloadBarClass(B: Base): new () => DownloadBarElement {
       paint(
         r,
         `<div class="hb-progress${state}"><div class="hb-progress-hd"><span class="hb-progress-text" role="status">${e(label)}</span>${
-          pct === null ? "" : `<span class="hb-progress-pct">${pct}%</span>`
+          pct === null || this.#state_ === "idle" ? "" : `<span class="hb-progress-pct">${pct}%</span>`
         }${act}</div>
 <div class="hb-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" ${pct === null ? "" : `aria-valuenow="${pct}"`}><i style="width:${pct ?? 30}%"></i></div></div>`,
       );

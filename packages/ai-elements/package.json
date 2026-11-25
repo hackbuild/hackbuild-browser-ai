@@ -37,5 +37,8 @@
     "@hackbuild/chat": "0.1.0",
     "@hackbuild/memory": "0.1.0",
     "@hackbuild/weights": "0.1.0"
+  },
+  "peerDependencies": {
+    "@virgilvox/hackbuild-ui": "^0.9.2"
   }
 }

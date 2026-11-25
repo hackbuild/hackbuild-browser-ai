@@ -8,13 +8,13 @@ import {
   HOST_CSS,
   appendDelta,
   define,
-  disableReason,
   escapeHtml,
   finishLine,
   formatSize,
   licenceLine,
   maskKey,
-  modelRows,
+  pickerFits,
+  pickerHtml,
   pillFor,
   progressText,
   traceRows,
@@ -61,16 +61,26 @@ describe("model rows", () => {
     expect(licenceLine(rec({}))).toBe("weights Apache-2.0, commercial use allowed");
     expect(licenceLine(rec({ licence: "LFM Open License", commercial: "unknown" }))).toBe("weights LFM Open License, commercial use unknown");
   });
-  test("a webgpu only model is disabled with the reason", () => {
-    const gpu = rec({ ladder: [{ device: "webgpu", dtype: "q4f16" }] });
-    expect(disableReason(gpu, env())).toBe("no webgpu adapter, the gpu has no shader-f16. this model needs them.");
-    expect(disableReason(gpu, env({ webgpu: true }))).toBe("the gpu has no shader-f16. this model needs it.");
-    expect(disableReason(gpu, env({ webgpu: true, f16: true }))).toBeNull();
-    expect(disableReason(rec({ ladder: [] }), env())).toBe("this model has no device ladder.");
+  test("fits take the HbModelList shape and a webgpu only model is off with the reason", () => {
+    const gpu = rec({ id: "g", ladder: [{ device: "webgpu", dtype: "q4f16" }] });
+    const fits = pickerFits([gpu, rec({ id: "w" })], env());
+    expect(fits.g).toEqual({ fit: "needs webgpu", ok: false, reason: "no webgpu adapter here." });
+    expect(fits.w).toMatchObject({ fit: "fits", ok: true });
+    expect(pickerFits([gpu], env(), null, { g: { fit: "fits", ok: true, reason: "given" } }).g!.reason).toBe("given");
   });
-  test("rows list the first rung this device would try", () => {
-    const rows = modelRows([rec({ id: "a", label: "model a", ladder: [{ device: "webgpu", dtype: "fp16" }, { device: "wasm", dtype: "q8" }] })], env());
-    expect(rows[0]).toMatchObject({ id: "a", label: "model a", devices: "webgpu or wasm", first: "wasm q8", disabled: null });
+  test("picker markup is HbModelList rows: radio per row, fit chip, reason, licence", () => {
+    const records = [rec({ id: "a", label: "model a", group: "start here" }), rec({ id: "g", ladder: [{ device: "webgpu", dtype: "q4f16" }], commercial: false })];
+    const html = pickerHtml(records, pickerFits(records, env()), { label: "models", selected: "a", query: "" });
+    expect(html).toContain('class="hb-modellist is-rows"');
+    expect(html).toContain('data-model="a"');
+    expect(html).toMatch(/data-model="a"[^>]*aria-checked="true"/);
+    expect(html).toMatch(/data-model="g"[^>]*aria-disabled="true"/);
+    expect(html).toContain('<span class="hb-model-fit is-err"><span class="hb-sr">fit here: </span>needs webgpu</span>');
+    expect(html).toContain('class="hb-model-why">no webgpu adapter here.</p>');
+    expect(html).toContain("licence as recorded: Apache-2.0, no commercial use");
+    expect(html).toContain('<h4 id="gh-start-here" class="hb-model-gh">start here</h4>');
+    expect(html).toContain("picked: model a, 300 mb (inferred).");
+    expect(html).not.toMatch(/class="hb-model-lic"|hb-btn-sm/);
   });
 });
 
@@ -136,10 +146,12 @@ test("tokens default to hackbuild-ui values and never shadow a page's tokens", (
   expect(TOKENS["--hb-ok"]).toBe("#1f9d55");
   expect(TOKENS["--hb-warn"]).toBe("#c77700");
   expect(TOKENS["--hb-pink"]).toBe("#FE0386");
-  // no token is declared in the sheet, so a page's value on the element or an ancestor reaches in
-  expect(`${HB_CSS}\n${HOST_CSS}`).not.toMatch(/(^|[{;\s])--hb-[a-z0-9-]+\s*:/);
-  // every token use carries its hackbuild-ui fallback
-  expect(HB_CSS).not.toMatch(/var\(--hb-(?!at\b)[a-z0-9-]+\)/);
+  // no token is declared on :host or :root, so a page's value on the element or an ancestor reaches in;
+  // a part may scope its own (.hb-instrument tightens the spacing tokens inside it)
+  const declares = [...`${HB_CSS}\n${HOST_CSS}`.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((m) => /(^|[;\s])--hb-[a-z0-9-]+\s*:/.test(m[2]!)).map((m) => m[1]!.trim());
+  expect(declares.filter((sel) => /(^|,)\s*(:host|:root)\s*(,|$)/.test(sel))).toEqual([]);
+  // every token use carries its hackbuild-ui fallback; a bare var() is a part's own inline value (--hb-level, --hb-pc-src)
+  expect([...HB_CSS.matchAll(/var\((--hb-[a-z0-9-]+)\)/g)].map((m) => m[1]).filter((n) => n! in TOKENS)).toEqual([]);
   expect(HB_CSS).toContain("var(--hb-ok, #1f9d55)");
   expect(HB_CSS).toContain("var(--hb-shadow, 3px 3px 0 var(--hb-ink, #1a1a1a))");
   // page level rules are gone: no import, no grain overlay, no dark palette
