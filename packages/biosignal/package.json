@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/biosignal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "EEG in a tab: zero phase filters, shrunk covariances and a Riemannian tangent space classifier with leak free grouped cross validation in a Rust wasm core (simd128), epoching, model export and an EEGNet runner slot.",
   "type": "module",
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/devices",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Provider ladders for onnxruntime-web and transformers.js: rung builders, session and pipeline factories for the models hub, runtime loading with pinned CDN fallbacks, thread and proxy setup, progress merging.",
   "type": "module",
   "license": "MIT",
@@ -32,8 +32,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/ai-env": "0.1.0",
-    "@hackbuild/models": "0.1.0",
-    "@hackbuild/weights": "0.1.0"
+    "@hackbuild/ai-env": "0.1.1",
+    "@hackbuild/models": "0.1.1",
+    "@hackbuild/weights": "0.1.1"
   }
 }

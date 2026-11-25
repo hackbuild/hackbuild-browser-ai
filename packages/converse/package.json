@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/converse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The conversation core: turns over a streaming chat engine, history hygiene, stop, redo, edit, memory and seen lines, cue replay, and the versioned chat session schema with a debounced store.",
   "type": "module",
   "license": "MIT",
@@ -32,6 +32,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/memory": "0.1.0"
+    "@hackbuild/memory": "0.1.1"
   }
 }

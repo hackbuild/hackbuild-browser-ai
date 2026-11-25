@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/ai-env",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Capability probe and file:// safe loading of ES modules and workers for in-tab model runtimes.",
   "type": "module",
   "license": "MIT",

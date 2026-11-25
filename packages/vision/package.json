@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/vision",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Perception through the models hub: depth (Depth Anything V2 small), detection (MediaPipe EfficientDet, YOLO as an optional external model), segmentation, face, hand and pose landmarks with a fallback chain, captions and questions through small VLMs, a webcam loop helper and a result cache.",
   "type": "module",
   "license": "MIT",
@@ -32,9 +32,9 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/ai-env": "0.1.0",
-    "@hackbuild/models": "0.1.0",
-    "@hackbuild/devices": "0.1.0",
-    "@hackbuild/weights": "0.1.0"
+    "@hackbuild/ai-env": "0.1.1",
+    "@hackbuild/models": "0.1.1",
+    "@hackbuild/devices": "0.1.1",
+    "@hackbuild/weights": "0.1.1"
   }
 }

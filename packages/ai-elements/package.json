@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/ai-elements",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Web components for in-tab AI pages: model picker, download bar, status pills, chat panel and memory inspector, themed by CSS custom properties, registered only when the page calls define().",
   "type": "module",
   "license": "MIT",
@@ -32,11 +32,11 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/ai-env": "0.1.0",
-    "@hackbuild/models": "0.1.0",
-    "@hackbuild/chat": "0.1.0",
-    "@hackbuild/memory": "0.1.0",
-    "@hackbuild/weights": "0.1.0"
+    "@hackbuild/ai-env": "0.1.1",
+    "@hackbuild/models": "0.1.1",
+    "@hackbuild/chat": "0.1.1",
+    "@hackbuild/memory": "0.1.1",
+    "@hackbuild/weights": "0.1.1"
   },
   "peerDependencies": {
     "@virgilvox/hackbuild-ui": "^0.9.2"

@@ -4,6 +4,16 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Patch releases, 2026-11-24
+
+- every package 0.1.0 to 0.1.1: the tarball gains `how.ts`, the shared
+  how to use record, and internal pins move to 0.1.1.
+- ai-elements: the shadow root sheet keeps only the class layer rules the
+  elements can match, written on every build by `tools/gen-hb-sheet.mjs`
+  from the element sources. Main entry gzip 48,077 to 14,162 bytes,
+  single file 51,187 to 17,208 bytes (measured). Generated from
+  hackbuild-ui 0.9.3.
+
 ### Height sources and photo to relief, 2026-11-24
 
 - depth-mesh: `HEIGHT_SOURCES` names depth, brightness and inflate
