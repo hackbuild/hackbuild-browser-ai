@@ -4,8 +4,10 @@ Run language, vision and speech models in a browser tab: one chat interface over
 
 Live examples: <https://hackbuild.github.io/hackbuild-browser-ai/>
 
+Every tool in one app: the suite, <https://hackbuild.github.io/hackbuild-suite/> (source <https://github.com/hackbuild/hackbuild-suite>).
+
 Status, 2026-11-23: 23 packages and 5 Rust cores, all in `packages/` and `crates/`.
-Nothing is published to npm.
+Published to npm under @hackbuild.
 
 | package | what | tests (counted 2026-11-23 on this machine; audio-dsp and transcribe include local fixture suites CI skips) |
 |---|---|---|
