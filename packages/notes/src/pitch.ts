@@ -48,6 +48,8 @@ export interface PitchModel {
 export const BASIC_PITCH: ModelRecord = {
   id: "basic-pitch",
   label: "basic pitch (spotify)",
+  speed: "fast",
+  verdict: "audio to notes",
   provides: ["notes"],
   provider: "tfjs",
   source: { url: "https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json" },

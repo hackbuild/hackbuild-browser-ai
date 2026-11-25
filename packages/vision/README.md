@@ -38,6 +38,14 @@ also MIT. No weights ship here.
 | segment.person | selfie-segmenter | MediaPipe | Apache-2.0 |
 | landmarks.face | face-landmarker, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | Apache-2.0; MIT |
 | landmarks.hand, landmarks.pose | hand-landmarker, pose-landmarker-lite | MediaPipe | Apache-2.0 |
+
+`PICKER_RECORDS` lists models for pickers that no hub registers by
+default, so routing by capability keeps the small defaults above: SmolVLM
+500M and SmolVLM2 256M video, Gemma 4 E2B, depth anything v2 base
+(CC-BY-NC-4.0) and v1 small, YOLOv10 nano, small and medium and FastSAM-s
+(AGPL-3.0 upstream), and the face swap set (scrfd 10g, ArcFace r50,
+inswapper 128; InsightFace, non-commercial). Sizes are the Hugging Face
+file listings (vendor, no download). A hub that runs one adds the record.
 | landmarks.gesture (optional) | gesture-recognizer | MediaPipe, hand points plus 7 canned gestures | unknown, model card not checked |
 | vision.caption, vision.ask | smolvlm-256m-instruct | transformers.js, per sub graph dtypes, repetition penalty 1.3 | Apache-2.0 |
 | vision.caption, vision.ask | lfm2-vl-450m | transformers.js, q4f16 on webgpu only (as earlier builds did) | LFM Open License v1.0, commercial use limited by revenue |

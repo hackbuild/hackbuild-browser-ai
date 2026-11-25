@@ -13,6 +13,8 @@ export const EMBED_RECORDS: ModelRecord[] = [
   {
     id: "potion-base-8m",
     label: "potion base 8M (static)",
+    speed: "instant",
+    verdict: "instant, misses paraphrase",
     provides: ["embed"],
     provider: "static",
     source: { repo: "minishlab/potion-base-8M", url: pinnedBase("minishlab/potion-base-8M") },
@@ -27,6 +29,8 @@ export const EMBED_RECORDS: ModelRecord[] = [
   {
     id: "minilm-l6",
     label: "all-MiniLM-L6-v2",
+    speed: "fast",
+    verdict: "small, english",
     provides: ["embed"],
     provider: "tjs",
     source: { modelId: "Xenova/all-MiniLM-L6-v2" },
@@ -42,11 +46,14 @@ export const EMBED_RECORDS: ModelRecord[] = [
   {
     id: "bge-small-en",
     label: "bge-small-en-v1.5",
+    speed: "fast",
+    verdict: "sharper recall, english",
     provides: ["embed"],
     provider: "tjs",
     source: { modelId: "Xenova/bge-small-en-v1.5" },
-    sizeMB: 34,
-    sizeSource: "inferred",
+    // model_quantized.onnx 34.0 MB, model.onnx 133.1 MB in the hub listing (vendor, 2026-11-25); q8 loads first
+    sizeMB: 32,
+    sizeSource: "vendor",
     ladder: tjsLadder({ wasm: ["q8", "fp32"], webgpu: ["fp32"], wasmFirst: true }),
     licence: "MIT",
     commercial: true,

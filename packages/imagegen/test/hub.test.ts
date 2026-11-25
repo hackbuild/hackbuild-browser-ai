@@ -2,7 +2,10 @@ import { describe, expect, test } from "vitest";
 import { ortProvider, type OrtModule, type OrtSession } from "@hackbuild/devices";
 import { createHub, createRegistry, stubFactory, type ModelRecord } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
-import { IMAGEGEN_RECORDS, FormError, applyForm, attachImagegen, eulerPlan, formOf, generate, leadingTimesteps, loadImagegen, loadLabel, stubImagegenModel, type SessionLike } from "@hackbuild/imagegen";
+import {
+  IMAGEGEN_RECORDS,
+  IMAGEGEN_PICKER_RECORDS,
+  FormError, applyForm, attachImagegen, eulerPlan, formOf, generate, leadingTimesteps, loadImagegen, loadLabel, stubImagegenModel, type SessionLike } from "@hackbuild/imagegen";
 
 const env = { webgpu: true, f16: true, adapter: null, maxBufferBytes: null, isolated: false, protocol: "https" as const, opfs: true, cacheStorage: true, indexedDB: true, threads: 1, deviceMemoryGB: 8, promptApi: false, notes: [] };
 
@@ -17,6 +20,8 @@ class T {
 describe("records and forms", () => {
   test("two records, each with a form the select can render", () => {
     expect(IMAGEGEN_RECORDS.map((r) => r.id)).toEqual(["sd-turbo", "sd-1.5"]);
+    expect(IMAGEGEN_PICKER_RECORDS.map((r) => r.id)).toEqual(["sdxl-turbo"]);
+    expect(formOf(IMAGEGEN_PICKER_RECORDS[0]!)?.steps.default).toBe(1);
     const [turbo, sd15] = IMAGEGEN_RECORDS.map((r) => formOf(r)!);
     expect(turbo).toMatchObject({ steps: { min: 1, max: 4, default: 2 }, guidance: null, negative: false, sizes: [512], spacing: "trailing" });
     expect(sd15).toMatchObject({ steps: { min: 5, max: 40, default: 22 }, guidance: { default: 7.5 }, negative: true, spacing: "leading" });
@@ -24,7 +29,7 @@ describe("records and forms", () => {
     expect(formOf({ ...IMAGEGEN_RECORDS[0]!, form: undefined } as never)).toBeNull();
   });
   test("the load button names the size and its source", () => {
-    expect(loadLabel(IMAGEGEN_RECORDS[0]!)).toBe("load sd-turbo 512, about 2.6 gb (inferred)");
+    expect(loadLabel(IMAGEGEN_RECORDS[0]!)).toBe("load sd-turbo 512, about 2.4 gb (vendor)");
     expect(loadLabel({ ...IMAGEGEN_RECORDS[0]!, sizeMB: null })).toBe("load sd-turbo 512, size unknown");
   });
   test("applyForm fills defaults, clamps, and drops what the model does not take", () => {

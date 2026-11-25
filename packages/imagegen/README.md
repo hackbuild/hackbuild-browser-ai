@@ -58,8 +58,13 @@ form to, after an earlier image generation bench's model table:
 
 | record | steps (min, max, default) | guidance | negative prompt | sizes | spacing | size |
 |---|---|---|---|---|---|---|
-| `sd-turbo` | 1, 4, 2 | none | no | 512 | trailing | 2.6 GB (inferred) |
-| `sd-1.5` | 5, 40, 22 | 1 to 12, 7.5 | yes | 512 | leading, offset 1 | 2.0 GB (inferred) |
+| `sd-turbo` | 1, 4, 2 | none | no | 512 | trailing | 2.3 GB (vendor) |
+| `sd-1.5` | 5, 40, 22 | 1 to 12, 7.5 | yes | 512 | leading, offset 1 | 1.9 GB (vendor) |
+| `sdxl-turbo`, in `IMAGEGEN_PICKER_RECORDS` | 1, 4, 1 | none | no | 512 | trailing | 2.5 GB (vendor) |
+
+SDXL-Turbo has two text encoders and the pipeline here runs one, so it is
+listed for pickers and not registered. Sizes sum the Hugging Face file
+listing (no download).
 
 `applyForm` fills the defaults, clamps steps and guidance, drops fields
 the model does not take, and refuses a size its graphs do not accept with

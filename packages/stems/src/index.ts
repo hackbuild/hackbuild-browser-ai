@@ -22,6 +22,8 @@ const base = pinnedBase("StemSplitio/htdemucs-onnx");
 const rec = (id: string, file: string, mb: number, overlap: number, label: string): ModelRecord => ({
   id,
   label,
+  speed: "slow",
+  verdict: "four stems",
   provides: ["stems"],
   provider: "ort",
   source: { url: base + file },

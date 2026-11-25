@@ -42,11 +42,14 @@ export const IMAGEGEN_RECORDS: ImagegenRecord[] = [
   {
     id: "sd-turbo",
     label: "sd-turbo 512",
+    speed: "fast",
+    verdict: "fast, built in",
     provides: ["imagegen"],
     provider: "ort",
     source: { repo: "schmuell/sd-turbo-ort-web", files },
-    sizeMB: 2600,
-    sizeSource: "inferred",
+    // text encoder 681.4, unet 1733.4, vae decoder 99.1 MB in the hub listing (vendor, 2026-11-25), in MiB
+    sizeMB: 2397,
+    sizeSource: "vendor",
     ladder: [{ device: "webgpu", ort: { executionProviders: ["webgpu"] }, options: free512 }],
     licence: "Stability AI Non-Commercial Research Community License (the LICENSE in schmuell/sd-turbo-ort-web; upstream stabilityai/sd-turbo moved to the Community License in July 2024, this export did not)",
     commercial: false,
@@ -71,11 +74,14 @@ export const IMAGEGEN_RECORDS: ImagegenRecord[] = [
   {
     id: "sd-1.5",
     label: "stable diffusion 1.5",
+    speed: "slow",
+    verdict: "classic, takes negatives",
     provides: ["imagegen"],
     provider: "ort",
     source: { repo: "microsoft/stable-diffusion-v1.5-webnn", files },
-    sizeMB: 2000,
-    sizeSource: "inferred",
+    // fp16 text encoder 246.5, unet 1719.4, vae 99.1 MB in the hub listing, no safety checker (vendor, 2026-11-25), in MiB
+    sizeMB: 1969,
+    sizeSource: "vendor",
     ladder: [{ device: "webgpu", ort: { executionProviders: ["webgpu"] }, options: free512 }],
     licence: "CreativeML OpenRAIL-M (use restrictions in its attachment A)",
     commercial: true,
@@ -113,3 +119,44 @@ export function loadLabel(rec: ModelRecord): string {
   const size = rec.sizeMB >= 1000 ? `${(rec.sizeMB / 1000).toFixed(1)} gb` : `${rec.sizeMB} mb`;
   return `load ${name}, about ${size} (${rec.sizeSource})`;
 }
+
+/**
+ * Listed for pickers, not registered by attachImagegen: SDXL-Turbo has two
+ * text encoders and the pipeline here runs one, so routing must not pick it.
+ */
+export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
+  {
+    id: "sdxl-turbo",
+    label: "sdxl-turbo 512",
+    speed: "steady",
+    verdict: "highest quality",
+    provides: ["imagegen"],
+    provider: "ort",
+    source: {
+      repo: "webnn/sdxl-turbo",
+      files: [{ path: "text_encoder/model.onnx" }, { path: "text_encoder_2/model.onnx" }, { path: "unet/model.onnx" }, { path: "vae_decoder/model.onnx" }],
+    },
+    // q4f16 text encoder 124.4, text encoder 2 483.7, unet 1965.6, vae decoder 97.6 MB in the hub listing (vendor, 2026-11-25), in MiB
+    sizeMB: 2548,
+    sizeSource: "vendor",
+    ladder: [{ device: "webgpu", ort: { executionProviders: ["webgpu"] }, options: free512 }],
+    licence: "Stability AI Community License (named in the card text; the repo has no licence field)",
+    commercial: "unknown",
+    place: "gpu",
+    runtime: "onnxruntime-web@1.27.0",
+    notes: [
+      "two text encoders; the pipeline in this package runs one, so this record is listed and not run yet",
+      "an earlier image bench offered it as the highest quality of three",
+    ],
+    form: {
+      steps: { min: 1, max: 4, default: 1 },
+      guidance: null,
+      negative: false,
+      sizes: [512],
+      spacing: "trailing",
+      note: "distilled from sdxl. 1 to 4 steps, no negative prompt. the best looking of the three.",
+      tokenizer: "Xenova/clip-vit-base-patch16",
+      graphs,
+    },
+  },
+];

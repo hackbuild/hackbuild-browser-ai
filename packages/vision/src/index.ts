@@ -15,7 +15,7 @@ export type {
   Landmarker,
   Vlm,
 } from "./types.js";
-export { VISION_RECORDS, MP_MODELS, mediapipeLadder, faceApiRecord, yoloRecord } from "./records.js";
+export { VISION_RECORDS, PICKER_RECORDS, MP_MODELS, mediapipeLadder, faceApiRecord, yoloRecord } from "./records.js";
 export { attachVision, depth, detect, segment, landmarks, landmarkChain, caption, ask, type CallOptions } from "./api.js";
 export { depthLoader, vlmLoader, samLoader, depthFromOutput } from "./loaders.js";
 export { mediapipeProvider, loadTasksVision, tasksVisionUrls, tasksVisionWasm, TASKS_VISION, type TasksVision, type MediapipeProviderOptions } from "./mediapipe.js";

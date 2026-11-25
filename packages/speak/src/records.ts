@@ -9,11 +9,14 @@ export const SPEAK_RECORDS: ModelRecord[] = [
   {
     id: "kokoro-82m",
     label: "kokoro 82m",
+    speed: "fast",
+    verdict: "natural, english",
     provides: ["speak"],
     provider: "kokoro-js",
     source: { modelId: "onnx-community/Kokoro-82M-v1.0-ONNX" },
-    sizeMB: 330,
-    sizeSource: "inferred",
+    // fp32 model.onnx 325.5 MB, q8 92.4 MB in the hub listing (vendor, 2026-11-25); the first rung loads fp32
+    sizeMB: 310,
+    sizeSource: "vendor",
     ladder: [
       { device: "webgpu", dtype: "fp32", needs: ["http"] },
       { device: "wasm", dtype: "q8" },
@@ -27,11 +30,14 @@ export const SPEAK_RECORDS: ModelRecord[] = [
   {
     id: "pocket-tts",
     label: "pocket tts",
+    speed: "steady",
+    verdict: "clones a voice",
     provides: ["speak"],
     provider: "pocket-worker",
     source: { url: "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/d0c0c79b7712256a32d691c67f20b8ae2e020d00/", repo: "kyutai/pocket-tts", revision: "d0c0c79b7712256a32d691c67f20b8ae2e020d00" },
-    sizeMB: null,
-    sizeSource: "unknown",
+    // the int8 onnx set of KevinAHM/pocket-tts-onnx sums to 125.4 MB, 198.6 MB with the cloning encoder (vendor, 2026-11-25); this build is that author's space
+    sizeMB: 189,
+    sizeSource: "inferred",
     ladder: [{ device: "wasm" }],
     licence: "CC-BY-4.0 (weights), MIT (code)",
     commercial: true,
@@ -41,6 +47,9 @@ export const SPEAK_RECORDS: ModelRecord[] = [
   {
     id: "bellows-voice",
     label: "bellows voice",
+    speed: "instant",
+    verdict: "vocal tract, no download",
+    noDownload: true,
     provides: ["speak"],
     provider: "bellows-voice",
     source: { repo: "virgilvox/bellows-voice" },
@@ -56,6 +65,9 @@ export const SPEAK_RECORDS: ModelRecord[] = [
   {
     id: "web-speech",
     label: "system voice",
+    speed: "instant",
+    verdict: "system voice",
+    noDownload: true,
     provides: ["speak"],
     provider: "system",
     source: {},
