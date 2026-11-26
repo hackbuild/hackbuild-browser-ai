@@ -2,7 +2,7 @@
 
 Get a tool decision or tagged text out of a small model in the tab, in the format that model and runtime can keep to.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/structured)](https://www.npmjs.com/package/@hackbuild/structured) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 9.4 kB measured](https://img.shields.io/badge/gzip-9.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/structured)](https://www.npmjs.com/package/@hackbuild/structured) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 9.3 kB measured](https://img.shields.io/badge/gzip-9.3%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 ## What it does
 
@@ -149,9 +149,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 9,352 bytes | 9,819 bytes |
-| `dist/single/index.iife.js` (single file build) | 9,825 bytes | 10,316 bytes |
+| `dist/index.js` (main entry, imports external) | 9,278 bytes | 9,741 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,785 bytes | 10,274 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

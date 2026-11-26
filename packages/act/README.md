@@ -2,7 +2,7 @@
 
 Let a language model act while it speaks: mood, gesture and posture tags in its reply fire when the voice reaches them, limited to names your avatar can realize.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/act)](https://www.npmjs.com/package/@hackbuild/act) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 13.8 kB measured](https://img.shields.io/badge/gzip-13.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/act)](https://www.npmjs.com/package/@hackbuild/act) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 13.7 kB measured](https://img.shields.io/badge/gzip-13.7%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 ## What it does
 
@@ -202,9 +202,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 13,779 bytes | 14,467 bytes |
-| `dist/single/index.iife.js` (single file build) | 14,638 bytes | 15,369 bytes |
+| `dist/index.js` (main entry, imports external) | 13,717 bytes | 14,402 bytes |
+| `dist/single/index.iife.js` (single file build) | 14,605 bytes | 15,335 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

@@ -2,7 +2,7 @@
 
 Turn a recording into notes, drum hits, a tempo and a MIDI file, in the tab.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/notes)](https://www.npmjs.com/package/@hackbuild/notes) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.6 kB measured](https://img.shields.io/badge/gzip-5.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/notes)](https://www.npmjs.com/package/@hackbuild/notes) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.5 kB measured](https://img.shields.io/badge/gzip-5.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet.
 
@@ -148,9 +148,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,572 bytes | 5,850 bytes |
-| `dist/single/index.iife.js` (single file build) | 6,362 bytes | 6,680 bytes |
+| `dist/index.js` (main entry, imports external) | 5,533 bytes | 5,809 bytes |
+| `dist/single/index.iife.js` (single file build) | 6,325 bytes | 6,641 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

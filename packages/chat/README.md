@@ -2,7 +2,7 @@
 
 Stream chat replies from WebLLM, wllama, transformers.js, the Chrome Prompt API or a remote endpoint through one interface.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/chat)](https://www.npmjs.com/package/@hackbuild/chat) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.9 kB measured](https://img.shields.io/badge/gzip-5.9%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/chat)](https://www.npmjs.com/package/@hackbuild/chat) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.8 kB measured](https://img.shields.io/badge/gzip-5.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: WebLLM 0.2.84 and 0.2.89 with Qwen2.5 0.5B, and transformers.js 4.3.2 with SmolLM2 360M, ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. wllama, the Prompt API and the remote engines have not run in a browser.
 
@@ -223,9 +223,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 5,857 bytes | 6,149 bytes |
-| `dist/single/index.iife.js` (single file build) | 7,659 bytes | 8,041 bytes |
+| `dist/index.js` (main entry, imports external) | 5,823 bytes | 6,114 bytes |
+| `dist/single/index.iife.js` (single file build) | 7,641 bytes | 8,023 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

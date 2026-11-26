@@ -2,7 +2,7 @@
 
 Find out what the tab can run, and load runtimes and workers in a way that also works from a file:// page.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/ai-env)](https://www.npmjs.com/package/@hackbuild/ai-env) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.5 kB measured](https://img.shields.io/badge/gzip-6.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/ai-env)](https://www.npmjs.com/package/@hackbuild/ai-env) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.4 kB measured](https://img.shields.io/badge/gzip-6.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 ## What it does
 
@@ -152,9 +152,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 6,462 bytes | 6,785 bytes |
-| `dist/single/index.iife.js` (single file build) | 6,404 bytes | 6,724 bytes |
+| `dist/index.js` (main entry, imports external) | 6,442 bytes | 6,764 bytes |
+| `dist/single/index.iife.js` (single file build) | 6,386 bytes | 6,705 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

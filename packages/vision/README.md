@@ -307,6 +307,6 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 | `dist/index.js` (main entry, imports external) | 29,464 bytes | 30,937 bytes |
 | `dist/single/index.iife.js` (single file build) | 59,934 bytes | 62,930 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

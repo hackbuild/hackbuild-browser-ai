@@ -1,28 +1,28 @@
 {
   "about": "gzip level 9 bytes (measured) per published file; CI fails when a file moves more than 5 percent from its row. Rewrite with node tools/lint-packages.mjs --update-budget after a reviewed change.",
-  "measured": "2026-11-25",
+  "measured": "2026-11-26",
   "margin": 0.05,
   "packages": {
     "@hackbuild/act": {
-      "main: dist/index.js bundled": 13779,
-      "dist/single/index.iife.js": 14638
+      "main: dist/index.js bundled": 13717,
+      "dist/single/index.iife.js": 14605
     },
     "@hackbuild/agent": {
       "main: dist/index.js bundled": 12542,
-      "dist/single/index.iife.js": 14510
+      "dist/single/index.iife.js": 14488
     },
     "@hackbuild/ai-elements": {
       "main: dist/index.js bundled": 582,
-      "dist/single/index.iife.js": 88239
+      "dist/single/index.iife.js": 92980
     },
     "@hackbuild/ai-env": {
-      "main: dist/index.js bundled": 6462,
-      "dist/single/index.iife.js": 6404
+      "main: dist/index.js bundled": 6442,
+      "dist/single/index.iife.js": 6386
     },
     "@hackbuild/audio-dsp": {
-      "main: dist/index.js bundled": 9440,
+      "main: dist/index.js bundled": 9392,
       "wasm/audio-dsp.wasm": 27444,
-      "dist/single/index.iife.js": 9303
+      "dist/single/index.iife.js": 9290
     },
     "@hackbuild/biosignal": {
       "main: dist/index.js bundled": 2900,
@@ -35,8 +35,8 @@
       "dist/single/index.iife.js": 3183
     },
     "@hackbuild/chat": {
-      "main: dist/index.js bundled": 5857,
-      "dist/single/index.iife.js": 7659
+      "main: dist/index.js bundled": 5823,
+      "dist/single/index.iife.js": 7641
     },
     "@hackbuild/depth-mesh": {
       "main: dist/index.js bundled": 16507,
@@ -44,24 +44,24 @@
       "dist/single/index.iife.js": 16009
     },
     "@hackbuild/devices": {
-      "main: dist/index.js bundled": 7219,
-      "dist/single/index.iife.js": 37059
+      "main: dist/index.js bundled": 7127,
+      "dist/single/index.iife.js": 37283
     },
     "@hackbuild/embed": {
-      "main: dist/index.js bundled": 6800,
-      "dist/single/index.iife.js": 33786
+      "main: dist/index.js bundled": 6779,
+      "dist/single/index.iife.js": 34020
     },
     "@hackbuild/imagegen": {
       "main: dist/index.js bundled": 8273,
       "dist/single/index.iife.js": 7985
     },
     "@hackbuild/listen": {
-      "main: dist/index.js bundled": 7274,
-      "dist/single/index.iife.js": 9278
+      "main: dist/index.js bundled": 7258,
+      "dist/single/index.iife.js": 9254
     },
     "@hackbuild/media": {
-      "main: dist/index.js bundled": 2073,
-      "dist/single/index.iife.js": 2059
+      "main: dist/index.js bundled": 2054,
+      "dist/single/index.iife.js": 2045
     },
     "@hackbuild/memory": {
       "main: dist/index.js bundled": 14002,
@@ -73,40 +73,40 @@
       "dist/single/index.iife.js": 42879
     },
     "@hackbuild/notes": {
-      "main: dist/index.js bundled": 5572,
-      "dist/single/index.iife.js": 6362
+      "main: dist/index.js bundled": 5533,
+      "dist/single/index.iife.js": 6325
     },
     "@hackbuild/speak": {
-      "main: dist/index.js bundled": 16374,
-      "dist/single/index.iife.js": 20158
+      "main: dist/index.js bundled": 16357,
+      "dist/single/index.iife.js": 20133
     },
     "@hackbuild/stems": {
-      "main: dist/index.js bundled": 2382,
+      "main: dist/index.js bundled": 2369,
       "dist/single/index.iife.js": 30452
     },
     "@hackbuild/structured": {
-      "main: dist/index.js bundled": 9352,
-      "dist/single/index.iife.js": 9825
+      "main: dist/index.js bundled": 9278,
+      "dist/single/index.iife.js": 9785
     },
     "@hackbuild/transcribe": {
-      "main: dist/index.js bundled": 16590,
-      "dist/single/index.iife.js": 18516
+      "main: dist/index.js bundled": 16410,
+      "dist/single/index.iife.js": 18352
     },
     "@hackbuild/vision": {
       "main: dist/index.js bundled": 29464,
       "dist/single/index.iife.js": 59934
     },
     "@hackbuild/weights": {
-      "main: dist/index.js bundled": 9327,
-      "dist/single/index.iife.js": 9255
+      "main: dist/index.js bundled": 9297,
+      "dist/single/index.iife.js": 9225
     },
     "@hackbuild/converse": {
-      "main: dist/index.js bundled": 5851,
-      "dist/single/index.iife.js": 5988
+      "main: dist/index.js bundled": 5840,
+      "dist/single/index.iife.js": 5978
     },
     "@hackbuild/ai-views": {
       "main: dist/index.js bundled": 21494,
-      "dist/single/elements.iife.js": 100092
+      "dist/single/elements.iife.js": 100083
     }
   }
 }

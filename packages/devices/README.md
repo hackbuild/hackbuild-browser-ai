@@ -2,7 +2,7 @@
 
 Plug onnxruntime-web and transformers.js into the models hub, with device ladders, pinned runtime imports and failure lines your users can read.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/devices)](https://www.npmjs.com/package/@hackbuild/devices) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 7.2 kB measured](https://img.shields.io/badge/gzip-7.2%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/devices)](https://www.npmjs.com/package/@hackbuild/devices) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 7.1 kB measured](https://img.shields.io/badge/gzip-7.1%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet. The runtime imports of transformers.js and onnxruntime-web passed one automated pass in Chrome 150 on an Apple M1 that nobody has looked at; the ort ladder on a real graph and Safari have not run.
 
@@ -189,9 +189,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 7,219 bytes | 7,579 bytes |
-| `dist/single/index.iife.js` (single file build) | 37,059 bytes | 38,911 bytes |
+| `dist/index.js` (main entry, imports external) | 7,127 bytes | 7,483 bytes |
+| `dist/single/index.iife.js` (single file build) | 37,283 bytes | 39,147 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.

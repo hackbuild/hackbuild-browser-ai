@@ -2,7 +2,7 @@
 
 Turn a recording into timed text in the tab, with Whisper or Moonshine behind a front end that finds quiet speech and drops the lines a model writes over silence.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/transcribe)](https://www.npmjs.com/package/@hackbuild/transcribe) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.6 kB measured](https://img.shields.io/badge/gzip-16.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/transcribe)](https://www.npmjs.com/package/@hackbuild/transcribe) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.4 kB measured](https://img.shields.io/badge/gzip-16.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: one model of this package has run in a real browser: whisper-base.en on wasm q8 and webgpu fp32 over one sentence spoken by Kokoro, in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. whisper-large-v3-turbo, the other Whisper models, Moonshine, the live segmenter on a microphone and the Web Speech adapter have not run.
 
@@ -187,9 +187,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 16,590 bytes | 17,419 bytes |
-| `dist/single/index.iife.js` (single file build) | 18,516 bytes | 19,441 bytes |
+| `dist/index.js` (main entry, imports external) | 16,410 bytes | 17,230 bytes |
+| `dist/single/index.iife.js` (single file build) | 18,352 bytes | 19,269 bytes |
 
-Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
+Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
