@@ -44,6 +44,12 @@ function attachVision(hub: Hub, tjs?: TjsProvider): void
 Add the vision records and register the transformers.js loaders.
 
 ```ts
+function autoThresholdMask(px: Pixels, invert?: boolean): { mask: Mask; threshold: number }
+```
+
+The threshold mask at Otsu's cut, with the cut it chose.
+
+```ts
 interface Box {
   h: number;
   w: number;
@@ -85,10 +91,41 @@ function centreDetector(label?: string): Detector
 A stub detector with no weights: one centred box with the given label.
 
 ```ts
+function clusterMask(px: Pixels, o?: { iterations?: number; k?: number; rng?: () => number }): Mask
+```
+
+Everything but the largest colour cluster, as the mask studio's cluster button: `colourClusters` then a mask.
+
+```ts
+function clusterMasks(c: Clusters): Mask[]
+```
+
+One mask per cluster, largest first.
+
+```ts
+interface Clusters {
+  background: number;
+  centres: [number, number, number][];
+  counts: number[];
+  height: number;
+  labels: Uint8Array;
+  width: number;
+}
+```
+
+What colourClusters returns: a cluster index per pixel, the centres, the pixel count per cluster and the background cluster.
+
+```ts
 const COCO_LABELS: string[]
 ```
 
 The 80 COCO class names, in YOLO class index order.
+
+```ts
+function colourClusters(px: Pixels, o?: { iterations?: number; k?: number; rng?: () => number }): Clusters
+```
+
+K-means on RGB: `k` clusters (2 to 16, default 4), `iterations` passes (default 8), centres seeded from pixels picked by `rng`.
 
 ```ts
 function cutoutPng(image: Pixels, m: Mask, o?: { compress?: boolean }): Promise<Uint8Array<ArrayBufferLike>>
@@ -103,10 +140,22 @@ function cutoutRgba(image: Pixels, m: Mask): Uint8ClampedArray
 The image's RGBA with the mask as alpha (the cutout).
 
 ```ts
+function decodeFastSam(out: ArrayLike<number>, dims: readonly number[], protos: ArrayLike<number>, protoDims: readonly number[], lb: Letterbox, src: { height: number; width: number }, o?: EverythingOptions): Instance[]
+```
+
+Decode the two FastSAM outputs into instances in source pixels, best first: boxes, scores, areas and one mask each (255 inside, `score` on the mask too).
+
+```ts
 function decodeYolo(out: ArrayLike<number>, dims: readonly number[], lb: Letterbox, src: { height: number; width: number }, o?: { iou?: number; labels?: readonly string[]; max?: number; scoreThreshold?: number }): Detection[]
 ```
 
 Decode a [4 + classes, anchors] output (batch 1) into boxes in source pixels.
+
+```ts
+function decodeYoloEnd2End(out: ArrayLike<number>, dims: readonly number[], lb: Letterbox, src: { height: number; width: number }, o?: { iou?: number; labels?: readonly string[]; max?: number; scoreThreshold?: number }): Detection[]
+```
+
+Decode an end to end output, [1, boxes, 6] as x1, y1, x2, y2, score and class in letterbox pixels (the YOLOv10 export layout, after the model's own one to one selection), into boxes in source pixels.
 
 ```ts
 const DEFAULT_REACTIONS: readonly Reaction[]
@@ -208,6 +257,18 @@ function detect(hub: Hub, image: unknown, o?: CallOptions & { maxResults?: numbe
 Objects in an image from the routed detector (MediaPipe EfficientDet by default, or a YOLO ort model), loaded and released through the hub.
 
 ```ts
+const DETECT_SIZES: Readonly<Record<DetectSize, string>>
+```
+
+Record id per detector size; the records sit in PICKER_RECORDS.
+
+```ts
+function detectAt(hub: Hub, image: unknown, size: DetectSize, o?: Omit<CallOptions, "model" | "size"> & { maxResults?: number; scoreThreshold?: number; toPixels?: (img: unknown) => Pixels }): Promise<Detection[]>
+```
+
+Objects at a chosen detector size: YOLOv10 nano, small or medium (DETECT_SIZES).
+
+```ts
 function detectCadenceMs(lastLatencyMs: number): number
 ```
 
@@ -233,10 +294,22 @@ interface Detector {
 A loaded detector: `detect` returns the objects in an image.
 
 ```ts
+type DetectSize = "n" | "s" | "m"
+```
+
+The three detector sizes over the YOLOv10 picker records: nano, small and medium.
+
+```ts
 function discSegmenter(): Segmenter & { cache: EmbeddingCache<{ height: number; width: number }>; encodes: number }
 ```
 
 A disc at the first positive point, or in the middle of the box, with a hole at each negative point.
+
+```ts
+function edgeMask(px: Pixels, threshold?: number): Mask
+```
+
+Edge pixels: the 3 by 3 Sobel gradient magnitude of luma above `threshold` (default 50).
 
 ```ts
 class EmbeddingCache<E = unknown> {
@@ -269,6 +342,60 @@ function encodePng(width: number, height: number, data: ArrayLike<number>, o?: {
 A PNG file from RGBA (4 channels) or grey (1 channel) bytes.
 
 ```ts
+function ensureRecord(hub: Hub, id: string): ModelRecord
+```
+
+Add a picker record to the hub's registry when it is missing, so a call that names it by id can load it.
+
+```ts
+interface EverythingOptions {
+  confidence?: number;
+  iou?: number;
+  maskThreshold?: number;
+  max?: number;
+  minArea?: number;
+  sigmoid?: boolean;
+}
+```
+
+Options for decodeFastSam and EverythingSegmenter.segmentAll.
+
+```ts
+interface EverythingSegmenter {
+  dispose?(): unknown;
+  segmentAll(image: unknown, o?: EverythingOptions): Promise<Instance[]>;
+}
+```
+
+A loaded segment everything model: `segmentAll` returns every instance in an image, best first.
+
+```ts
+interface ExportFile {
+  data: Uint8Array;
+  name: string;
+  type: "image/png" | "application/json";
+}
+```
+
+One exported file: its name, bytes and media type.
+
+```ts
+function exportInstances(image: Pixels, instances: readonly Instance[], o?: ExportInstancesOptions): Promise<ExportFile[]>
+```
+
+The files for a set of instances: `<prefix>_<n>_cutout.png` and `<prefix>_<n>_mask.png` per non empty instance, then `instances.json`.
+
+```ts
+interface ExportInstancesOptions {
+  compress?: boolean;
+  crop?: boolean;
+  prefix?: string;
+}
+```
+
+Options for exportInstances: crop the PNGs to each mask (default true), a file name prefix (default "instance"), PNG compression.
+
+```ts
 interface FaceApi {
   nets: { faceLandmark68TinyNet: { loadFromUri(u: string): Promise<void> }; tinyFaceDetector: { loadFromUri(u: string): Promise<void> } };
   TinyFaceDetectorOptions: new (o?: Record<string, unknown>) => unknown;
@@ -289,6 +416,12 @@ function faceApiRecord(baseUrl: string): ModelRecord
 ```
 
 A face landmark fallback record over face-api.js tiny nets (code MIT; weights MIT from @vladmandic/face-api).
+
+```ts
+function fastSamSegmenter(m: OrtModel, o?: { size?: number; toPixels?: (img: unknown) => Pixels }): EverythingSegmenter
+```
+
+Wrap a FastSAM ort model as an EverythingSegmenter.
 
 ```ts
 function fitSize(w: number, h: number, maxPx?: number): { height: number; scale: number; width: number }
@@ -333,10 +466,49 @@ type ImageInput = unknown
 Anything the runtimes accept: an image, canvas, video frame, bitmap, URL or data URL.
 
 ```ts
+interface Instance {
+  area: number;
+  box: Box;
+  label?: string;
+  mask: Mask;
+  score: number;
+}
+```
+
+One object a segment everything pass found: its box and score in image pixels, its area in pixels and its mask.
+
+```ts
+function instanceAt(instances: readonly Instance[], x: number, y: number): Instance | undefined
+```
+
+The smallest instance whose mask holds the pixel at x, y, for hover and click picks; undefined off every mask.
+
+```ts
+interface InstanceRow {
+  area: number;
+  box: Box;
+  crop: Box;
+  cutout: string;
+  index: number;
+  label?: string;
+  mask: string;
+  score: number;
+}
+```
+
+One row of `instances.json`.
+
+```ts
 function iou(a: Box, b: Box): number
 ```
 
 Intersection over union of two boxes, 0 to 1.
+
+```ts
+function isEnd2End(dims: readonly number[]): boolean
+```
+
+True when an output is the end to end layout (last axis 6, boxes on the axis before it), false for the [4 + classes, anchors] layout.
 
 ```ts
 function landmarkChain(hub: Hub, kind: LandmarkKind): ModelRecord[]
@@ -440,6 +612,12 @@ interface LoopOptions<T> {
 A perception loop beside a render loop: one step at a time (a busy guard), each step started no sooner than `interval(lastLatency)` after the previous one began (an adaptive cadence or a fixed period), stopped by `stop()` or an abort signal.
 
 ```ts
+function luma(px: Pixels): Float32Array
+```
+
+Rec.
+
+```ts
 interface Mask {
   data: Uint8Array;
   height: number;
@@ -455,6 +633,12 @@ function maskArea(m: Mask): number
 ```
 
 Inside pixels (128 and up).
+
+```ts
+function maskBox(m: Mask): { h: number; w: number; x: number; y: number } | null
+```
+
+The tight box of the inside pixels in whole pixels, or null for an empty mask.
 
 ```ts
 function maskDilate(m: Mask, r: number): Mask
@@ -544,6 +728,12 @@ function maskToRle(m: Mask): MaskRle
 The mask as COCO style uncompressed run length, column major, 128 and up inside.
 
 ```ts
+function maskToSelection(m: Mask): Uint8Array
+```
+
+A Mask to 1 in a byte a pixel (128 and up is inside), the shape the hackbuild-ui mask tools edit.
+
+```ts
 function maskToSvg(m: Mask, o?: { fill?: string }): string
 ```
 
@@ -588,6 +778,12 @@ function nms(dets: Detection[], iouThreshold?: number, max?: number): Detection[
 ```
 
 Greedy NMS within each label, best first, then the top `max` overall.
+
+```ts
+function otsuThreshold(px: Pixels): number
+```
+
+Otsu's threshold over the luma histogram: the cut that maximizes the between class variance, 0 to 255.
 
 ```ts
 interface Perception {
@@ -789,6 +985,12 @@ interface Segmenter {
 A loaded segmenter: `segment` returns masks for an image and prompt, best first.
 
 ```ts
+function segmentEverything(hub: Hub, image: unknown, o?: CallOptions & EverythingOptions & { toPixels?: (img: unknown) => Pixels }): Promise<Instance[]>
+```
+
+Every object in one pass (FastSAM-S by default): instances with a box, score, area and mask, best first, after a class agnostic NMS.
+
+```ts
 interface SegmentOptions {
   cache?: EmbeddingCache<unknown>;
   key?: string;
@@ -805,6 +1007,12 @@ interface SegmentPrompt {
 ```
 
 What to cut out: points (object or background) and a box, in image pixels.
+
+```ts
+function selectionToMask(sel: ArrayLike<number>, width: number, height: number): Mask
+```
+
+A selection as 1 in a byte a pixel (the hackbuild-ui mask tools' shape) to a Mask, 255 inside.
 
 ```ts
 class SignalTracker {
@@ -848,6 +1056,12 @@ function tasksVisionWasm(version?: string): string
 ```
 
 The directory of the tasks-vision wasm fileset, on jsDelivr.
+
+```ts
+function thresholdMask(px: Pixels, threshold?: number, invert?: boolean): Mask
+```
+
+Pixels brighter than `threshold` (0 to 255, default 128); `invert` keeps the darker ones.
 
 ```ts
 const VISION_RECORDS: ModelRecord[]
@@ -896,13 +1110,51 @@ RGBA pixels the page sends to the depth worker: ImageData, or anything with widt
 function yoloDetector(m: OrtModel, o?: { labels?: readonly string[]; size?: number; toPixels?: (img: unknown) => Pixels }): Detector
 ```
 
-Wrap an ort model as a Detector.
+Wrap an ort model as a Detector; the output layout (YOLOv8 anchors or YOLOv10 end to end) is read from its dims.
 
 ```ts
 function yoloRecord(o: { id?: string; labels?: string[]; licence?: string; sha256?: string; url: string }): ModelRecord
 ```
 
 YOLOv8n exported to ONNX (640 input, [1, 84, 8400] output).
+
+### @hackbuild/vision/select
+
+```ts
+function ellipseMask(width: number, height: number, a: MaskPt, b: MaskPt): Mask
+```
+
+The ellipse that fills the box between two corners.
+
+```ts
+function floodMask(px: Pixels, x: number, y: number, tolerance?: number): Mask
+```
+
+Flood fill: the contiguous patch of one colour under x, y, within `tolerance` percent (the wand with contiguous on, as the flood tool).
+
+```ts
+const lassoMask: (width: number, height: number, points: readonly MaskPt[]) => Mask
+```
+
+The lasso is a freehand polygon; the same rasteriser.
+
+```ts
+function polygonMask(width: number, height: number, points: readonly MaskPt[]): Mask
+```
+
+Lasso or polygon: every pixel whose centre lies inside the path (even odd).
+
+```ts
+function rectMask(width: number, height: number, a: MaskPt, b: MaskPt): Mask
+```
+
+The rectangle between two corners, in image pixels.
+
+```ts
+function wandMask(px: Pixels, x: number, y: number, tolerance: number, contiguous?: boolean): Mask
+```
+
+Magic wand: pixels within `tolerance` percent of the colour at x, y; `contiguous` (default) floods through 4 neighbours, off takes every such pixel.
 
 ## Examples
 

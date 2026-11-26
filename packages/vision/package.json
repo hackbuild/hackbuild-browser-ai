@@ -1,7 +1,7 @@
 {
   "name": "@hackbuild/vision",
   "version": "0.1.3",
-  "description": "Perception through the models hub: depth (Depth Anything V2 small), detection (MediaPipe EfficientDet, YOLO as an optional external model), segmentation, face, hand and pose landmarks with a fallback chain, captions and questions through small VLMs, a webcam loop helper and a result cache.",
+  "description": "Perception through the models hub: depth (Depth Anything V2 small), detection (MediaPipe EfficientDet, YOLO v8 external and v10 at three sizes), segmentation (prompted SAM, FastSAM segment everything, selection rasterisers, no model auto masks, per instance export), face, hand and pose landmarks with a fallback chain, captions and questions through small VLMs, a webcam loop helper and a result cache.",
   "type": "module",
   "license": "MIT",
   "author": "Moheeb Zara <hackbuildvideo@gmail.com>",
@@ -18,6 +18,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./select": {
+      "types": "./dist/select.d.ts",
+      "import": "./dist/select.js"
     }
   },
   "files": [
@@ -37,5 +41,13 @@
     "@hackbuild/models": "0.2.1",
     "@hackbuild/devices": "0.1.3",
     "@hackbuild/weights": "0.1.2"
+  },
+  "peerDependencies": {
+    "@virgilvox/hackbuild-ui": ">=0.10.0 <0.11.0"
+  },
+  "peerDependenciesMeta": {
+    "@virgilvox/hackbuild-ui": {
+      "optional": true
+    }
   }
 }

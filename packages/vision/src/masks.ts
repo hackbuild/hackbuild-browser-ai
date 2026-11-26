@@ -407,3 +407,31 @@ export function maskFromRle(r: MaskRle): Mask {
   if (i !== w * h) throw new RangeError(`maskFromRle: counts cover ${i} pixels of ${w * h}`);
   return { width: w, height: h, data };
 }
+
+/** A selection as 1 in a byte a pixel (the hackbuild-ui mask tools' shape) to a {@link Mask}, 255 inside. */
+export function selectionToMask(sel: ArrayLike<number>, width: number, height: number): Mask {
+  if (sel.length !== width * height) throw new RangeError(`selectionToMask: ${sel.length} values for a ${width} x ${height} mask`);
+  return { width, height, data: Uint8Array.from(sel, (v) => (v ? 255 : 0)) };
+}
+
+/** A {@link Mask} to 1 in a byte a pixel (128 and up is inside), the shape the hackbuild-ui mask tools edit. */
+export function maskToSelection(m: Mask): Uint8Array {
+  return Uint8Array.from(m.data, (v) => (v >= ON ? 1 : 0));
+}
+
+/** The tight box of the inside pixels in whole pixels, or null for an empty mask. */
+export function maskBox(m: Mask): { x: number; y: number; w: number; h: number } | null {
+  let x0 = m.width;
+  let y0 = m.height;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < m.height; y++)
+    for (let x = 0; x < m.width; x++)
+      if (m.data[y * m.width + x]! >= ON) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+  return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}

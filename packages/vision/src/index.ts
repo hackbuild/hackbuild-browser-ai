@@ -14,13 +14,14 @@ export type {
   Landmarks,
   Landmarker,
   Vlm,
+  Instance,
 } from "./types.js";
 export { VISION_RECORDS, PICKER_RECORDS, MP_MODELS, mediapipeLadder, faceApiRecord, yoloRecord } from "./records.js";
-export { attachVision, depth, detect, segment, landmarks, landmarkChain, caption, ask, type CallOptions } from "./api.js";
+export { attachVision, depth, detect, detectAt, segmentEverything, ensureRecord, segment, landmarks, landmarkChain, caption, ask, type CallOptions } from "./api.js";
 export { depthLoader, vlmLoader, samLoader, depthFromOutput } from "./loaders.js";
 export { mediapipeProvider, loadTasksVision, tasksVisionUrls, tasksVisionWasm, TASKS_VISION, type TasksVision, type MediapipeProviderOptions } from "./mediapipe.js";
 export { faceApiProvider, type FaceApi } from "./faceapi.js";
-export { yoloDetector, decodeYolo, letterboxParams, letterboxTensor, nms, iou, detectCadenceMs, COCO_LABELS, type Letterbox } from "./yolo.js";
+export { yoloDetector, decodeYolo, decodeYoloEnd2End, isEnd2End, DETECT_SIZES, type DetectSize, letterboxParams, letterboxTensor, nms, iou, detectCadenceMs, COCO_LABELS, type Letterbox } from "./yolo.js";
 export { perceptionLoop, readbackLoop, ResultCache, depthToRgba, fitSize, type Loop, type LoopOptions, type ReadbackOptions } from "./loop.js";
 export { depthWorker, DEPTH_WORKER_SOURCE, type DepthWorker, type DepthWorkerOptions, type Pixels as WorkerPixels } from "./worker.js";
 export { visionStubs, rampDepth, centreDetector, discSegmenter, fixedLandmarker, fixedVlm } from "./stubs.js";
@@ -46,8 +47,14 @@ export {
   maskToSvg,
   maskToRle,
   maskFromRle,
+  selectionToMask,
+  maskToSelection,
+  maskBox,
   type MaskRle,
 } from "./masks.js";
+export { decodeFastSam, fastSamSegmenter, instanceAt, type EverythingOptions, type EverythingSegmenter } from "./fastsam.js";
+export { luma, edgeMask, thresholdMask, otsuThreshold, autoThresholdMask, colourClusters, clusterMask, clusterMasks, type Clusters } from "./auto.js";
+export { exportInstances, type ExportFile, type InstanceRow, type ExportInstancesOptions } from "./instances.js";
 export {
   SignalTracker,
   SeenNotes,

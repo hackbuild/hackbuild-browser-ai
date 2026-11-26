@@ -2,8 +2,9 @@
  * A detector over a YOLOv8 style ONNX export: a square letterbox (640 by
  * default, grey 114 padding), one [1, 4 + classes, anchors] output read as
  * centre x, centre y, width, height and class scores, then non maximum
- * suppression per class. Written from the published output layout; the
- * weights are external and AGPL-3.0.
+ * suppression per class. YOLOv10 exports give [1, boxes, 6] after their
+ * own selection; that layout is read from the dims and decoded too.
+ * Written from the published output layouts; the weights are AGPL-3.0.
  */
 
 import type { OrtModel } from "@hackbuild/devices";
@@ -114,7 +115,51 @@ export function decodeYolo(
   return nms(dets, o.iou ?? 0.45, o.max ?? 13);
 }
 
-/** Wrap an ort model as a Detector. Images must be Pixels, or `toPixels` must turn them into Pixels. */
+/**
+ * Decode an end to end output, [1, boxes, 6] as x1, y1, x2, y2, score and
+ * class in letterbox pixels (the YOLOv10 export layout, after the
+ * model's own one to one selection), into boxes in source pixels. The
+ * per class NMS pass still runs, so an export that leaves near duplicates
+ * gives one box per object.
+ */
+export function decodeYoloEnd2End(
+  out: ArrayLike<number>,
+  dims: readonly number[],
+  lb: Letterbox,
+  src: { width: number; height: number },
+  o: { scoreThreshold?: number; iou?: number; max?: number; labels?: readonly string[] } = {},
+): Detection[] {
+  const n = dims[dims.length - 2]!;
+  const stride = dims[dims.length - 1]!;
+  const thr = o.scoreThreshold ?? 0.25;
+  const labels = o.labels ?? COCO_LABELS;
+  const dets: Detection[] = [];
+  for (let a = 0; a < n; a++) {
+    const r = a * stride;
+    const score = out[r + 4]!;
+    if (!(score > thr)) continue;
+    const c = Math.round(out[r + 5]!);
+    const x0 = Math.max(0, (out[r]! - lb.padX) / lb.scale);
+    const y0 = Math.max(0, (out[r + 1]! - lb.padY) / lb.scale);
+    const x1 = Math.min(src.width, (out[r + 2]! - lb.padX) / lb.scale);
+    const y1 = Math.min(src.height, (out[r + 3]! - lb.padY) / lb.scale);
+    if (x1 <= x0 || y1 <= y0) continue;
+    dets.push({ label: labels[c] ?? String(c), score, box: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } });
+  }
+  return nms(dets, o.iou ?? 0.45, o.max ?? 13);
+}
+
+/** True when an output is the end to end layout (last axis 6, boxes on the axis before it), false for the [4 + classes, anchors] layout. */
+export function isEnd2End(dims: readonly number[]): boolean {
+  return dims[dims.length - 1] === 6 && dims[dims.length - 2]! > 6;
+}
+
+/** The three detector sizes over the YOLOv10 picker records: nano, small and medium. */
+export type DetectSize = "n" | "s" | "m";
+/** Record id per detector size; the records sit in PICKER_RECORDS. */
+export const DETECT_SIZES: Readonly<Record<DetectSize, string>> = { n: "yolov10n", s: "yolov10s", m: "yolov10m" };
+
+/** Wrap an ort model as a Detector; the output layout (YOLOv8 anchors or YOLOv10 end to end) is read from its dims. Images must be Pixels, or `toPixels` must turn them into Pixels. */
 export function yoloDetector(m: OrtModel, o: { size?: number; labels?: readonly string[]; toPixels?: (img: unknown) => Pixels } = {}): Detector {
   const size = o.size ?? 640;
   return {
@@ -124,11 +169,13 @@ export function yoloDetector(m: OrtModel, o: { size?: number; labels?: readonly 
       const feeds = { [m.session.inputNames[0]!]: new m.ort.Tensor("float32", data, [1, 3, size, size]) };
       const res = await m.session.run(feeds);
       const t = res[m.session.outputNames[0]!]!;
-      return decodeYolo(t.data as ArrayLike<number>, t.dims, lb, px, {
+      const d = {
         ...(opts.scoreThreshold !== undefined ? { scoreThreshold: opts.scoreThreshold } : {}),
         ...(opts.maxResults !== undefined ? { max: opts.maxResults } : {}),
         ...(o.labels ? { labels: o.labels } : {}),
-      });
+      };
+      const out = t.data as ArrayLike<number>;
+      return isEnd2End(t.dims) ? decodeYoloEnd2End(out, t.dims, lb, px, d) : decodeYolo(out, t.dims, lb, px, d);
     },
     dispose: () => m.dispose(),
   };

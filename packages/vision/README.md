@@ -127,6 +127,22 @@ Mask operations are functions on `Mask` (128 and up is inside): `maskUnion`, `ma
 
 Export: `maskToPng` (grey), `cutoutPng(pixels, mask)` (the image with the mask as alpha), `maskToSvg` (one even odd path along pixel edges, loops from `maskOutline`), `maskToRle` and `maskFromRle` (COCO style uncompressed run length, column major). `encodePng` deflates through CompressionStream where the runtime has it and writes stored blocks otherwise.
 
+### segment everything, selection tools and auto masks
+
+`segmentEverything(hub, image, { confidence, iou, minArea, sigmoid })` runs FastSAM-s once and returns every instance (box, score, area, mask), best first, after a class agnostic NMS (defaults 0.4 and 0.9, the FastSAM defaults). The decoder reads the box output and the 4D prototype output by rank, sums coefficients times prototypes, applies the sigmoid, crops to the box and maps back through the letterbox. `instanceAt(instances, x, y)` gives the smallest instance under a point, for hover and click picks. Asking for it adds the FastSAM record (AGPL-3.0 upstream) to the registry.
+
+The selection rasterisers come from the hackbuild-ui mask tools on the `@hackbuild/vision/select` subpath (hackbuild-ui 0.10 is an optional peer there): `wandMask(px, x, y, tolerance, contiguous)`, `floodMask`, `lassoMask` and `polygonMask`, `rectMask`, `ellipseMask`, each returning a vision `Mask`, plus the raw `wandSelect`, `polygonFill`, `rectFill` and `ellipseFill`. `selectionToMask` and `maskToSelection` in the main entry convert between the two shapes.
+
+```ts
+import { wandMask } from "@hackbuild/vision/select";
+const sel = wandMask(pixels, x, y, 18);           // 18 percent of the rgb cube, contiguous
+const kept = maskUnion(current, sel);
+```
+
+No model auto modes, ported from the mask studio: `edgeMask(px, 50)` (Sobel on luma), `thresholdMask(px, 128)`, `autoThresholdMask(px)` (Otsu, returns the cut), `colourClusters(px, { k, rng })` with `clusterMask` (all but the largest cluster) and `clusterMasks` (one per cluster).
+
+`exportInstances(pixels, instances)` returns the files of a per instance export: `instance_<n>_cutout.png` and `instance_<n>_mask.png`, cropped to each mask unless `crop: false`, and `instances.json` with every box, score, area and crop.
+
 ### perception signals and seen notes
 
 `SignalTracker` turns per frame face and hand readings into steady signals and a few events: `arrived`, `left`, `smiled`, `gesture`. The clock comes in with each frame. Hands are optional; it runs on faces alone.
@@ -157,35 +173,41 @@ Thresholds are vendor figures, none measured here:
 
 ### yolo stays external
 
-The YOLO decoder is written from the published output layout ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by default: `yoloRecord({ url })` builds a record for a URL the app supplies, with a 640 letterbox and per class NMS at 0.45 keeping 13 boxes.
+The YOLO decoder is written from the published output layouts ([1, 84, 8400] for YOLOv8, [1, 300, 6] end to end for YOLOv10, told apart by the dims); no Ultralytics code is used. YOLO is never registered by default: `yoloRecord({ url })` builds a record for a URL the app supplies, with a 640 letterbox and per class NMS at 0.45 keeping 13 boxes. `detectAt(hub, image, "n" | "s" | "m")` picks YOLOv10 nano, small or medium (`DETECT_SIZES`) and adds that record on first use; picking a size is the opt in to the AGPL-3.0 weights. NMS runs on the end to end output too.
 
 ## API overview
 
 | export | what it does |
 |---|---|
-| [`attachVision`](../../docs/api/vision/README.md#attachvision) | register the vision records and transformers.js loaders on a hub |
-| [`depth`](../../docs/api/vision/README.md#depth) | a depth map, 0 to 1 with larger nearer |
-| [`detect`](../../docs/api/vision/README.md#detect) | boxes with labels and scores |
-| [`segment`](../../docs/api/vision/README.md#segment) | masks from points and a box, or a person mask |
-| [`landmarks`](../../docs/api/vision/README.md#landmarks) | face, hand, pose or gesture landmarks through a fallback chain |
-| [`caption`](../../docs/api/vision/README.md#caption) | a one sentence caption from a small VLM |
-| [`ask`](../../docs/api/vision/README.md#ask) | a VLM's answer to a question about an image |
-| [`mediapipeProvider`](../../docs/api/vision/README.md#mediapipeprovider) | the MediaPipe tasks-vision provider for the hub |
-| [`depthWorker`](../../docs/api/vision/README.md#depthworker) | Depth Anything in a dedicated worker |
-| [`perceptionLoop`](../../docs/api/vision/README.md#perceptionloop) | one perception step at a time beside a render loop |
-| [`readbackLoop`](../../docs/api/vision/README.md#readbackloop) | rate capped async readback that skips frames while busy |
-| [`ResultCache`](../../docs/api/vision/README.md#resultcache) | a small LRU of results by key |
-| [`EmbeddingCache`](../../docs/api/vision/README.md#embeddingcache) | image embeddings kept for later prompts |
-| [`maskUnion`](../../docs/api/vision/README.md#maskunion) | one of the mask operations; the rest sit beside it |
-| [`cutoutPng`](../../docs/api/vision/README.md#cutoutpng) | the image with the mask as alpha, as a PNG |
-| [`maskToSvg`](../../docs/api/vision/README.md#masktosvg) | the mask outline as an SVG path |
-| [`maskToRle`](../../docs/api/vision/README.md#masktorle) | COCO style run length |
-| [`SignalTracker`](../../docs/api/vision/README.md#signaltracker) | steady perception signals and events from face and hand frames |
-| [`SeenNotes`](../../docs/api/vision/README.md#seennotes) | one lowercase line for a language model when the signals change |
-| [`VISION_RECORDS`](../../docs/api/vision/README.md#vision_records) | the records `attachVision` registers |
-| [`PICKER_RECORDS`](../../docs/api/vision/README.md#picker_records) | records for pickers, never registered by default |
-| [`yoloRecord`](../../docs/api/vision/README.md#yolorecord) | an external YOLOv8n record for a URL you supply |
-| [`visionStubs`](../../docs/api/vision/README.md#visionstubs) | weightless models for stub pages and tests |
+| [`attachVision`](../../docs/api/vision/index.md#attachvision) | register the vision records and transformers.js loaders on a hub |
+| [`depth`](../../docs/api/vision/index.md#depth) | a depth map, 0 to 1 with larger nearer |
+| [`detect`](../../docs/api/vision/index.md#detect) | boxes with labels and scores |
+| [`detectAt`](../../docs/api/vision/index.md#detectat) | boxes from YOLOv10 at a chosen size, n, s or m |
+| [`segmentEverything`](../../docs/api/vision/index.md#segmenteverything) | every instance in one FastSAM pass |
+| [`instanceAt`](../../docs/api/vision/index.md#instanceat) | the instance under a point |
+| [`edgeMask`](../../docs/api/vision/index.md#edgemask) | one of the no model auto masks; threshold, Otsu and clusters sit beside it |
+| [`wandMask`](../../docs/api/vision/select.md#wandmask) | `@hackbuild/vision/select`: the hackbuild-ui wand, flood, lasso, polygon, rectangle and ellipse as vision masks |
+| [`exportInstances`](../../docs/api/vision/index.md#exportinstances) | cutout and mask PNGs per instance plus a JSON of boxes |
+| [`segment`](../../docs/api/vision/index.md#segment) | masks from points and a box, or a person mask |
+| [`landmarks`](../../docs/api/vision/index.md#landmarks) | face, hand, pose or gesture landmarks through a fallback chain |
+| [`caption`](../../docs/api/vision/index.md#caption) | a one sentence caption from a small VLM |
+| [`ask`](../../docs/api/vision/index.md#ask) | a VLM's answer to a question about an image |
+| [`mediapipeProvider`](../../docs/api/vision/index.md#mediapipeprovider) | the MediaPipe tasks-vision provider for the hub |
+| [`depthWorker`](../../docs/api/vision/index.md#depthworker) | Depth Anything in a dedicated worker |
+| [`perceptionLoop`](../../docs/api/vision/index.md#perceptionloop) | one perception step at a time beside a render loop |
+| [`readbackLoop`](../../docs/api/vision/index.md#readbackloop) | rate capped async readback that skips frames while busy |
+| [`ResultCache`](../../docs/api/vision/index.md#resultcache) | a small LRU of results by key |
+| [`EmbeddingCache`](../../docs/api/vision/index.md#embeddingcache) | image embeddings kept for later prompts |
+| [`maskUnion`](../../docs/api/vision/index.md#maskunion) | one of the mask operations; the rest sit beside it |
+| [`cutoutPng`](../../docs/api/vision/index.md#cutoutpng) | the image with the mask as alpha, as a PNG |
+| [`maskToSvg`](../../docs/api/vision/index.md#masktosvg) | the mask outline as an SVG path |
+| [`maskToRle`](../../docs/api/vision/index.md#masktorle) | COCO style run length |
+| [`SignalTracker`](../../docs/api/vision/index.md#signaltracker) | steady perception signals and events from face and hand frames |
+| [`SeenNotes`](../../docs/api/vision/index.md#seennotes) | one lowercase line for a language model when the signals change |
+| [`VISION_RECORDS`](../../docs/api/vision/index.md#vision_records) | the records `attachVision` registers |
+| [`PICKER_RECORDS`](../../docs/api/vision/index.md#picker_records) | records for pickers, never registered by default |
+| [`yoloRecord`](../../docs/api/vision/index.md#yolorecord) | an external YOLOv8n record for a URL you supply |
+| [`visionStubs`](../../docs/api/vision/index.md#visionstubs) | weightless models for stub pages and tests |
 
 The full reference is in [docs/api/vision](../../docs/api/vision/README.md).
 
@@ -259,6 +281,7 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 | 2026-11-22 | `npx vitest run packages/vision` under Node 22.18.0 with fake runtimes: licences on every record and YOLO kept external, every capability in stub mode, depth normalization from predicted_depth and from the 8 bit image, the depth record walking fp16 to fp32 through the transformers.js provider, the MediaPipe provider falling from the GPU to the CPU delegate and mapping detections, masks, hands and blendshapes, the face fallback to face-api.js after the MediaPipe record fails, YOLO letterbox, decode and NMS, an external YOLO record through an ort model, VLM questions serialized on one chain, SlimSAM embedding an image once for several prompts, the loop's busy guard and interval, the LRU cache, schedule options reaching the hub (interval wait, skip, frame budget skip) with routing to a smaller model and busy reports, and the readback loop's rate cap and busy skips | passes 15 tests (19 on 2026-11-23) |
 | 2026-11-23 | Chrome 150 on an Apple M1, the vision page (#35), frame p50 / p95 beside depth; unit tests run the worker source on the inline rung with a fake transformers.js module | scene alone 16.7 / 18.3 ms; depth on the main thread 16.7 / 49.9 unscheduled and 16.7 / 49.8 with the frame budget; depth in the worker on webgpu 16.7 / 18.3 (22 runs in 6 s, 280 ms p50), with a 200 ms gap 16.7 / 18.3, on wasm 16.7 / 18.2 (4,664 ms per run); no main thread task over 50 ms in any mode (measured) |
 | 2026-11-23 | LFM2-VL 450M (LFM Open License v1.0) loads and captions on webgpu after the images first processor fix | load 8,743 ms, caption 4,671 ms, the caption names the cube and the scene (measured) |
+| 2026-11-25 | `npx vitest run packages/vision`: the YOLOv10 end to end decode with NMS, `detectAt` adding the picked size and running a fake ort model, the FastSAM decode of synthetic prototypes through the letterbox and the hub, `instanceAt`, the hackbuild-ui rasteriser wrappers, the edge, threshold, Otsu and seeded k-means masks, and the per instance export | passes 50 tests |
 | 2026-11-24 | `npx vitest run packages/vision`: one encode for point, negative point and box prompts on one image, shared encodes in flight, failed encodes dropped, least recently used eviction, SlimSAM fed `input_boxes` and negative labels from one embedding, a box prompt routed through the hub to the stub, union, subtract, invert, a radius 3 dilate, erode keeping the border, feather, largest piece at 4 and 8 connectivity, PNG grey and alpha read back through zlib, the SVG outline of a square and a ring, and the run length round trip | passes 30 tests; the radius 3 dilate gives 29 pixels (computed) |
 
 ### Not verified by anything
@@ -268,8 +291,11 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
   SlimSAM class names and processor calls (box prompts through
   `input_boxes` included), a real YOLOv8n export's output
   name and layout.
-- FastSAM: not built. Its weights are AGPL-3.0 and its mask decoder is
-  not written; SlimSAM covers point prompts.
+- FastSAM and YOLOv10: the decoders run in unit tests on synthetic
+  outputs only. The output names, the prototype layout of the
+  `anakhiu/fastsam-onnx` export and the YOLOv10 end to end layout of the
+  onnx-community exports are inferred from the published architectures;
+  no real export has been run here.
 - Accuracy and speed of every model: no numbers taken.
 - Whether the frame budget and idle waits remove stutter in a real scene
   (needs a person looking at real frame rate).

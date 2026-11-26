@@ -6,7 +6,8 @@ const how: HowDoc = {
   how: [
     `every task is a capability on the \`@hackbuild/models\` hub with a fallback chain of records, so a call names what it wants (depth, detect, segment, face, hand, pose, caption) and the hub picks a model this device can run.`,
     `every call takes \`schedule\` (passed to \`hub.run\`: \`minIntervalMs\`, \`idleOnly\`, \`frameBudgetMs\`) and \`size\` or \`maxMB\` to route to a smaller model, so a rendering page keeps its frames.`,
-    `\`depthWorker\` runs depth anything v2 small (apache-2.0) in a dedicated worker, so pre and post processing and the readback leave the page thread. the yolo decoder is written from the published output layout and is never registered by default.`,
+    `\`depthWorker\` runs depth anything v2 small (apache-2.0) in a dedicated worker, so pre and post processing and the readback leave the page thread. the yolo decoder is written from the published output layouts and is never registered by default; \`detectAt(hub, image, "n" | "s" | "m")\` opts in to a yolov10 size (agpl-3.0).`,
+    `\`segmentEverything\` decodes fastsam prototype masks with a class agnostic nms into instances; \`@hackbuild/vision/select\` re-exports the hackbuild-ui wand, flood, lasso, polygon, rectangle and ellipse rasterisers; \`edgeMask\`, \`autoThresholdMask\` and \`clusterMask\` need no model; \`exportInstances\` writes cutout and mask pngs plus a json of boxes.`,
   ],
   install: "npm install @hackbuild/vision",
   today: `git clone https://github.com/hackbuild/hackbuild-browser-ai

@@ -10,10 +10,11 @@
 import type { OrtModel, TjsProvider } from "@hackbuild/devices";
 import type { Hub, Loaded, ModelRecord, RunOptions, SizeClass, UseOptions } from "@hackbuild/models";
 import { depthLoader, samLoader, vlmLoader } from "./loaders.js";
-import { VISION_RECORDS } from "./records.js";
+import { fastSamSegmenter, type EverythingOptions, type EverythingSegmenter } from "./fastsam.js";
+import { PICKER_RECORDS, VISION_RECORDS } from "./records.js";
 import { hasPrompt } from "./segment.js";
-import type { DepthMap, Detection, Detector, ImageInput, LandmarkKind, Landmarker, Landmarks, Mask, Pixels, SegmentOptions, SegmentPrompt, Segmenter, Vlm } from "./types.js";
-import { yoloDetector } from "./yolo.js";
+import type { DepthMap, Detection, Instance, Detector, ImageInput, LandmarkKind, Landmarker, Landmarks, Mask, Pixels, SegmentOptions, SegmentPrompt, Segmenter, Vlm } from "./types.js";
+import { DETECT_SIZES, yoloDetector, type DetectSize } from "./yolo.js";
 
 /** Add the vision records and register the transformers.js loaders. MediaPipe and ort factories are provided by the app. */
 export function attachVision(hub: Hub, tjs?: TjsProvider): void {
@@ -76,6 +77,61 @@ export function detect(
   if (o.maxResults !== undefined) opts.maxResults = o.maxResults;
   if (o.timestamp !== undefined) opts.timestamp = o.timestamp;
   return withModel<unknown, Detection[]>(hub, target("detect", o), (v) => asDetector(v, o.toPixels).detect(image, opts), o);
+}
+
+/** Add a picker record to the hub's registry when it is missing, so a call that names it by id can load it. */
+export function ensureRecord(hub: Hub, id: string): ModelRecord {
+  const have = hub.registry.get(id);
+  if (have) return have;
+  const rec = PICKER_RECORDS.find((r) => r.id === id);
+  if (!rec) throw new Error(`${id} is neither registered nor a picker record`);
+  hub.registry.add(rec);
+  return rec;
+}
+
+/**
+ * Objects at a chosen detector size: YOLOv10 nano, small or medium
+ * ({@link DETECT_SIZES}). Picking a size is the opt in to the AGPL-3.0
+ * Ultralytics weights: the record is added to the registry on first use.
+ * Boxes pass a per class NMS.
+ */
+export function detectAt(
+  hub: Hub,
+  image: ImageInput,
+  size: DetectSize,
+  o: Omit<CallOptions, "model" | "size"> & { scoreThreshold?: number; maxResults?: number; toPixels?: (img: unknown) => Pixels } = {},
+): Promise<Detection[]> {
+  const id = Object.hasOwn(DETECT_SIZES, size) ? DETECT_SIZES[size] : undefined;
+  if (!id) return Promise.reject(new RangeError(`detector size ${String(size)}: pick n, s or m`));
+  ensureRecord(hub, id);
+  return detect(hub, image, { ...o, model: id });
+}
+
+function asEverything(v: unknown, toPixels?: (img: unknown) => Pixels): EverythingSegmenter {
+  if (v && typeof v === "object" && "sessions" in v) return fastSamSegmenter(v as OrtModel, toPixels ? { toPixels } : {});
+  return v as EverythingSegmenter;
+}
+
+/**
+ * Every object in one pass (FastSAM-S by default): instances with a box,
+ * score, area and mask, best first, after a class agnostic NMS. The
+ * FastSAM record (AGPL-3.0 upstream) is added on first use unless `model`
+ * names another record that provides "segment.everything".
+ */
+export function segmentEverything(
+  hub: Hub,
+  image: ImageInput,
+  o: CallOptions & EverythingOptions & { toPixels?: (img: unknown) => Pixels } = {},
+): Promise<Instance[]> {
+  const { model, size, maxMB, signal, schedule, toPixels, ...eo } = o;
+  const id = model ?? "fastsam-s";
+  ensureRecord(hub, id);
+  const co: CallOptions = { model: id };
+  if (size) co.size = size;
+  if (maxMB !== undefined) co.maxMB = maxMB;
+  if (signal) co.signal = signal;
+  if (schedule) co.schedule = schedule;
+  return withModel<unknown, Instance[]>(hub, { id }, (v) => asEverything(v, toPixels).segmentAll(image, eo), co);
 }
 
 /**

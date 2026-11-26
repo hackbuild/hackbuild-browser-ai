@@ -3,9 +3,11 @@
  * 2026-11-22; sizes are inferred from the builds and parameter counts, except where
  * a row says vendor: those sum the hub listing's files (no download), in MiB.
  * YOLO weights are AGPL-3.0 (Ultralytics): they are never registered by
- * default. YOLOv8n has no public hub repo, so `yoloRecord` builds a record
+ * default. YOLOv8n has no onnx-community or Xenova repo (an HTTP HEAD of
+ * their config.json gave 401 on 2026-11-25), so `yoloRecord` builds a record
  * only for a URL the app supplies; YOLOv10 n, s and m, FastSAM and the face
- * swap set sit in PICKER_RECORDS.
+ * swap set sit in PICKER_RECORDS. The YOLOv10 n, s and m, SmolVLM 500M,
+ * Gemma 4 E2B and FastSAM repos answered that HEAD with 200 the same day.
  */
 
 import { LADDERS, tjsLadder } from "@hackbuild/devices";
@@ -274,7 +276,8 @@ export const PICKER_RECORDS: ModelRecord[] = [
     licence: "AGPL-3.0 upstream (Ultralytics FastSAM); the export's card says apache-2.0",
     commercial: false,
     place: "cpu-worker",
-    notes: ["finds every mask in one pass on onnxruntime-web (93 MB, vendor)", "segment everything: prototype masks, nms, then a pick by click"],
+    // fastsam_s.onnx 47637745 bytes in the hub listing (vendor, 2026-11-25, https://huggingface.co/anakhiu/fastsam-onnx/tree/main), in MiB
+    notes: ["finds every mask in one pass on onnxruntime-web; the original page loaded a 93 MB build (vendor, its review)", "segment everything: prototype masks, nms, then a pick by click (segmentEverything, instanceAt)"],
   },
   {
     id: "scrfd-10g",

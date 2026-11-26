@@ -110,3 +110,13 @@ export interface Vlm {
   ask(image: ImageInput, question?: string, opts?: { maxTokens?: number; signal?: AbortSignal }): Promise<string>;
   dispose?(): unknown;
 }
+
+/** One object a segment everything pass found: its box and score in image pixels, its area in pixels and its mask. */
+export interface Instance {
+  box: Box;
+  score: number;
+  /** Inside pixels of the mask. */
+  area: number;
+  mask: Mask;
+  label?: string;
+}
