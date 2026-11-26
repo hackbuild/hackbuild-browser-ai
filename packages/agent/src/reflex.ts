@@ -7,14 +7,17 @@
 
 import type { Step } from "./tools.js";
 
+/** A reflex rule's plan: steps from the regex match and the clause, or null to let the next rule try. */
 export type ReflexPlan = (m: RegExpExecArray, clause: string) => Step[] | null;
 
+/** What `Reflex.parse` returns: the steps mapped and the clauses no rule mapped. */
 export interface ReflexResult {
   steps: Step[];
   /** Clauses no rule mapped. */
   missed: string[];
 }
 
+/** Split a request into lowercase clauses on commas, semicolons, "then" and "and", with polite words removed. */
 export function clauses(text: string): string[] {
   return text
     .toLowerCase()
@@ -24,6 +27,7 @@ export function clauses(text: string): string[] {
     .filter(Boolean);
 }
 
+/** The reflex brain: regex rules that map each clause of a request to steps, with no model. */
 export class Reflex {
   private rules: { re: RegExp; plan: ReflexPlan }[] = [];
 

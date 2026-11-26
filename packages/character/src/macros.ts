@@ -28,6 +28,7 @@ function keyMatcher(key: string, e: LoreEntry): RegExp | null {
 
 const anyKey = (keys: readonly string[] | undefined, text: string, e: LoreEntry) => (keys ?? []).some((k) => keyMatcher(k, e)?.test(text) ?? false);
 
+/** Options for `activeLore`. */
 export interface LoreOptions {
   /** Stop adding entries once their content passes this many characters. */
   budgetChars?: number;

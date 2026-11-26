@@ -10,8 +10,10 @@
  * and are in neither default; an app opts in by passing them.
  */
 
+/** Bucket name to the words that name it. */
 export type WordTable = Readonly<Record<string, readonly string[]>>;
 
+/** Mood buckets: the words that name each of eleven moods, from happy to excited. */
 export const EMOTION_WORDS: WordTable = {
   happy: ["happy", "joy", "joyful", "glad", "smile", "smiling", "grin", "grinning", "cheerful", "delight", "delighted", "pleased", "fun"],
   sad: ["sad", "sorrow", "unhappy", "depressed", "cry", "crying", "tear", "tears", "gloomy", "upset", "disappointed", "hurt", "lonely", "frown", "frowning"],

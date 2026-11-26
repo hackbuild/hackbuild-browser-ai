@@ -12,6 +12,7 @@ import { stripThink, type JsonSchema } from "@hackbuild/chat";
 import { parseLooseJSON } from "@hackbuild/structured";
 import type { Step } from "./tools.js";
 
+/** A parsed model turn: think, say, the steps to run, done, where it came from and the tools dropped as unknown. */
 export interface Plan {
   think: string;
   say: string;
@@ -23,6 +24,7 @@ export interface Plan {
   unknown: string[];
 }
 
+/** The JSON Schema of the turn contract, with tool names as an enum and `do` capped at `maxActions` steps. */
 export function planSchema(tools: readonly string[], maxActions = 3): JsonSchema {
   return {
     type: "object",
@@ -85,6 +87,7 @@ function stepOf(item: unknown): Step | null {
 
 const canon = (s: string) => s.toLowerCase().replace(/[\s-]+/g, "_");
 
+/** Parse a model reply into a `Plan`, tolerating drifted shapes; text that does not parse becomes `say` with done set. */
 export function parsePlan(raw: string, tools: readonly string[], maxActions = 4): Plan {
   const known = new Map(tools.map((t) => [canon(t), t]));
   const v = parseLooseJSON(raw);

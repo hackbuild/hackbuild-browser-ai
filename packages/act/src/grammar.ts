@@ -9,6 +9,7 @@
 
 import type { ActVocabulary } from "./vocab.js";
 
+/** Options for `promptBlock`: the reply style and how many names of each kind to list. */
 export interface PromptOptions {
   /** "tags": [name] inline in speech. "json": a say field plus mood, gesture, posture. */
   style?: "tags" | "json";
@@ -16,6 +17,7 @@ export interface PromptOptions {
   max?: { moods?: number; gestures?: number; postures?: number };
 }
 
+/** The system prompt lines that tell the model which tags it may use, in the tags or json style. */
 export function promptBlock(v: ActVocabulary, o: PromptOptions = {}): string {
   const m = v.moods.slice(0, o.max?.moods ?? 10);
   const g = v.gestures.slice(0, o.max?.gestures ?? 14);

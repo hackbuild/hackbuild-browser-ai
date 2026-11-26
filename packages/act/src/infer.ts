@@ -12,6 +12,7 @@ import { cosine, stem, words } from "./resolve.js";
 import type { ActKind, ActVocabulary } from "./vocab.js";
 import { EMOTION_WORDS, GESTURE_WORDS, type WordTable } from "./words.js";
 
+/** A mood or gesture inferred from an untagged sentence, with its score and the step that found it. */
 export interface Inferred {
   kind: Exclude<ActKind, "posture">;
   name: string;
@@ -64,6 +65,7 @@ export const WEAK_PHRASES: readonly string[] = [
   "really quick",
 ];
 
+/** Options for `createInferrer`: keyword tables, weak phrases and words, and the embedding floor and margin. */
 export interface InferrerOptions {
   keywords?: Record<string, readonly string[]>;
   weak?: readonly string[];
@@ -76,6 +78,7 @@ export interface InferrerOptions {
   margin?: number;
 }
 
+/** Infers a mood or gesture from a sentence, by keywords and then by embedding. */
 export interface Inferrer {
   /** Keyword step only. */
   keyword(sentence: string): Inferred | null;
@@ -83,6 +86,7 @@ export interface Inferrer {
   infer(sentence: string): Promise<Inferred | null>;
 }
 
+/** Make an inferrer over a vocabulary's moods and gestures; postures are never inferred. */
 export function createInferrer(v: ActVocabulary, o: InferrerOptions = {}): Inferrer {
   const table = { ...DEFAULT_KEYWORDS, ...(o.keywords ?? {}) };
   const weak = (o.weak ?? WEAK_PHRASES).map((p) => p.toLowerCase());

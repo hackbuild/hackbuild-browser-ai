@@ -17,6 +17,7 @@
 import type { Embedder } from "@hackbuild/memory";
 import { kindOf, namesOf, type ActKind, type ActVocabulary, KINDS } from "./vocab.js";
 
+/** A name resolved to the vocabulary: its kind, the avatar's name, and the step that found it. */
 export interface Resolved {
   kind: ActKind;
   name: string;
@@ -39,6 +40,7 @@ export function stem(w: string): string {
   return s;
 }
 
+/** The lowercase words of a string, letters and digits, with apostrophes removed. */
 export function words(s: string): string[] {
   return (s.toLowerCase().match(/[\p{L}\p{N}']+/gu) ?? []).map((w) => w.replace(/'/g, ""));
 }
@@ -51,12 +53,14 @@ function stems(s: string): string[] {
     .map(stem);
 }
 
+/** Options for `createResolver`: an optional embedder and its cosine floor. */
 export interface ResolverOptions {
   embedder?: Embedder;
   /** Cosine floor for the embedding step. Default 0.55. */
   floor?: number;
 }
 
+/** Resolves a name a model wrote to a vocabulary name, lexically or with the embedding step. */
 export interface Resolver {
   /** Lexical steps only; synchronous. */
   resolve(name: string, kind?: ActKind | null): Resolved | null;
@@ -64,6 +68,7 @@ export interface Resolver {
   resolveAsync(name: string, kind?: ActKind | null): Promise<Resolved | null>;
 }
 
+/** The cosine similarity of two vectors, 0 when either is all zeros. */
 export function cosine(a: Float32Array, b: Float32Array): number {
   let d = 0;
   let na = 0;
@@ -76,6 +81,7 @@ export function cosine(a: Float32Array, b: Float32Array): number {
   return na && nb ? d / Math.sqrt(na * nb) : 0;
 }
 
+/** Make a resolver over a vocabulary: exact name, alias, whole word overlap, then the nearest embedding above the floor. */
 export function createResolver(v: ActVocabulary, o: ResolverOptions = {}): Resolver {
   const floor = o.floor ?? 0.55;
   const all: { kind: ActKind; name: string; stems: string[] }[] = KINDS.flatMap((k) => namesOf(v, k).map((name) => ({ kind: k, name, stems: stems(name) })));

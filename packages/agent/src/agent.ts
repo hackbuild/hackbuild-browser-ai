@@ -29,14 +29,18 @@ import { loosePlanSchema, parsePlan, planSchema, SayStream, type Plan } from "./
 import type { Reflex } from "./reflex.js";
 import { createRegistry, stepText, type Registry, type Step, type StepResult, type Tool } from "./tools.js";
 
+/** A random number source returning 0 to 1, injected so turns repeat under a seed. */
 export type Rng = () => number;
+/** Why a turn runs: something was heard, a goal is active, a free tick, or a goal report. */
 export type Why = "heard" | "goal" | "free" | "report";
 
+/** The memory the agent reads and writes: `recall` returns lines for a query, `write` stores an episode or a lesson. */
 export interface AgentMemory {
   recall(query: string): string[] | Promise<string[]>;
   write(kind: "episode" | "lesson", text: string): void | Promise<void>;
 }
 
+/** What the host returns each turn: ranked prompt sections, fixed lines and the state goal planners read. */
 export interface Perception<S> {
   /** Ranked sections: YOU CAN DO NOW (9), I SEE NOW (8), RULES (7), MAP (6) and so on. */
   sections?: Section[];
@@ -46,6 +50,7 @@ export interface Perception<S> {
   state?: S;
 }
 
+/** Options for `createAgent`: tools, brain, mode, soul, perception, memory, reflex, goals, budgets, clock, rng and callbacks. */
 export interface AgentOptions<S> {
   tools: readonly Tool[];
   brain?: ChatEngine | null;
@@ -80,6 +85,7 @@ export interface AgentOptions<S> {
   onEvent?: (e: AgentEvent) => void;
 }
 
+/** An event `onEvent` receives during a turn: a plan, a step result, a hint, a goal change or the turn's end. */
 export type AgentEvent =
   | { type: "plan"; plan: Plan; via: "model" | "reflex" | "cache" | "planner" }
   | { type: "step"; result: StepResult }
@@ -87,8 +93,10 @@ export type AgentEvent =
   | { type: "goal"; goal: Goal; change: "added" | "done" | "blocked" | "failed" | "coach" }
   | { type: "end"; result: TurnResult };
 
+/** Why a turn ended: done, an escalation rule, a guard, an abort, or the source that planned it with no model. */
 export type Ended = "done" | "empty" | "failures" | "repeat" | "steps" | "guard" | "aborted" | "reflex" | "cache" | "planner" | "no-brain";
 
+/** What `handle` returns: why the turn ran, how it ended, what was said, the step results, the model calls and the goal. */
 export interface TurnResult {
   why: Why;
   ended: Ended;
@@ -98,6 +106,7 @@ export interface TurnResult {
   goal: Goal | null;
 }
 
+/** Running counts for the agent: model calls, reflex and cache hits, the last prompt's tokens and the last reply's time in ms. */
 export interface Cost {
   modelCalls: number;
   reflexHits: number;
@@ -115,6 +124,7 @@ const CONTRACT = [
   'Example: {"think": "mug is on the table", "say": "getting it", "do": [["go_to", "table"], ["pick_up", "mug"]], "done": false}',
 ].join("\n");
 
+/** Runs agent turns: perceive, recall, decide, act and reflect, over the tools, brain, reflex brain and goals it was given. */
 export class Agent<S = unknown> {
   readonly tools: Registry;
   readonly cache: PlanCache;
@@ -495,6 +505,7 @@ export class Agent<S = unknown> {
   }
 }
 
+/** Make an `Agent` from its options. */
 export function createAgent<S = unknown>(o: AgentOptions<S>): Agent<S> {
   return new Agent(o);
 }

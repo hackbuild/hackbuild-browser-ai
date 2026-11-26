@@ -16,7 +16,9 @@ import type { ChatEngine, ChatMessage } from "@hackbuild/chat";
 import { loosePlanSchema, parsePlan, planSchema, type Plan } from "./plan.js";
 import type { Reflex } from "./reflex.js";
 
+/** A planner tier: the model, a scripted planner, or the reflex brain. */
 export type Tier = "model" | "scripted" | "reflex";
+/** The planner tiers in the order the chain tries them. */
 export const TIERS: readonly Tier[] = ["model", "scripted", "reflex"];
 
 /**
@@ -41,6 +43,7 @@ export interface Drop {
   at: number;
 }
 
+/** A request to the planner chain: what the person said, the messages for the model tiers, and an abort signal. */
 export interface ChainRequest {
   /** What the person said; the reflex tier reads this. */
   text: string;
@@ -49,6 +52,7 @@ export interface ChainRequest {
   signal?: AbortSignal;
 }
 
+/** What the chain planned: the plan, the tier that made it, the raw reply and the drops on the way. */
 export interface ChainResult {
   plan: Plan;
   tier: Tier;
@@ -59,6 +63,7 @@ export interface ChainResult {
 /** A planner by function: a plan, raw text to parse, or null for none. */
 export type PlanFn = (req: ChainRequest) => Plan | string | null | Promise<Plan | string | null>;
 
+/** Options for `createPlannerChain`: tool names, the three tiers, tries, generation settings, the clock and the drop log size. */
 export interface ChainOptions {
   tools: readonly string[];
   /** The model planner. */
@@ -80,6 +85,7 @@ export interface ChainOptions {
   onDrop?: (d: Drop) => void;
 }
 
+/** Plans a request down the tiers, keeping a log of every drop. */
 export interface PlannerChain {
   plan(req: ChainRequest): Promise<ChainResult | null>;
   /** Every drop so far, oldest first. */
@@ -116,6 +122,7 @@ export function dropLine(d: Drop): string {
   return `${why[d.reason].replace(/\.\.$/, ".")}${next}`;
 }
 
+/** Make a planner chain that tries the model planner, then the scripted planner, then the reflex brain. */
 export function createPlannerChain(o: ChainOptions): PlannerChain {
   const log: Drop[] = [];
   let last: ChainResult | null = null;

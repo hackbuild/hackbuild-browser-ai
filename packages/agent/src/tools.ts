@@ -14,12 +14,14 @@ export interface Step {
   args: string[];
 }
 
+/** What a tool's `run` receives besides its arguments: the turn's abort signal and the text heard. */
 export interface ToolContext {
   signal: AbortSignal;
   /** Text the agent heard this turn, if any. */
   heard: string | null;
 }
 
+/** A tool the agent can call: name, description, an argument schema and `run`. */
 export interface Tool {
   name: string;
   description: string;
@@ -38,6 +40,7 @@ export class ToolError extends Error {
   }
 }
 
+/** The result of one step: the step, whether it worked, and the text the model reads next. */
 export interface StepResult {
   step: Step;
   ok: boolean;
@@ -45,6 +48,7 @@ export interface StepResult {
   text: string;
 }
 
+/** The agent's tools by name, with prompt lines, chat tool specs, argument checks and a runner. */
 export interface Registry {
   readonly names: string[];
   get(name: string): Tool | undefined;
@@ -79,6 +83,7 @@ function propsOf(t: Tool): { props: Prop[]; required: number } {
   return { props, required };
 }
 
+/** Make a registry over a list of tools. */
 export function createRegistry(tools: readonly Tool[]): Registry {
   const map = new Map(tools.map((t) => [t.name, t]));
   const reg: Registry = {
@@ -123,4 +128,5 @@ export function createRegistry(tools: readonly Tool[]): Registry {
   return reg;
 }
 
+/** A step as one line of text: the tool name and its arguments. */
 export const stepText = (s: Step): string => (s.args.length ? `${s.tool} ${s.args.join(", ")}` : s.tool);

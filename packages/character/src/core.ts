@@ -5,6 +5,7 @@
 
 import type { Card, Profile, ReadResult } from "./types.js";
 
+/** Where `loadCharacterCore` gets the wasm: a URL to fetch, bytes, or a base64 string such as `CHARACTER_WASM_BASE64`. */
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
 type Ptr = number;
@@ -27,6 +28,7 @@ interface Exports {
   cc_blank_png(w: number, h: number, rgb: number): number;
 }
 
+/** The error every failed core call and a failed wasm fetch throw, carrying the core's message. */
 export class CharacterError extends Error {
   constructor(message: string) {
     super(message);
@@ -63,6 +65,7 @@ export type CardInput = Card | Record<string, unknown> | Uint8Array;
 
 const asBytes = (c: CardInput): Uint8Array => (c instanceof Uint8Array ? c : enc.encode(JSON.stringify(c)));
 
+/** A file to put in a CHARX archive: its path inside the archive and its bytes. */
 export interface CharxAsset {
   /** Path inside the archive, e.g. "assets/avatar/body.vrm". */
   path: string;
@@ -198,6 +201,7 @@ export function packAssets(assets: readonly CharxAsset[]): Uint8Array {
   return out;
 }
 
+/** Fetch or decode the character wasm, instantiate it and return a `CharacterCore`. */
 export async function loadCharacterCore(src: CoreSource): Promise<CharacterCore> {
   const bytes = await bytesOf(src);
   const { instance } = await WebAssembly.instantiate(bytes as BufferSource, {});

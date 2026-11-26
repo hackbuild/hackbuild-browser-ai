@@ -27,6 +27,7 @@ import { createInferrer, type Inferrer } from "./infer.js";
 import { createResolver, type Resolver } from "./resolve.js";
 import { surfaceForms, type ActKind, type ActVocabulary } from "./vocab.js";
 
+/** An act placed at an offset of the visible text, with the tag or sentence it came from. */
 export interface Cue {
   kind: ActKind;
   name: string;
@@ -37,19 +38,23 @@ export interface Cue {
   source: "tag" | "infer" | "json" | "replay";
 }
 
+/** A cue that fired, with the clock time in ms. */
 export interface FiredCue extends Cue {
   /** Clock time it fired, ms. */
   t: number;
 }
 
+/** A cue that did not fire because it repeated the current mood or posture, or fell inside the gesture cooldown. */
 export interface Suppressed extends Cue {
   reason: "repeat" | "cooldown";
 }
 
+/** The cues that fired in one reply, by offset, for `replay`. */
 export interface ReplayRecord {
   cues: { at: number; kind: ActKind; name: string }[];
 }
 
+/** Options for `createDirector`: the vocabulary, the mode, the fire callback, an optional embedder and the timing settings. */
 export interface DirectorOptions {
   vocab: ActVocabulary;
   /** "tags": explicit tags only. "hybrid": tags plus inference for untagged sentences. "off": strip tags, fire nothing. */
@@ -70,6 +75,7 @@ export interface DirectorOptions {
   moodFloor?: number;
 }
 
+/** Reads a streamed reply, returns the visible text for speech and fires each cue when speech reaches its offset. */
 export interface Director {
   /** Start a new reply. Mood, posture and the gesture cooldown carry over. */
   begin(): void;
@@ -94,6 +100,7 @@ export interface Director {
 
 const OPEN_CLOSE = /^[[*({【「（](.*)[\])}*】」）]$/s;
 
+/** Make a director over a vocabulary that places cues as the reply streams and fires them as speech reports offsets. */
 export function createDirector(o: DirectorOptions): Director {
   const v = o.vocab;
   const mode = o.mode ?? "tags";

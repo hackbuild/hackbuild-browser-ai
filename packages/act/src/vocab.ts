@@ -8,9 +8,12 @@
 
 import { ACTION_WORDS, EMOTION_WORDS, GESTURE_WORDS, POSTURE_WORDS, aliasesFrom } from "./words.js";
 
+/** The three kinds of act: a mood on the face, a one shot gesture, or a posture the body holds. */
 export type ActKind = "mood" | "gesture" | "posture";
+/** The act kinds in order: mood, gesture, posture. */
 export const KINDS: readonly ActKind[] = ["mood", "gesture", "posture"];
 
+/** The moods, gestures and postures one avatar can realize, with an alias table from other words to those names. */
 export interface ActVocabulary {
   moods: string[];
   gestures: string[];
@@ -124,6 +127,7 @@ export function buildVocabulary(avatar: AvatarActs, opts: { aliases?: Record<str
   return { moods, gestures, postures, aliases };
 }
 
+/** The kind of a vocabulary name, ignoring case, or null when the avatar has no such name. */
 export function kindOf(v: ActVocabulary, name: string): ActKind | null {
   const n = name.toLowerCase();
   if (v.moods.some((x) => x.toLowerCase() === n)) return "mood";
@@ -132,6 +136,7 @@ export function kindOf(v: ActVocabulary, name: string): ActKind | null {
   return null;
 }
 
+/** The vocabulary's names of one kind. */
 export function namesOf(v: ActVocabulary, kind: ActKind): string[] {
   return kind === "mood" ? v.moods : kind === "gesture" ? v.gestures : v.postures;
 }

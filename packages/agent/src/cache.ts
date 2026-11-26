@@ -6,6 +6,7 @@
 
 import type { Step } from "./tools.js";
 
+/** A request in the form the plan cache keys on: lowercase, punctuation and polite openers removed, spaces collapsed. */
 export const normalizeRequest = (s: string): string =>
   s
     .toLowerCase()
@@ -14,6 +15,7 @@ export const normalizeRequest = (s: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** A least recently used cache of plans that worked, keyed by normalized request text. */
 export class PlanCache {
   private m = new Map<string, Step[]>();
   constructor(readonly size = 60) {}

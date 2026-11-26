@@ -4,6 +4,7 @@
  * profile extension this package keeps at `data.extensions.hackbuild`.
  */
 
+/** The avatar file kinds a profile can name: vrm, glb, fbx, mmd or live2d. */
 export type AvatarKind = "vrm" | "glb" | "fbx" | "mmd" | "live2d";
 
 /** What a card needs to drive a body and a voice. Version 1. */
@@ -51,6 +52,7 @@ export interface Lock {
   hash: string;
 }
 
+/** One lorebook entry: the keys that activate it, the text it adds, and its ordering and matching settings. */
 export interface LoreEntry {
   keys: string[];
   content: string;
@@ -70,6 +72,7 @@ export interface LoreEntry {
   position?: "before_char" | "after_char";
 }
 
+/** A lorebook: its entries plus optional scan depth, token budget and recursion settings. */
 export interface CharacterBook {
   name?: string;
   description?: string;
@@ -80,6 +83,7 @@ export interface CharacterBook {
   entries: LoreEntry[];
 }
 
+/** The `data` object of a V2 card: name, persona text, greetings, lorebook, tags and extensions. */
 export interface CardDataV2 {
   name: string;
   description: string;
@@ -98,12 +102,14 @@ export interface CardDataV2 {
   extensions: Record<string, unknown> & { hackbuild?: Profile };
 }
 
+/** A Character Card V2, `spec` set to `chara_card_v2`. */
 export interface CardV2 {
   spec: "chara_card_v2";
   spec_version: "2.0";
   data: CardDataV2;
 }
 
+/** One entry of a V3 card's `assets` list: its type, where it lives, a name and a file extension. */
 export interface CardAsset {
   /** icon, background, user_icon, emotion, or x_ followed by a custom name. */
   type: string;
@@ -113,6 +119,7 @@ export interface CardAsset {
   ext: string;
 }
 
+/** The `data` object of a V3 card: the V2 fields plus group greetings, assets, nickname, sources and dates. */
 export interface CardDataV3 extends CardDataV2 {
   group_only_greetings: string[];
   assets?: CardAsset[];
@@ -124,14 +131,17 @@ export interface CardDataV3 extends CardDataV2 {
   modification_date?: number;
 }
 
+/** A Character Card V3, `spec` set to `chara_card_v3` and `spec_version` 3.0. */
 export interface CardV3 {
   spec: "chara_card_v3";
   spec_version: "3.0";
   data: CardDataV3;
 }
 
+/** A V2 or V3 card. */
 export type Card = CardV2 | CardV3;
 
+/** What `CharacterCore.read` returns: the detected format, where the card came from, its spec, the card as stored and the CHARX files beside it. */
 export interface ReadResult {
   format: "png" | "charx" | "json";
   /** "ccv3" or "chara" for PNG, "card.json" for CHARX, "json". */

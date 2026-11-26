@@ -14,8 +14,10 @@
 
 import type { Step } from "./tools.js";
 
+/** A goal kind: explore, find, fetch, collect, tidy, custom, or any kind the host adds a planner for. */
 export type GoalKind = "explore" | "find" | "fetch" | "collect" | "tidy" | "custom" | (string & {});
 
+/** A persistent goal: kind, target, status, tries, per object failures, skip list and timestamps. */
 export interface Goal {
   id: string;
   kind: GoalKind;
@@ -37,9 +39,12 @@ export interface Goal {
   updated: number;
 }
 
+/** What a goal planner returns: the next steps, done with a note, or failed with a note. */
 export type GoalStep = { steps: Step[] } | { done: string } | { failed: string };
+/** A goal planner that needs no model: given the goal and the host's state, it returns the next `GoalStep`. */
 export type Planner<S> = (goal: Goal, state: S) => GoalStep;
 
+/** Where goals are loaded from and saved to. */
 export interface GoalSink {
   load(): Goal[] | null | Promise<Goal[] | null>;
   save(goals: Goal[]): void | Promise<void>;
@@ -63,6 +68,7 @@ export function storageSink(store: { getItem(k: string): string | null; setItem(
   };
 }
 
+/** The patterns that read a goal kind and target from a request, tried in order. */
 export const GOAL_PATTERNS: readonly [GoalKind, RegExp][] = [
   ["tidy", /\b(?:tidy|clean)(?:\s+up)?(?:\s+(?:the\s+)?(.+))?$/],
   ["collect", /\b(?:collect|gather)\s+(?:up\s+)?(?:all\s+)?(?:the\s+|my\s+)?(.+)$/],
@@ -71,6 +77,7 @@ export const GOAL_PATTERNS: readonly [GoalKind, RegExp][] = [
   ["explore", /\b(?:explore|look around|wander)(?:\s+(?:the\s+)?(.+))?$/],
 ];
 
+/** Options for `Goals`: sink, planners, the goal cap, tries before blocking, failures before skipping, and the clock. */
 export interface GoalsOptions<S> {
   sink?: GoalSink;
   planners?: Record<string, Planner<S>>;
@@ -82,6 +89,7 @@ export interface GoalsOptions<S> {
   now?: () => number;
 }
 
+/** Persistent goals with a planner per kind, skip lists, blocking and one report per ended goal. */
 export class Goals<S = unknown> {
   private goals: Goal[] = [];
   private seq = 0;

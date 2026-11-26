@@ -4,109 +4,109 @@
   "margin": 0.05,
   "packages": {
     "@hackbuild/act": {
-      "main: dist/index.js bundled": 13478,
-      "dist/single/index.iife.js": 14268
+      "main: dist/index.js bundled": 13779,
+      "dist/single/index.iife.js": 14638
     },
     "@hackbuild/agent": {
-      "main: dist/index.js bundled": 12150,
-      "dist/single/index.iife.js": 13822
+      "main: dist/index.js bundled": 12542,
+      "dist/single/index.iife.js": 14510
     },
     "@hackbuild/ai-elements": {
       "main: dist/index.js bundled": 582,
-      "dist/single/index.iife.js": 87305
+      "dist/single/index.iife.js": 88239
     },
     "@hackbuild/ai-env": {
-      "main: dist/index.js bundled": 6191,
-      "dist/single/index.iife.js": 6087
+      "main: dist/index.js bundled": 6462,
+      "dist/single/index.iife.js": 6404
     },
     "@hackbuild/audio-dsp": {
-      "main: dist/index.js bundled": 9218,
+      "main: dist/index.js bundled": 9440,
       "wasm/audio-dsp.wasm": 27444,
-      "dist/single/index.iife.js": 9049
+      "dist/single/index.iife.js": 9303
     },
     "@hackbuild/biosignal": {
-      "main: dist/index.js bundled": 2716,
+      "main: dist/index.js bundled": 2900,
       "wasm/biosignal.wasm": 22644,
-      "dist/single/index.iife.js": 2814
+      "dist/single/index.iife.js": 2998
     },
     "@hackbuild/character": {
-      "main: dist/index.js bundled": 3026,
+      "main: dist/index.js bundled": 3098,
       "wasm/character.wasm": 78775,
-      "dist/single/index.iife.js": 3110
+      "dist/single/index.iife.js": 3183
     },
     "@hackbuild/chat": {
-      "main: dist/index.js bundled": 5476,
-      "dist/single/index.iife.js": 7135
+      "main: dist/index.js bundled": 5857,
+      "dist/single/index.iife.js": 7659
     },
     "@hackbuild/depth-mesh": {
-      "main: dist/index.js bundled": 8151,
+      "main: dist/index.js bundled": 8508,
       "wasm/depth-mesh.wasm": 23546,
-      "dist/single/index.iife.js": 8031
+      "dist/single/index.iife.js": 8394
     },
     "@hackbuild/devices": {
-      "main: dist/index.js bundled": 6937,
-      "dist/single/index.iife.js": 36425
+      "main: dist/index.js bundled": 7219,
+      "dist/single/index.iife.js": 37059
     },
     "@hackbuild/embed": {
-      "main: dist/index.js bundled": 6654,
-      "dist/single/index.iife.js": 33578
+      "main: dist/index.js bundled": 6800,
+      "dist/single/index.iife.js": 33786
     },
     "@hackbuild/imagegen": {
-      "main: dist/index.js bundled": 6000,
-      "dist/single/index.iife.js": 5647
+      "main: dist/index.js bundled": 6201,
+      "dist/single/index.iife.js": 5842
     },
     "@hackbuild/listen": {
-      "main: dist/index.js bundled": 7076,
-      "dist/single/index.iife.js": 8938
+      "main: dist/index.js bundled": 7274,
+      "dist/single/index.iife.js": 9278
     },
     "@hackbuild/media": {
-      "main: dist/index.js bundled": 2033,
-      "dist/single/index.iife.js": 2015
+      "main: dist/index.js bundled": 2073,
+      "dist/single/index.iife.js": 2059
     },
     "@hackbuild/memory": {
-      "main: dist/index.js bundled": 13788,
+      "main: dist/index.js bundled": 14008,
       "wasm/memory.wasm": 41134,
-      "dist/single/index.iife.js": 14039
+      "dist/single/index.iife.js": 14272
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 42353,
-      "dist/single/index.iife.js": 41841
+      "main: dist/index.js bundled": 42772,
+      "dist/single/index.iife.js": 42279
     },
     "@hackbuild/notes": {
-      "main: dist/index.js bundled": 5075,
-      "dist/single/index.iife.js": 5793
+      "main: dist/index.js bundled": 5572,
+      "dist/single/index.iife.js": 6362
     },
     "@hackbuild/speak": {
-      "main: dist/index.js bundled": 16202,
-      "dist/single/index.iife.js": 19843
+      "main: dist/index.js bundled": 16374,
+      "dist/single/index.iife.js": 20158
     },
     "@hackbuild/stems": {
-      "main: dist/index.js bundled": 2231,
-      "dist/single/index.iife.js": 29868
+      "main: dist/index.js bundled": 2382,
+      "dist/single/index.iife.js": 30187
     },
     "@hackbuild/structured": {
-      "main: dist/index.js bundled": 8979,
-      "dist/single/index.iife.js": 9310
+      "main: dist/index.js bundled": 9352,
+      "dist/single/index.iife.js": 9825
     },
     "@hackbuild/transcribe": {
-      "main: dist/index.js bundled": 16053,
-      "dist/single/index.iife.js": 17849
+      "main: dist/index.js bundled": 16590,
+      "dist/single/index.iife.js": 18516
     },
     "@hackbuild/vision": {
-      "main: dist/index.js bundled": 23015,
-      "dist/single/index.iife.js": 53082
+      "main: dist/index.js bundled": 23813,
+      "dist/single/index.iife.js": 54219
     },
     "@hackbuild/weights": {
-      "main: dist/index.js bundled": 9195,
-      "dist/single/index.iife.js": 9115
+      "main: dist/index.js bundled": 9327,
+      "dist/single/index.iife.js": 9255
     },
     "@hackbuild/converse": {
-      "main: dist/index.js bundled": 5598,
-      "dist/single/index.iife.js": 5678
+      "main: dist/index.js bundled": 5851,
+      "dist/single/index.iife.js": 5988
     },
     "@hackbuild/ai-views": {
-      "main: dist/index.js bundled": 12015,
-      "dist/single/elements.iife.js": 85735
+      "main: dist/index.js bundled": 12413,
+      "dist/single/elements.iife.js": 86649
     }
   }
 }

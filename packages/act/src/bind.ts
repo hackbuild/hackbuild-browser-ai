@@ -27,13 +27,16 @@ import { cosine } from "./resolve.js";
 import type { AvatarActs } from "./vocab.js";
 import { MOTION_WORDS, POSTURE_WORDS, bucketOf, bucketsOf, meaningfulWords, nameTokens } from "./words.js";
 
+/** The nine classes a clip sorts into, from idle and talk loops to clips kept for playing by hand. */
 export type ClipClass = "idle" | "talk" | "gesture" | "posture" | "dance" | "reaction" | "locomotion" | "action" | "odd";
 
+/** Every clip class, in order. */
 export const CLIP_CLASSES: readonly ClipClass[] = ["idle", "talk", "gesture", "posture", "dance", "reaction", "locomotion", "action", "odd"];
 
 /** Classes a reply may set off on its own. Locomotion, action and odd clips stay for playing by hand. */
 export const CUE_CLASSES: ReadonlySet<ClipClass> = new Set<ClipClass>(["idle", "talk", "gesture", "posture", "dance", "reaction"]);
 
+/** A rule that puts a clip in a class when its folder and name match the pattern. */
 export interface ClipRule {
   cls: ClipClass;
   /** Tested against "folder name" in lowercase words. */
@@ -56,6 +59,7 @@ export const CLIP_RULES: readonly ClipRule[] = [
   { cls: "idle", re: /\b(idle|stand|standing|breathing)\b/ },
 ];
 
+/** One clip of an avatar's library as the app describes it: id, name, folder, description and tags. */
 export interface ClipInfo {
   /** Unique id the app maps back to a file or a clip. */
   id: string;
@@ -85,6 +89,7 @@ export function classifyClip(c: Pick<ClipInfo, "name" | "folder" | "tags" | "use
   return "gesture";
 }
 
+/** A clip after binding: its class, the word buckets it sits in, and the label the model sees. */
 export interface BoundClip extends ClipInfo {
   cls: ClipClass;
   /** Word table buckets this clip is placed in. */
@@ -93,6 +98,7 @@ export interface BoundClip extends ClipInfo {
   label: string;
 }
 
+/** What `bindActs` returns: the lists for `buildVocabulary`, the clips behind each name, the loops and the clips kept out of replies. */
 export interface ActBinding {
   /** Lists for `buildVocabulary`. */
   acts: Required<AvatarActs>;
@@ -106,6 +112,7 @@ export interface ActBinding {
   manual: BoundClip[];
 }
 
+/** Options for `bindActs`: names per kind, clip rules and extra word buckets. */
 export interface BindOptions {
   /** Names per kind shown to the model. Default 14. */
   max?: number;
