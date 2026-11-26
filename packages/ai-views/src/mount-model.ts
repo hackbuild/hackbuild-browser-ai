@@ -53,9 +53,28 @@ export interface ModelSelectOptions {
   go?: boolean;
 }
 
-function chipWords(s: PickSnapshot): string {
-  const w = lineWords(s.row, s.empty);
-  return w.state ? `${w.name}, ${w.state}` : w.name;
+// words a model name carries that say nothing to a person choosing it
+const FILLER = /^(instruct|chat|it|mlc|onnx|gguf|hf|q\d\w*|f16|f32|fp16|int8|bf16|uniform)$/i;
+
+/**
+ * A model name cut for the bar chip: filler words (instruct, chat, quant tags)
+ * go, and a name of more than three words keeps its first two and its last,
+ * which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+ */
+export function shortName(name: string): string {
+  const w = name.split(/\s+/).filter((x) => x && !FILLER.test(x));
+  const kept = w.length > 3 ? [w[0]!, w[1]!, w[w.length - 1]!] : w;
+  return kept.join(" ") || name;
+}
+
+/** The chip's words: the short name, then the download size, or the state once it moves. */
+export function chipWords(s: PickSnapshot): string {
+  const r = s.row;
+  if (!r) return s.empty;
+  const w = lineWords(r, s.empty);
+  const name = shortName(r.name);
+  if ((r.state === "loading" || r.state === "loaded" || r.state === "error") && w.state) return `${name}, ${w.state}`;
+  return `${name}, ${r.noDownload ? "no download" : r.size ?? "size unknown"}`;
 }
 
 /** The closed picker over a host; pressing it opens the sheet. */
@@ -66,7 +85,8 @@ export function mountModelSelect(host: HTMLElement, pick: ModelPick, o: ModelSel
   if (o.variant === "chip") {
     const draw = (s: PickSnapshot) => {
       const words = chipWords(s);
-      host.innerHTML = `<button type="button" class="hb-msel-chip${s.row?.state ? ` is-${s.row.state}` : ""}" aria-haspopup="dialog" aria-label="model: ${esc(words)}"><span>${esc(words)}</span></button>`;
+      const full = s.row ? `model: ${s.row.name}${s.row.size ? `, ${s.row.size}` : ""}${lineWords(s.row, s.empty).state ? `, ${lineWords(s.row, s.empty).state}` : ""}` : `model: ${s.empty}`;
+      host.innerHTML = `<button type="button" class="hb-msel-chip${s.row?.state ? ` is-${s.row.state}` : ""}" aria-haspopup="dialog" aria-label="${esc(full)}" title="${esc(full)}"><span>${esc(words)}</span></button>`;
     };
     l.on(host, "click", (e) => {
       if ((e.target as Element).closest(".hb-msel-chip")) sheet.open();

@@ -27,7 +27,7 @@ import { mountTranscribeDrop, mountTranscribeQueue, mountTranscriptExports, moun
 import { transcribeQueue, type TranscribeQueue, type Transcriber } from "./transcribe.js";
 import { mountMemoryInspector, type MemoryInspector, type RecallLike } from "./memory.js";
 
-export { mountModelSelect, mountModelJobs, pickSheet, gateWords, type ModelSelectOptions } from "./mount-model.js";
+export { mountModelSelect, mountModelJobs, pickSheet, gateWords, chipWords, shortName, type ModelSelectOptions } from "./mount-model.js";
 export { mountChatPane, mountComposer, mountChatList, mountContextMeter, turnHtml, type ChatPaneOptions, type ComposerOptions } from "./mount-chat.js";
 export { mountTranscribeDrop, mountTranscriptView, mountTranscribeQueue, mountTranscriptExports, transcriptHtml, type TranscribeDropOptions, type TranscribeDropHandle, type TranscriptViewOptions } from "./mount-transcribe.js";
 export { mountMaskStudio, mountMaskTools, mountMaskVerbs, mountMaskRack, type MaskStudio, type MaskModels, type MaskStudioOptions, type FoundMask, type StudioState, type StudioTool } from "./mount-mask.js";
