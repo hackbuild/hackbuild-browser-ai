@@ -32,7 +32,7 @@ export { mountChatPane, mountComposer, mountChatList, mountContextMeter, turnHtm
 export { mountExportMenu, isMedia, droppedFiles } from "./mount-transcribe.js";
 export { mountMemoryPane, mountSourcesDrop, mountPersonaRack, mountVoiceRow, mountVoiceClone, mountSessionMenu, protect, isProtected, type MemoryLike, type MemoryPaneHandle, type MemoryPaneOptions, type SourcesDropOptions } from "./mount-talk.js";
 export { mountTranscribeDrop, mountTranscriptView, mountTranscribeQueue, mountTranscriptExports, transcriptHtml, type TranscribeDropOptions, type TranscribeDropHandle, type TranscriptViewOptions } from "./mount-transcribe.js";
-export { mountMaskStudio, mountMaskTools, mountMaskVerbs, mountMaskRack, type MaskStudio, type MaskModels, type MaskStudioOptions, type FoundMask, type StudioState, type StudioTool } from "./mount-mask.js";
+export { mountMaskStudio, mountMaskTools, mountMaskVerbs, mountMaskRack, type MaskStudio, type MaskModels, type MaskStudioOptions, type FoundMask, type MaskEverythingOptions, type StudioState, type StudioTool, type StudioView } from "./mount-mask.js";
 export { mountFrameView, mountCameraFeed, type FrameView, type FrameViewOptions, type CameraFeed, type CameraFeedOptions } from "./mount-frame.js";
 export { mountMemoryInspector, type MemoryInspector } from "./memory.js";
 

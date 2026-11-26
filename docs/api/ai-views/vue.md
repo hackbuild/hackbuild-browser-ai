@@ -270,6 +270,10 @@ Vue component for one rack part of a mask studio: found, mask, saved or export.
 
 ```ts
 const MaskStudio: DefineComponent<ExtractPropTypes<{
+  demand: {
+     default: boolean;
+     type: BooleanConstructor;
+  };
   models: {
      default: () => object;
      type: PropType<MaskModels>;
@@ -283,7 +287,11 @@ const MaskStudio: DefineComponent<ExtractPropTypes<{
 }>, {
 }, {
 }, {
-}, ComponentOptionsMixin, ComponentOptionsMixin, ("sample" | "studio")[], "sample" | "studio", PublicProps, ToResolvedProps<ExtractPropTypes<{
+}, ComponentOptionsMixin, ComponentOptionsMixin, ("sample" | "studio" | "want")[], "sample" | "studio" | "want", PublicProps, ToResolvedProps<ExtractPropTypes<{
+  demand: {
+     default: boolean;
+     type: BooleanConstructor;
+  };
   models: {
      default: () => object;
      type: PropType<MaskModels>;
@@ -292,7 +300,8 @@ const MaskStudio: DefineComponent<ExtractPropTypes<{
      default: string;
      type: StringConstructor;
   };
-}>, ("sample" | "studio")[]>, {
+}>, ("sample" | "studio" | "want")[]>, {
+  demand: boolean;
   models: MaskModels;
   sampleLabel: string;
 }, {
@@ -302,8 +311,8 @@ const MaskStudio: DefineComponent<ExtractPropTypes<{
 }, any>;
 ```
 
-Vue component for a mask studio; emits `studio` with the mounted studio and `sample` when the
-sample button is pressed.
+Vue component for a mask studio; emits `studio` with the mounted studio, `sample` when the
+sample button is pressed, and with `demand` set, `want` when a tool needs a model not loaded yet.
 
 ***
 

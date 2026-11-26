@@ -23,7 +23,7 @@ import type { WeightStore } from "@hackbuild/weights";
 import { hfResolve } from "@hackbuild/weights";
 import { ALL_RECORDS, type Job } from "./jobs.js";
 import type { FrameBox } from "./frame.js";
-import type { FoundMask, MaskModels } from "./mount-mask.js";
+import type { FoundMask, MaskEverythingOptions, MaskModels } from "./mount-mask.js";
 import type { LoadContext, Loader } from "./pick.js";
 import type { RunResult, Transcriber } from "./transcribe.js";
 
@@ -327,6 +327,20 @@ async function adapt(job: Job, rec: ModelRecord, value: unknown, rt: Runtime, ct
       const keyOf = (img: object) => keys.get(img) ?? (keys.set(img, `img-${++key}`), `img-${key}`);
       const first = async (image: { width: number; height: number }, x: number, y: number) =>
         (await v.segment(hub, asImage(image), { points: [{ x, y, label: 1 }] }, { model: rec.id, key: keyOf(image) }))[0];
+      if (rec.provides?.includes("segment.everything")) {
+        // FastSAM: one pass finds every object; a press picks the one under it from that pass
+        let last: { img: object; key: string; list: Awaited<ReturnType<typeof v.segmentEverything>> } | null = null;
+        const all = async (image: { width: number; height: number }, o: MaskEverythingOptions = {}) => {
+          const key = JSON.stringify(o);
+          if (last?.img !== image || last.key !== key) last = { img: image, key, list: await v.segmentEverything(hub, asImage(image), { ...o, model: rec.id }) };
+          return last.list;
+        };
+        const fast: MaskModels = {
+          segment: async (image, p) => v.instanceAt(await all(image), p.x, p.y)?.mask.data ?? null,
+          everything: async (image, o) => (await all(image, o)).map((i, k) => ({ mask: i.mask.data, label: i.label ?? `object ${k + 1}`, score: i.score, box: i.box })),
+        };
+        return fast;
+      }
       const models: MaskModels = {
         segment: async (image, p) => (await first(image, p.x, p.y))?.data ?? null,
         everything: async (image) => {

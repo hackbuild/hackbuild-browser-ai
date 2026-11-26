@@ -162,11 +162,16 @@ One object a segment model found: a mask in image pixels (0 or 255), its word an
 
 #### Properties
 
-| Property | Type |
-| ------ | ------ |
-| <a id="property-label-1"></a> `label` | `string` |
-| <a id="property-mask"></a> `mask` | `Uint8Array` |
-| <a id="property-score"></a> `score` | `number` |
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-box"></a> `box?` | `object` | The box in image pixels, drawn in the found view when present. |
+| `box.h` | `number` | - |
+| `box.w` | `number` | - |
+| `box.x` | `number` | - |
+| `box.y` | `number` | - |
+| <a id="property-label-1"></a> `label` | `string` | - |
+| <a id="property-mask"></a> `mask` | `Uint8Array` | - |
+| <a id="property-score"></a> `score` | `number` | - |
 
 ***
 
@@ -272,6 +277,21 @@ Options for `mountFrameView`: empty words, mirroring and the colours of the draw
 
 ***
 
+### MaskEverythingOptions
+
+Decode settings for a segment everything model (FastSAM): confidence, overlap, smallest area, sigmoid.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-confidence"></a> `confidence?` | `number` |
+| <a id="property-iou"></a> `iou?` | `number` |
+| <a id="property-minarea"></a> `minArea?` | `number` |
+| <a id="property-sigmoid"></a> `sigmoid?` | `boolean` |
+
+***
+
 ### MaskModels
 
 The segment models a mask studio calls: a click segment for one point and a segment everything.
@@ -280,7 +300,7 @@ The segment models a mask studio calls: a click segment for one point and a segm
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-everything"></a> `everything?` | (`image`) => `Promise`\<[`FoundMask`](#foundmask)[]\> | Segment everything: every object at once. |
+| <a id="property-everything"></a> `everything?` | (`image`, `o?`) => `Promise`\<[`FoundMask`](#foundmask)[]\> | Segment everything: every object at once, with the decode settings when the model takes them. |
 | <a id="property-segment"></a> `segment?` | (`image`, `point`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\> \| `null`\> | Click segment: the mask under one point, in image pixels. |
 
 ***
@@ -296,17 +316,46 @@ and a subscription to its state.
 
 #### Properties
 
-| Property | Type |
-| ------ | ------ |
-| <a id="property-haseverything"></a> `hasEverything` | `boolean` |
-| <a id="property-hassegment"></a> `hasSegment` | `boolean` |
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-canwant"></a> `canWant` | `boolean` | The page loads models on demand (`onWant`), so the model tools show before their models. |
+| <a id="property-haseverything"></a> `hasEverything` | `boolean` | - |
+| <a id="property-hassegment"></a> `hasSegment` | `boolean` | - |
 
 #### Methods
+
+##### addFound()
+
+```ts
+addFound(list): void;
+```
+
+Add objects to the found list (a model the page ran itself, or colour clusters).
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `list` | [`FoundMask`](#foundmask)[] |
+
+###### Returns
+
+`void`
 
 ##### clear()
 
 ```ts
 clear(): void;
+```
+
+###### Returns
+
+`void`
+
+##### clearFound()
+
+```ts
+clearFound(): void;
 ```
 
 ###### Returns
@@ -354,8 +403,16 @@ dispose(): void;
 ##### everything()
 
 ```ts
-everything(): Promise<void>;
+everything(o?): Promise<void>;
 ```
+
+Find every object with the segment everything model; asks for it through `onWant` when missing.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `o?` | [`MaskEverythingOptions`](#maskeverythingoptions) |
 
 ###### Returns
 
@@ -385,13 +442,13 @@ Grow, shrink or round off the mask, one undo step each.
 exportAs(kind): Promise<Blob | null>;
 ```
 
-The mask, matte or cutout as a png Blob.
+The mask, matte, cutout or inverse matte as a png Blob.
 
 ###### Parameters
 
 | Parameter | Type |
 | ------ | ------ |
-| `kind` | `MaskOutput` |
+| `kind` | `MaskOutput` \| `"inverse"` |
 
 ###### Returns
 
@@ -441,6 +498,18 @@ The current mask as ImageData (alpha by default), null before an image.
 
 `ImageData` \| `null`
 
+##### mergeFound()
+
+```ts
+mergeFound(): void;
+```
+
+Put every shown found object into the mask, one undo step.
+
+###### Returns
+
+`void`
+
 ##### pick()
 
 ```ts
@@ -453,11 +522,39 @@ Open the file picker.
 
 `void`
 
+##### pixels()
+
+```ts
+pixels(): MaskPixels | null;
+```
+
+The picture's pixels, null before an image.
+
+###### Returns
+
+`MaskPixels` \| `null`
+
 ##### redo()
 
 ```ts
 redo(): void;
 ```
+
+###### Returns
+
+`void`
+
+##### removeFound()
+
+```ts
+removeFound(index): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `index` | `number` |
 
 ###### Returns
 
@@ -497,6 +594,22 @@ Put the current mask aside; restore puts it back as one undo step.
 
 `void`
 
+##### setContiguous()
+
+```ts
+setContiguous(on): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `on` | `boolean` |
+
+###### Returns
+
+`void`
+
 ##### setImage()
 
 ```ts
@@ -512,6 +625,24 @@ setImage(src): Promise<void>;
 ###### Returns
 
 `Promise`\<`void`\>
+
+##### setMask()
+
+```ts
+setMask(mask): void;
+```
+
+Replace the mask (0 or 255 per image pixel) as one undo step, as the no model modes do.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `mask` | `ArrayLike`\<`number`\> |
+
+###### Returns
+
+`void`
 
 ##### setMode()
 
@@ -588,6 +719,41 @@ setTool(t): void;
 | Parameter | Type |
 | ------ | ------ |
 | `t` | [`StudioTool`](#studiotool) |
+
+###### Returns
+
+`void`
+
+##### setView()
+
+```ts
+setView(v): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `v` | [`StudioView`](#studioview) |
+
+###### Returns
+
+`void`
+
+##### showFound()
+
+```ts
+showFound(index, on): void;
+```
+
+Show or hide one found object in the found view.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `index` | `number` |
+| `on` | `boolean` |
 
 ###### Returns
 
@@ -695,6 +861,24 @@ zoom(dir): void;
 
 `void`
 
+##### zoomTo()
+
+```ts
+zoomTo(z): void;
+```
+
+Set the zoom directly, 0.25 to 6, as a pinch does.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `z` | `number` |
+
+###### Returns
+
+`void`
+
 ***
 
 ### MaskStudioOptions
@@ -710,6 +894,7 @@ export file name.
 | <a id="property-name-1"></a> `name?` | `string` | Name of exported files, without extension. |
 | <a id="property-note"></a> `note?` | `string` | - |
 | <a id="property-onsample"></a> `onSample?` | () => `void` | - |
+| <a id="property-onwant"></a> `onWant?` | (`kind`) => `void` | A tool needs a model the studio does not have yet: the page loads it and calls setModels. With this set, the point tool shows before its model loads. |
 | <a id="property-samplelabel"></a> `sampleLabel?` | `string` | - |
 | <a id="property-title"></a> `title?` | `string` | - |
 
@@ -1002,16 +1187,19 @@ image size and the last error.
 | <a id="property-busy"></a> `busy` | `string` | - |
 | <a id="property-canredo"></a> `canRedo` | `boolean` | - |
 | <a id="property-canundo"></a> `canUndo` | `boolean` | - |
+| <a id="property-contiguous"></a> `contiguous` | `boolean` | The magic wand takes only touching pixels when true. |
 | <a id="property-coverage"></a> `coverage` | `number` | - |
 | <a id="property-error"></a> `error` | `string` | The last failure, in words. |
 | <a id="property-found"></a> `found` | ([`FoundMask`](#foundmask) & `object`)[] | - |
 | <a id="property-height"></a> `height` | `number` | - |
+| <a id="property-hover"></a> `hover` | `number` | The found object under the pointer, or -1. |
 | <a id="property-mode"></a> `mode` | `MaskMode` | - |
 | <a id="property-ready"></a> `ready` | `boolean` | - |
 | <a id="property-saved"></a> `saved` | `object`[] | Masks put aside with a name and a small preview, newest first. |
 | <a id="property-size"></a> `size` | `number` | - |
 | <a id="property-tolerance"></a> `tolerance` | `number` | - |
 | <a id="property-tool"></a> `tool` | [`StudioTool`](#studiotool) | - |
+| <a id="property-view"></a> `view` | [`StudioView`](#studioview) | - |
 | <a id="property-width"></a> `width` | `number` | - |
 | <a id="property-zoom"></a> `zoom` | `number` | - |
 
@@ -1129,6 +1317,16 @@ type StudioTool = "point" | MaskTool;
 ```
 
 A mask studio tool: the click segment point or one of the hackbuild-ui mask tools.
+
+***
+
+### StudioView
+
+```ts
+type StudioView = "composite" | "mask" | "instances";
+```
+
+What the canvas shows: the picture with the mask, the mask alone, or every found object in its colour.
 
 ## Variables
 

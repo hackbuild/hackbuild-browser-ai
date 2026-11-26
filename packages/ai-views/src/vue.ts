@@ -200,18 +200,18 @@ export const TranscriptView = defineComponent({
 });
 
 /**
- * Vue component for a mask studio; emits `studio` with the mounted studio and `sample` when the
- * sample button is pressed.
+ * Vue component for a mask studio; emits `studio` with the mounted studio, `sample` when the
+ * sample button is pressed, and with `demand` set, `want` when a tool needs a model not loaded yet.
  */
 export const MaskStudio = defineComponent({
   name: "MaskStudio",
-  props: { models: { type: Object as PropType<MaskModels>, default: () => ({}) }, sampleLabel: { type: String, default: "" } },
-  emits: ["studio", "sample"],
+  props: { models: { type: Object as PropType<MaskModels>, default: () => ({}) }, sampleLabel: { type: String, default: "" }, demand: { type: Boolean, default: false } },
+  emits: ["studio", "sample", "want"],
   setup(props, { emit }) {
     const el = ref<HTMLElement | null>(null);
     const studio = shallowRef<Studio | null>(null);
     onMounted(() => {
-      studio.value = mountMaskStudio(el.value!, { models: props.models, ...(props.sampleLabel ? { sampleLabel: props.sampleLabel, onSample: () => emit("sample") } : {}) });
+      studio.value = mountMaskStudio(el.value!, { models: props.models, ...(props.sampleLabel ? { sampleLabel: props.sampleLabel, onSample: () => emit("sample") } : {}), ...(props.demand ? { onWant: (k: "segment" | "everything") => emit("want", k) } : {}) });
       emit("studio", studio.value);
     });
     watch(

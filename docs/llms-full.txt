@@ -1794,6 +1794,7 @@ A tag name `define` registers, before any prefix.
 
 ```ts
 interface FoundMask {
+  box?: { h: number; w: number; x: number; y: number };
   label: string;
   mask: Uint8Array;
   score: number;
@@ -1843,8 +1844,19 @@ function isProtected(it: StoredItem): boolean
 True when an item is kept out of cleanup: decay never drops it.
 
 ```ts
+interface MaskEverythingOptions {
+  confidence?: number;
+  iou?: number;
+  minArea?: number;
+  sigmoid?: boolean;
+}
+```
+
+Decode settings for a segment everything model (FastSAM): confidence, overlap, smallest area, sigmoid.
+
+```ts
 interface MaskModels {
-  everything?: (image: MaskPixels) => Promise<FoundMask[]>;
+  everything?: (image: MaskPixels, o?: MaskEverythingOptions) => Promise<FoundMask[]>;
   segment?: (image: MaskPixels, point: { x: number; y: number }) => Promise<Uint8Array<ArrayBufferLike> | null>;
 }
 ```
@@ -1853,27 +1865,37 @@ The segment models a mask studio calls: a click segment for one point and a segm
 
 ```ts
 interface MaskStudio extends Mounted {
+  canWant: boolean;
   hasEverything: boolean;
   hasSegment: boolean;
+  addFound(list: FoundMask[]): void;
   clear(): void;
+  clearFound(): void;
   cutAt(x: number, y: number, mode?: MaskMode): Promise<void>;
   dispose(): void;
-  everything(): Promise<void>;
+  everything(o?: MaskEverythingOptions): Promise<void>;
   expand(px?: number): void;
-  exportAs(kind: MaskOutput): Promise<Blob | null>;
+  exportAs(kind: MaskOutput | "inverse"): Promise<Blob | null>;
   forget(id: number): void;
   invert(): void;
   mask(kind?: MaskOutput): ImageData | null;
+  mergeFound(): void;
   pick(): void;
+  pixels(): MaskPixels | null;
   redo(): void;
+  removeFound(index: number): void;
   restore(id: number): void;
   save(name?: string): void;
+  setContiguous(on: boolean): void;
   setImage(src: string | HTMLImageElement | HTMLCanvasElement | ImageBitmap | MaskPixels): Promise<void>;
+  setMask(mask: ArrayLike<number>): void;
   setMode(m: MaskMode): void;
   setModels(m: MaskModels): void;
   setSize(px: number): void;
   setTolerance(pct: number): void;
   setTool(t: StudioTool): void;
+  setView(v: StudioView): void;
+  showFound(index: number, on: boolean): void;
   shrink(px?: number): void;
   smooth(r?: number): void;
   state(): StudioState;
@@ -1881,6 +1903,7 @@ interface MaskStudio extends Mounted {
   toggleFound(index: number): void;
   undo(): void;
   zoom(dir: -1 | 0 | 1): void;
+  zoomTo(z: number): void;
 }
 ```
 
@@ -1892,6 +1915,7 @@ interface MaskStudioOptions {
   name?: string;
   note?: string;
   onSample?: () => void;
+  onWant?: (kind: "segment" | "everything") => void;
   sampleLabel?: string;
   title?: string;
 }
@@ -2142,16 +2166,19 @@ interface StudioState {
   busy: string;
   canRedo: boolean;
   canUndo: boolean;
+  contiguous: boolean;
   coverage: number;
   error: string;
-  found: (FoundMask & { colour: string; on: boolean })[];
+  found: (FoundMask & { colour: string; hidden: boolean; on: boolean })[];
   height: number;
+  hover: number;
   mode: MaskMode;
   ready: boolean;
   saved: { coverage: number; id: number; name: string; thumb: string }[];
   size: number;
   tolerance: number;
   tool: StudioTool;
+  view: StudioView;
   width: number;
   zoom: number;
 }
@@ -2164,6 +2191,12 @@ type StudioTool = "point" | MaskTool
 ```
 
 A mask studio tool: the click segment point or one of the hackbuild-ui mask tools.
+
+```ts
+type StudioView = "composite" | "mask" | "instances"
+```
+
+What the canvas shows: the picture with the mask, the mask alone, or every found object in its colour.
 
 ```ts
 interface TranscribeDropHandle extends Mounted {
@@ -3098,10 +3131,10 @@ const MaskRack: DefineComponent<{ name: string; part: "export" | "found" | "mask
 Vue component for one rack part of a mask studio: found, mask, saved or export.
 
 ```ts
-const MaskStudio: DefineComponent<ExtractPropTypes<{ models: { default: () => {}; type: PropType<MaskModels> }; sampleLabel: { default: string; type: StringConstructor } }>, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("sample" | "studio")[], "sample" | "studio", PublicProps, ToResolvedProps<ExtractPropTypes<{ models: { default: () => {}; type: PropType<MaskModels> }; sampleLabel: { default: string; type: StringConstructor } }>, ("sample" | "studio")[]>, { models: MaskModels; sampleLabel: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+const MaskStudio: DefineComponent<ExtractPropTypes<{ demand: { default: boolean; type: BooleanConstructor }; models: { default: () => {}; type: PropType<MaskModels> }; sampleLabel: { default: string; type: StringConstructor } }>, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("sample" | "studio" | "want")[], "sample" | "studio" | "want", PublicProps, ToResolvedProps<ExtractPropTypes<{ demand: { default: boolean; type: BooleanConstructor }; models: { default: () => {}; type: PropType<MaskModels> }; sampleLabel: { default: string; type: StringConstructor } }>, ("sample" | "studio" | "want")[]>, { demand: boolean; models: MaskModels; sampleLabel: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
-Vue component for a mask studio; emits `studio` with the mounted studio and `sample` when the sample button is pressed.
+Vue component for a mask studio; emits `studio` with the mounted studio, `sample` when the sample button is pressed, and with `demand` set, `want` when a tool needs a model not loaded yet.
 
 ```ts
 const MaskTools: DefineComponent<{ studio: MaskStudio }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ studio: MaskStudio }, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>

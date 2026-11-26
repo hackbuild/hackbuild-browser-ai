@@ -38,7 +38,22 @@ async function check(): Promise<boolean> {
   st.restore(st.state().saved[0]!.id);
   const img = st.mask("matte");
   const blob = await st.exportAs("cutout");
-  return cup > 0.04 && grown > cup && st.state().saved.length === 1 && img?.width === 800 && !!blob && blob.size > 0;
+  const inverse = await st.exportAs("inverse");
+  // found objects: find, hide, merge, delete; the views; a mask set from outside
+  await st.everything();
+  const n = st.state().found.length;
+  const objects = st.state().view === "instances";
+  st.showFound(0, false);
+  st.mergeFound();
+  const merged = st.state().found.filter((f) => f.on).length === n - 1;
+  st.removeFound(0);
+  st.setView("mask");
+  const masked = st.state().view === "mask";
+  st.clearFound();
+  st.setMask(new Uint8Array(800 * 600).fill(255));
+  const full = st.state().coverage > 0.99;
+  st.setContiguous(false);
+  return cup > 0.04 && grown > cup && st.state().saved.length === 1 && img?.width === 800 && !!blob && blob.size > 0 && !!inverse && n >= 2 && objects && merged && masked && full && !st.state().contiguous && st.state().found.length === 0;
 }
 el.addEventListener("sample", () => void sample());
 layout(document.getElementById("lay")!);

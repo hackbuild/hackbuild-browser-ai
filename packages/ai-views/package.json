@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/ai-views",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Views that bind the browser AI packages to hackbuild-ui: a model picker per job, a chat pane and composer, a drop first transcriber, a mask studio, a frame view and a camera feed. Each ships as a Vue component and a custom element.",
   "type": "module",
   "license": "MIT",
