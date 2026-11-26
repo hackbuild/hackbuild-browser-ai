@@ -14,6 +14,10 @@ const K = new Uint32Array([
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ]);
 
+/**
+ * Incremental SHA-256: call `update` with each chunk as it arrives, then `digestHex` once, so a
+ * file of several GB is never held in one buffer.
+ */
 export class Sha256 {
   private readonly h = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
   private readonly w = new Uint32Array(64);
@@ -108,6 +112,7 @@ export class Sha256 {
   }
 }
 
+/** Lowercase hex SHA-256 of a byte array. */
 export function sha256Hex(data: Uint8Array): string {
   return new Sha256().update(data).digestHex();
 }

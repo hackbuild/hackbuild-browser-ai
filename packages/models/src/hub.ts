@@ -21,6 +21,10 @@ import type { Env } from "@hackbuild/ai-env";
 import { ladderFor, walkLadder, type Capability, type LadderFailure, type ModelRecord, type Provider, type Rung } from "./record.js";
 import { createRegistry, type Registry, type SizeClass } from "./registry.js";
 
+/**
+ * What a factory gets for one rung: the record, the rung, the env, the abort signal, the hub,
+ * whether the rung is the last, and a progress reporter.
+ */
 export interface FactoryContext {
   record: ModelRecord;
   rung: Rung;
@@ -33,6 +37,7 @@ export interface FactoryContext {
   report(phase: "fetch" | "compile" | "warm", fraction: number | null, file?: string): void;
 }
 
+/** A step of a load: fetch, compile, warm, ready or failed. */
 export type LoadPhase = "fetch" | "compile" | "warm" | "ready" | "failed";
 
 /** One step of a load, heard by every listener; one model keeps one id across ladder rungs. */
@@ -52,6 +57,10 @@ export interface LoadEvent {
 /** Builds a runtime object for one rung. Throw to move to the next rung. */
 export type Factory<T = unknown> = (ctx: FactoryContext) => Promise<T>;
 
+/**
+ * A model the hub loaded: its id, record, the rung that worked, the runtime object and the rungs
+ * that failed first.
+ */
 export interface Loaded<T = unknown> {
   readonly id: string;
   readonly record: ModelRecord;
@@ -61,6 +70,7 @@ export interface Loaded<T = unknown> {
   readonly failures: LadderFailure[];
 }
 
+/** Options for `hub.use`: size class, largest size, commercial use, abort signal and load priority. */
 export interface UseOptions {
   size?: SizeClass;
   maxMB?: number;
@@ -70,11 +80,16 @@ export interface UseOptions {
   priority?: number;
 }
 
+/** Priority and abort signal for a job in an exclusive queue. */
 export interface ExclusiveOptions {
   priority?: number;
   signal?: AbortSignal;
 }
 
+/**
+ * Scheduling for one `hub.run`: least gap between starts, idle only, a frame budget and whether to
+ * wait or skip.
+ */
 export interface RunOptions extends ExclusiveOptions {
   /** Least ms between the starts of two runs of this model. Default 0. */
   minIntervalMs?: number;
@@ -94,6 +109,10 @@ export interface HubTimers {
   idle(): Promise<void>;
 }
 
+/**
+ * One loaded model as the hub reports it: id, provider, device, size, references, last use and runs
+ * in flight.
+ */
 export interface HubStatus {
   id: string;
   provider: Provider;
@@ -105,6 +124,10 @@ export interface HubStatus {
   busy: number;
 }
 
+/**
+ * A model hub: routes a capability to a record, loads it through a provider factory, keeps loaded
+ * models under a memory budget and queues GPU work.
+ */
 export interface Hub {
   readonly registry: Registry;
   readonly env: Env | undefined;
@@ -131,6 +154,7 @@ export interface Hub {
   status(): HubStatus[];
 }
 
+/** The error the hub throws, with a `code` of "no-route", "no-provider", "budget", "abort" or "skipped". */
 export class HubError extends Error {
   readonly code: "no-route" | "no-provider" | "budget" | "abort" | "skipped";
   constructor(code: HubError["code"], message: string) {
@@ -140,6 +164,10 @@ export class HubError extends Error {
   }
 }
 
+/**
+ * Options for `createHub`: registry, env, memory budget, the stub switch, clock, timers and the
+ * licence notice.
+ */
 export interface HubOptions {
   registry?: Registry;
   env?: Env;
@@ -207,6 +235,7 @@ export function stubFactory(builders: Record<string, (record: ModelRecord) => un
   };
 }
 
+/** Creates a model hub over a registry, with the memory budget and licence notice from `opts`. */
 export function createHub(opts: HubOptions = {}): Hub {
   const registry = opts.registry ?? createRegistry();
   const now = opts.now ?? (() => Date.now());

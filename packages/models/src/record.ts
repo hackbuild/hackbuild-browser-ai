@@ -8,6 +8,7 @@
 
 import type { Env } from "@hackbuild/ai-env";
 
+/** The capability names the packages in this repository provide. */
 export type KnownCapability =
   | "chat"
   | "tools"
@@ -29,17 +30,31 @@ export type KnownCapability =
 /** Known names plus any string a later package adds. */
 export type Capability = KnownCapability | (string & {});
 
+/**
+ * The runtime that runs a record, such as webllm, wllama, transformers.js ("tjs"), onnxruntime
+ * ("ort") or the stub.
+ */
 export type Provider = "webllm" | "wllama" | "tjs" | "ort" | "prompt-api" | "remote" | "mediapipe" | "tfjs" | "system" | "stub" | (string & {});
 
+/** Where a rung runs: webgpu, wasm, webgl, cpu, the browser's built in model, or a remote endpoint. */
 export type Device = "webgpu" | "wasm" | "webgl" | "cpu" | "browser" | "remote";
 
+/**
+ * An env capability a rung needs: webgpu, shader-f16, cross origin isolation, an http page or the
+ * Prompt API.
+ */
 export type Need = "webgpu" | "shader-f16" | "isolated" | "http" | "promptApi";
 
+/** onnxruntime-web session options for one rung: execution providers and graph optimization level. */
 export interface OrtRung {
   executionProviders: string[];
   graphOptimizationLevel?: "disabled" | "basic" | "extended" | "all";
 }
 
+/**
+ * One device and dtype to try for a model, with the env needs, onnxruntime options and runtime
+ * knobs for it.
+ */
 export interface Rung {
   device: Device;
   /** One dtype, or per sub graph dtypes for transformers.js (`{ embed_tokens: "fp16", decoder_model_merged: "q4" }`). */
@@ -54,6 +69,10 @@ export interface Rung {
   options?: Record<string, unknown>;
 }
 
+/**
+ * Per model behaviour app code needs: system role, turn alternation, reasoning format, tool
+ * formats, warnings and image order.
+ */
 export interface Quirks {
   /** false: the chat template has no system role (Gemma 3); merge it into the first user turn. */
   systemRole?: boolean;
@@ -79,10 +98,13 @@ export interface Quirks {
 
 /** How quick a model feels where it fits, slowest last. */
 export type Speed = "instant" | "fast" | "steady" | "slow";
+/** The speed words a record may carry, fastest first. */
 export const SPEEDS: readonly Speed[] = ["instant", "fast", "steady", "slow"];
 
+/** Where a size figure comes from: vendor, measured, computed, inferred or unknown. */
 export type SizeSource = "vendor" | "measured" | "computed" | "inferred" | "unknown";
 
+/** Where a model's weights are: repo, revision, files, URL, runtime model id and SHA-256. */
 export interface ModelSource {
   /** Hugging Face repo or similar. */
   repo?: string;
@@ -104,6 +126,10 @@ export type Censorship = "stock" | "uncensored" | "abliterated" | "unknown";
 /** Memory tier the model is comfortable in, the same cut as `sizeClass`. */
 export type Tier = "tiny" | "small" | "medium" | "large";
 
+/**
+ * A model: what it provides, the runtime that runs it, where its weights are, its size with the
+ * size source, the device and dtype ladder, quirks and the weight licence.
+ */
 export interface ModelRecord {
   id: string;
   label?: string;
@@ -200,6 +226,7 @@ export function ortLadder(): Rung[] {
   ];
 }
 
+/** The kind of a load failure as `classifyError` names it. */
 export type ErrorKind = "runtime-mismatch" | "out-of-memory" | "f16" | "device-lost" | "unsupported-op" | "network" | "abort" | "unknown";
 
 /** Name the failure so a ladder and a status line can act on it. Patterns come from the builds' logs. */
@@ -217,12 +244,14 @@ export function classifyError(e: unknown): ErrorKind {
   return "unknown";
 }
 
+/** One rung that failed, with the kind of error and its message. */
 export interface LadderFailure {
   rung: Rung;
   kind: ErrorKind;
   error: string;
 }
 
+/** The error `walkLadder` throws when every rung failed or none fits, with the failure of each rung tried. */
 export class LadderError extends Error {
   readonly failures: LadderFailure[];
   constructor(id: string, failures: LadderFailure[]) {

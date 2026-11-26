@@ -13,6 +13,7 @@
 import { cacheBackend, idbBackend, memoryBackend, opfsBackend, type Backend, type BackendName, type Meta } from "./backends.js";
 import { Sha256 } from "./sha256.js";
 
+/** A weight file to fetch: URL, cache key, SHA-256 when known, and the weight licence. */
 export interface WeightRef {
   url: string;
   /** Cache key. Default: the URL. Use `gguf:<repo>/<file>` style keys to match older caches. */
@@ -23,6 +24,7 @@ export interface WeightRef {
   licence: string;
 }
 
+/** Download progress of one file; `total` and `fraction` are null when the server sent no length. */
 export interface Progress {
   key: string;
   loaded: number;
@@ -33,6 +35,7 @@ export interface Progress {
   resuming: boolean;
 }
 
+/** Options for one `get`: a progress callback, an abort signal, and whether to resume. */
 export interface GetOptions {
   onProgress?: (p: Progress) => void;
   signal?: AbortSignal;
@@ -40,6 +43,7 @@ export interface GetOptions {
   resume?: boolean;
 }
 
+/** The error the store throws, with a `code` of "http", "sha256", "quota", "abort" or "range". */
 export class WeightError extends Error {
   readonly code: "http" | "sha256" | "quota" | "abort" | "range";
   constructor(code: WeightError["code"], message: string) {
@@ -49,6 +53,10 @@ export class WeightError extends Error {
   }
 }
 
+/**
+ * Options for `openWeightStore`: backend order, part size, fetch, the licence notice, storage
+ * estimate, persistence and Web Locks.
+ */
 export interface StoreOptions {
   /** Backend order to try, or backend objects. Default "auto": opfs, idb, cache, memory, skipping what is missing. */
   backends?: "auto" | readonly (BackendName | Backend)[];
@@ -88,6 +96,7 @@ export interface DownloadRow {
   waiters: number;
 }
 
+/** Used and quota bytes of this origin's storage, and whether a file of a given size fits. */
 export interface Estimate {
   used: number | null;
   quota: number | null;
@@ -95,6 +104,10 @@ export interface Estimate {
   fits(bytes: number): boolean;
 }
 
+/**
+ * A weight store: get with resume, put files the user supplied, list, evict, cancel, track
+ * downloads and estimate space.
+ */
 export interface WeightStore {
   readonly backend: Backend;
   get(ref: WeightRef, opts?: GetOptions): Promise<Blob>;

@@ -6,6 +6,7 @@
 
 import type { GetOptions, Progress, WeightStore } from "./store.js";
 
+/** One file of a multi file repo, by its path in the repo, with an optional SHA-256. */
 export interface RepoFile {
   /** Path inside the repo, e.g. "onnx/model_q4f16.onnx". */
   path: string;
@@ -14,6 +15,7 @@ export interface RepoFile {
   optional?: boolean;
 }
 
+/** A multi file model: base URL, file list, weight licence and key prefix. */
 export interface RepoRef {
   /** Base URL ending in "/", e.g. hfResolve("onnx-community/x", "main"). */
   base: string;
@@ -23,6 +25,7 @@ export interface RepoRef {
   keyPrefix?: string;
 }
 
+/** Progress over a whole repo: the current file, bytes so far and the known total. */
 export interface RepoProgress {
   file: string;
   fileProgress: Progress;

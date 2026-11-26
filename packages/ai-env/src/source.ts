@@ -6,12 +6,14 @@
 
 export type Rewrite = readonly [pattern: RegExp | string, replacement: string];
 
+/** The rewritten text and the rewrites that matched nothing. */
 export interface RewriteResult {
   text: string;
   /** Index and pattern of each rewrite that matched nothing. */
   missed: { index: number; pattern: string }[];
 }
 
+/** Applies string or RegExp rewrites to source text and reports each one that matched nothing. */
 export function rewriteSource(src: string, rewrites: readonly Rewrite[]): RewriteResult {
   let text = src;
   const missed: RewriteResult["missed"] = [];
@@ -88,6 +90,7 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return parts.join("");
 }
 
+/** Decodes base64 text to bytes, skipping characters outside the base64 alphabet. */
 export function base64ToBytes(b64: string): Uint8Array {
   const clean = b64.replace(/[^A-Za-z0-9+/]/g, "");
   const pad = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
@@ -108,6 +111,7 @@ export function base64ToBytes(b64: string): Uint8Array {
   return out;
 }
 
+/** Encodes text as a base64 data: URL, JavaScript by default. */
 export function textToDataUrl(text: string, mime = "text/javascript"): string {
   return `data:${mime};base64,${bytesToBase64(new TextEncoder().encode(text))}`;
 }

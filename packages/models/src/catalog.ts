@@ -26,6 +26,7 @@
 
 import { ortLadder, type ModelRecord } from "./record.js";
 
+/** The starter model records, each with its size source and weight licence. */
 export const CATALOG: readonly ModelRecord[] = [
   {
     id: "smollm2-135m-instruct",

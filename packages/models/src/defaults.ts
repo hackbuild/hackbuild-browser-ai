@@ -15,12 +15,17 @@ export const STEP_UP = 1.5;
 /** The catalogue group a first visit offers downloads from, when the catalogue has one; other groups are a choice the person makes. */
 export const START_GROUP = "start here";
 
+/** One row of a reasons list: label, value and a lowercase line saying why. */
 export interface Reason {
   label: string;
   value: string;
   why: string;
 }
 
+/**
+ * What `suggestDefaults` and `pickModel` choose from: the catalogue, stored ids, the storage
+ * estimate, the capability and an optional budget.
+ */
 export interface DefaultsInput {
   /** Records to choose from, e.g. CATALOG or registry.list(). */
   catalogue: readonly ModelRecord[];
@@ -34,6 +39,10 @@ export interface DefaultsInput {
   budget?: Budget;
 }
 
+/**
+ * A first visit's suggestion: the model, device and threads to set, a reason per field, a download
+ * worth offering, and the budget used.
+ */
 export interface Defaults {
   patch: {
     /** The record to load, or null when nothing stored fits and the person must download first. */

@@ -2,14 +2,18 @@
 // Each file: [sha256, bytes, source]. source is "measured" when the bytes
 // were downloaded and hashed, "vendor" when the SHA-256 is the hub's LFS oid.
 
+/** One pinned file as SHA-256, byte count and whether the hash was measured or taken from the vendor. */
 export type PinFile = readonly [sha256: string, bytes: number, source: "measured" | "vendor"];
+/** The pinned commit of a Hugging Face repo and the SHA-256 and size of each pinned file. */
 export interface RepoPin {
   readonly revision: string;
   readonly files: Readonly<Record<string, PinFile>>;
 }
 
+/** The date the pins were taken. */
 export const PINNED_AT = "2026-11-24";
 
+/** Pinned commits and file hashes per Hugging Face repo, written by tools/pin-weights.mjs. */
 export const PINS: Readonly<Record<string, RepoPin>> = {
   "HuggingFaceTB/SmolLM2-135M-Instruct": {
     "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",

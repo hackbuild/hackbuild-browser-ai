@@ -16,6 +16,7 @@ export const CPU_CAP_MB = 6 * 1024;
 /** Budget when the browser does not report device memory. Vendor for a native runtime, proposed here. */
 export const FALLBACK_BUDGET_MB = 5.5 * 1024;
 
+/** The largest model in MB this machine can give one model, with a lowercase reason. */
 export interface Budget {
   /** Largest model, in MB, that leaves this machine responsive. */
   mb: number;
@@ -43,8 +44,10 @@ export interface StorageEstimate {
   fits(bytes: number): boolean;
 }
 
+/** How a record fits this machine, best first: "fits", then the reasons it does not, down to "cannot run here". */
 export type Fit = "fits" | "fits on cpu, slow" | "needs f16" | "needs webgpu" | "over memory" | "over storage" | "cannot run here";
 
+/** Whether a record fits this machine, as a `Fit` word, an ok flag and a lowercase reason. */
 export interface FitResult {
   fit: Fit;
   /** True for "fits" and "fits on cpu, slow". */
@@ -100,6 +103,7 @@ export function fitOf(rec: ModelRecord, env: Env | undefined, estimate?: Storage
 /** The organs of the slot rack, in rack order. */
 export type Slot = "brain" | "smallBrain" | "embedder" | "ears" | "vad" | "voice" | "eyes" | "depth" | "mask" | "detector" | "image";
 
+/** The slots of the model rack, in rack order, with their labels. */
 export const SLOTS: readonly { slot: Slot; label: string }[] = [
   { slot: "brain", label: "brain" },
   { slot: "smallBrain", label: "small brain" },
@@ -114,6 +118,7 @@ export const SLOTS: readonly { slot: Slot; label: string }[] = [
   { slot: "image", label: "image" },
 ];
 
+/** A size preset that fills the slot rack with catalogue ids, named by weight class. */
 export interface Preset {
   id: "phone" | "laptop" | "desktop" | (string & {});
   /** Named by weight class. */
@@ -147,6 +152,10 @@ export const PRESETS: readonly Preset[] = [
   },
 ];
 
+/**
+ * The summed download of a preset in MB (computed), the weakest size source among its parts, each
+ * part, and the picks with no known size.
+ */
 export interface PresetTotal {
   /** Summed download of the picks with a known size, in MB (computed). */
   mb: number;
@@ -185,6 +194,7 @@ export function presetTotal(preset: Preset, records: readonly ModelRecord[] | { 
   return { mb, source: STRENGTH[worst]!, parts, unknown };
 }
 
+/** Parameter label, quantization and split position read from a GGUF file name. */
 export interface GgufFacts {
   /** Parameter label, e.g. "3B", "E4B", "26B-A4B"; null when the name has none. */
   params: string | null;

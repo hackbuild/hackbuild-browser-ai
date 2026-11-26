@@ -7,6 +7,10 @@
 
 export type BackendName = "opfs" | "cache" | "idb" | "memory";
 
+/**
+ * The stored record of one weight file: URL, licence, total, part sizes, validators and the SHA-256
+ * once complete.
+ */
 export interface Meta {
   key: string;
   url: string | null;
@@ -23,6 +27,7 @@ export interface Meta {
   updated: number;
 }
 
+/** A storage backend that keeps each weight file as numbered parts plus one meta record. */
 export interface Backend {
   readonly name: BackendName;
   getMeta(key: string): Promise<Meta | null>;
@@ -34,6 +39,7 @@ export interface Backend {
   keys(): Promise<string[]>;
 }
 
+/** A backend that keeps parts in memory for this tab only. */
 export function memoryBackend(): Backend {
   const metas = new Map<string, Meta>();
   const parts = new Map<string, Blob>();

@@ -11,6 +11,7 @@ import type { ModelRecord } from "./record.js";
 
 export { PINNED_AT, PINS, type PinFile, type RepoPin };
 
+/** The pin of a repo, or undefined when the repo is not pinned. */
 export function pinOf(repo: string | undefined): RepoPin | undefined {
   return repo && Object.hasOwn(PINS, repo) ? PINS[repo] : undefined;
 }

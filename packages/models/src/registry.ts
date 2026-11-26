@@ -2,6 +2,7 @@ import type { Env } from "@hackbuild/ai-env";
 import { SPEEDS, ladderFor, type Capability, type ModelRecord, type Provider } from "./record.js";
 import { withPin } from "./pinning.js";
 
+/** A size class by download size: tiny, small, medium or large. */
 export type SizeClass = "tiny" | "small" | "medium" | "large";
 
 /** Size class by download size: tiny under 400 MB, small under 1.5 GB, medium under 3.5 GB (inferred cut points). */
@@ -13,6 +14,7 @@ export function sizeClass(mb: number | null): SizeClass | null {
   return "large";
 }
 
+/** Filters for `find` and `route`: capability, provider, size class, largest size, commercial use and env. */
 export interface Query {
   provides?: Capability;
   provider?: Provider;
@@ -23,6 +25,7 @@ export interface Query {
   env?: Env;
 }
 
+/** A set of model records you can add to, get, list, filter and route a request through. */
 export interface Registry {
   add(...recs: ModelRecord[]): void;
   get(id: string): ModelRecord | undefined;
@@ -32,6 +35,7 @@ export interface Registry {
   route(q: Query): ModelRecord | undefined;
 }
 
+/** The error a registry throws when a record fails validation. */
 export class RegistryError extends Error {
   constructor(message: string) {
     super(message);
@@ -41,6 +45,10 @@ export class RegistryError extends Error {
 
 const CENSORSHIP: readonly string[] = ["stock", "uncensored", "abliterated", "unknown"];
 
+/**
+ * Throws a RegistryError when a record has no id, licence, capability or ladder, or a malformed
+ * speed, verdict, censorship or VRAM source.
+ */
 export function validateRecord(r: ModelRecord): void {
   if (!r.id) throw new RegistryError("record has no id");
   if (!r.licence || !r.licence.trim()) throw new RegistryError(`${r.id}: every model reference names its weight licence`);
@@ -55,6 +63,10 @@ export function validateRecord(r: ModelRecord): void {
   if (r.censorship !== undefined && !CENSORSHIP.includes(r.censorship)) throw new RegistryError(`${r.id}: censorship is one of ${CENSORSHIP.join(", ")}`);
 }
 
+/**
+ * Creates a registry holding `initial`, validating each record and setting the pinned revision of
+ * pinned repos.
+ */
 export function createRegistry(initial: readonly ModelRecord[] = []): Registry {
   const recs = new Map<string, ModelRecord>();
   const reg: Registry = {

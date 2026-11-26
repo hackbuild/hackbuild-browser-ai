@@ -8,6 +8,7 @@
 
 export type Protocol = "file" | "http" | "https" | "other";
 
+/** What the tab can do, as measured by `probe`, with one note per missing capability. */
 export interface Env {
   /** navigator.gpu.requestAdapter() returned an adapter. */
   webgpu: boolean;
@@ -46,6 +47,7 @@ export interface ProbeGlobals {
   LanguageModel?: unknown;
 }
 
+/** Options for `probe`: the globals to read, the timeout for adapter and OPFS calls, and the thread cap. */
 export interface ProbeOptions {
   globals?: ProbeGlobals;
   /** Give up on requestAdapter or getDirectory after this many ms. Default 3000. */
@@ -76,6 +78,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
   });
 }
 
+/** Maps a `location.protocol` string to "file", "http", "https" or "other". */
 export function protocolOf(proto: string | undefined): Protocol {
   if (proto === "file:") return "file";
   if (proto === "http:") return "http";
@@ -83,6 +86,10 @@ export function protocolOf(proto: string | undefined): Protocol {
   return "other";
 }
 
+/**
+ * Measures what the tab can do: WebGPU and shader-f16, cross origin isolation, OPFS, Cache Storage,
+ * IndexedDB, safe wasm threads, device memory and the Prompt API.
+ */
 export async function probe(opts: ProbeOptions = {}): Promise<Env> {
   const g = (opts.globals ?? (globalThis as unknown as ProbeGlobals)) as ProbeGlobals;
   const timeoutMs = opts.timeoutMs ?? 3000;

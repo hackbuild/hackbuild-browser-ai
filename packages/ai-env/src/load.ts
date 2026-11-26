@@ -18,8 +18,10 @@
 
 import { absolutizeImports, rewriteSource, textToDataUrl, toClassicWorker, type Rewrite } from "./source.js";
 
+/** A function that imports a module specifier, such as a dynamic `import()`. */
 export type Importer = (specifier: string) => Promise<unknown>;
 
+/** The browser functions the loaders call (fetch, import, object URLs, page protocol); tests pass fakes. */
 export interface LoadDeps {
   fetch?: typeof fetch;
   /** Defaults to a native dynamic import. Tests pass a fake. */
@@ -37,6 +39,10 @@ export async function sha256Text(text: string): Promise<string> {
   return Array.from(d, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Options for `importEsm`: a SHA-256 per URL, source rewrites, the classic worker swap, a free form
+ * patch and attempt callbacks.
+ */
 export interface ImportEsmOptions extends LoadDeps {
   /**
    * SHA-256 (lowercase hex) of the fetched text per URL. A URL listed here
@@ -55,6 +61,10 @@ export interface ImportEsmOptions extends LoadDeps {
   onAttempt?: (a: { url: string; via: "import" | "blob" | "data"; ok: boolean; error?: string }) => void;
 }
 
+/**
+ * The error importEsm and spawnWorker throw when every URL or rung failed, with one entry per
+ * attempt in `attempts`.
+ */
 export class LoadError extends Error {
   readonly attempts: { url: string; via: string; error: string }[];
   constructor(message: string, attempts: { url: string; via: string; error: string }[]) {
@@ -70,6 +80,10 @@ function errText(e: unknown): string {
   return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
 }
 
+/**
+ * Imports an ES module from the first URL that loads, through plain import, then a patched Blob
+ * URL, then a base64 data: URL, checking a SHA-256 when you give one.
+ */
 export async function importEsm<T = unknown>(urls: string | readonly string[], opts: ImportEsmOptions = {}): Promise<T> {
   const list = typeof urls === "string" ? [urls] : urls;
   const importer = opts.importer ?? nativeImport;
@@ -145,6 +159,10 @@ export async function importEsm<T = unknown>(urls: string | readonly string[], o
   throw new LoadError(`could not import ${list.join(", ")}`, attempts);
 }
 
+/**
+ * A way to start a worker: a module worker from a Blob, a classic worker from a Blob, or the source
+ * run on the page.
+ */
 export type WorkerRung = "module-blob" | "classic-blob" | "inline";
 
 /** The parts of Worker the ladder uses. A real Worker satisfies it. */
@@ -155,6 +173,10 @@ export interface WorkerLike {
   removeEventListener(type: "message" | "error", fn: (ev: { data?: unknown; message?: string }) => void): void;
 }
 
+/**
+ * Options for `spawnWorker`: rung order, rewrites, a prelude, a base URL, the handshake timeout and
+ * the Worker constructor.
+ */
 export interface SpawnOptions {
   prefer?: readonly WorkerRung[];
   /** Applied to the worker source before spawning. */
@@ -174,6 +196,7 @@ export interface SpawnOptions {
   name?: string;
 }
 
+/** A started worker, the rung that started it, and the rungs that failed before it. */
 export interface Spawned {
   worker: WorkerLike;
   rung: WorkerRung;
