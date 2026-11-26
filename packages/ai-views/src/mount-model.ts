@@ -60,9 +60,10 @@ const FILLER = /^(instruct|chat|it|mlc|onnx|gguf|hf|q\d\w*|f16|f32|fp16|int8|bf1
  * A model name cut for the bar chip: filler words (instruct, chat, quant tags)
  * go, and a name of more than three words keeps its first two and its last,
  * which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+ * A note in brackets goes first: "slimsam 77 uniform (point prompts)" reads "slimsam 77".
  */
 export function shortName(name: string): string {
-  const w = name.split(/\s+/).filter((x) => x && !FILLER.test(x));
+  const w = name.replace(/\s*\([^)]*\)/g, "").split(/\s+/).filter((x) => x && !FILLER.test(x));
   const kept = w.length > 3 ? [w[0]!, w[1]!, w[w.length - 1]!] : w;
   return kept.join(" ") || name;
 }

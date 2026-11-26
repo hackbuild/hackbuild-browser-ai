@@ -108,6 +108,7 @@ describe("chip words", () => {
   it("cuts a model name to a short one", () => {
     expect(shortName("hermes 3 llama 3.2 3b")).toBe("hermes 3 3b");
     expect(shortName("smollm2 360m instruct")).toBe("smollm2 360m");
+    expect(shortName("slimsam 77 uniform (point prompts)")).toBe("slimsam 77");
     expect(shortName("whisper base.en")).toBe("whisper base.en");
   });
   it("shows the short name and the size, then the state once it moves", () => {
