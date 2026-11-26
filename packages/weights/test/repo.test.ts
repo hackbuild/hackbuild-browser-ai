@@ -69,4 +69,14 @@ describe("transformers.js cache", () => {
     const cache = transformersCache(store, { licenceFor: () => "Apache-2.0", sha256For: () => "00".repeat(32) });
     await expect(cache.match(base + "onnx/model_q4.onnx")).rejects.toThrow(/sha256/);
   });
+  it("never fetches the local model path and keeps one copy of main and its pin", async () => {
+    const pinned = base.replace("/resolve/main/", "/resolve/pin/");
+    const h = host({ [pinned + "config.json"]: "{}" });
+    const store = await openWeightStore({ backends: ["memory"], fetch: h.fetch, onNotice: () => {} });
+    const cache = transformersCache(store, { licenceFor: () => "Apache-2.0", keyFor: (u) => u.replace("/resolve/main/", "/resolve/pin/") });
+    expect(await cache.match("/models/onnx-community/depth-anything-v2-small/config.json")).toBeUndefined();
+    expect(await (await cache.match(base + "config.json"))!.text()).toBe("{}");
+    expect(await (await cache.match(pinned + "config.json"))!.text()).toBe("{}");
+    expect(h.calls).toEqual([pinned + "config.json"]);
+  });
 });

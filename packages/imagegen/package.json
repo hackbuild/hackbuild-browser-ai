@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/imagegen",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Text to image in a tab: SD-Turbo and SD 1.5 text encoder, UNet and VAE on onnxruntime-web, SDXL-Turbo with two encoders and pooled embeddings, with a seeded Euler scheduler on trailing or leading timesteps, guidance with a negative prompt, per model form records, loaded through the models hub and run under its gpu lock.",
   "type": "module",
   "license": "MIT",
@@ -33,6 +33,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/models": "0.2.2"
+    "@hackbuild/models": "0.2.3"
   }
 }

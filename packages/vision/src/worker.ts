@@ -11,7 +11,7 @@
 
 import { spawnWorker, type Spawned, type SpawnOptions } from "@hackbuild/ai-env";
 import type { DepthMap } from "./types.js";
-import { withPin, type ModelRecord } from "@hackbuild/models";
+import { firstInSession, withPin, type ModelRecord } from "@hackbuild/models";
 import { VISION_RECORDS } from "./records.js";
 
 /** Options for {@link depthWorker}: the transformers.js URLs, the depth model or record, the licence callback, device, dtype and worker rungs. */
@@ -129,7 +129,9 @@ export async function depthWorker(o: DepthWorkerOptions): Promise<DepthWorker> {
     const rec = o.record ?? VISION_RECORDS.find((r) => r.provides.includes("depth") && r.source.modelId === (o.modelId ?? "onnx-community/depth-anything-v2-small"));
     if (!rec?.source.modelId) throw new Error(`depth worker: ${o.modelId} is not a registered depth record; pass record with its licence named`);
     const pinned = withPin(rec);
-    (o.onLicence ?? ((l: string) => console.info(l)))(`model ${pinned.id}: weight licence ${pinned.licence}. the weights are not part of this library.`);
+    const line = `model ${pinned.id}: weight licence ${pinned.licence}. the weights are not part of this library.`;
+    if (o.onLicence) o.onLicence(line);
+    else if (firstInSession(pinned.source.modelId ?? pinned.id)) console.info(line);
     await call({
       op: "load",
       urls: [...o.urls],

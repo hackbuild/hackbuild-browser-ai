@@ -69,8 +69,8 @@
       "dist/single/index.iife.js": 14266
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 43337,
-      "dist/single/index.iife.js": 42879
+      "main: dist/index.js bundled": 43738,
+      "dist/single/index.iife.js": 43296
     },
     "@hackbuild/notes": {
       "main: dist/index.js bundled": 5533,
@@ -93,19 +93,19 @@
       "dist/single/index.iife.js": 18352
     },
     "@hackbuild/vision": {
-      "main: dist/index.js bundled": 29464,
-      "dist/single/index.iife.js": 59934
+      "main: dist/index.js bundled": 29500,
+      "dist/single/index.iife.js": 60091
     },
     "@hackbuild/weights": {
-      "main: dist/index.js bundled": 9297,
-      "dist/single/index.iife.js": 9225
+      "main: dist/index.js bundled": 9741,
+      "dist/single/index.iife.js": 9666
     },
     "@hackbuild/converse": {
       "main: dist/index.js bundled": 5840,
       "dist/single/index.iife.js": 5978
     },
     "@hackbuild/ai-views": {
-      "main: dist/index.js bundled": 21494,
+      "main: dist/index.js bundled": 21595,
       "dist/single/elements.iife.js": 100083
     }
   }

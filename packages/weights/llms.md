@@ -241,7 +241,7 @@ interface StoreOptions {
 Options for `openWeightStore`: backend order, part size, fetch, the licence notice, storage estimate, persistence and Web Locks.
 
 ```ts
-function transformersCache(store: WeightStore, opts: { licenceFor: (url: string) => string | null; onProgress?: (p: Progress) => void; sha256For?: (url: string) => string | undefined }): { match(req: string | Request): Promise<Response | undefined>; put(req: string | Request, res: Response): Promise<void> }
+function transformersCache(store: WeightStore, opts: { keyFor?: (url: string) => string; licenceFor: (url: string) => string | null; onProgress?: (p: Progress) => void; sha256For?: (url: string) => string | undefined }): { match(req: string | Request): Promise<Response | undefined>; put(req: string | Request, res: Response): Promise<void> }
 ```
 
 A cache object for transformers.js (`env.useCustomCache = true; env.customCache = transformersCache(store, ...)`).

@@ -538,7 +538,7 @@ licence notice.
 | <a id="property-budgetmb-1"></a> `budgetMB?` | `number` | Memory budget for resident models, in MB. Default no limit. |
 | <a id="property-env-2"></a> `env?` | `Env` | - |
 | <a id="property-now"></a> `now?` | () => `number` | - |
-| <a id="property-onlicence"></a> `onLicence?` | (`line`, `record`) => `void` | Called once per record, before its first load, with the weight licence line. Default console.info. Every model reference states its licence. |
+| <a id="property-onlicence"></a> `onLicence?` | (`line`, `record`) => `void` | Called once per record, before its first load, with the weight licence line. Default: one console.info line per model per page session; pass `() => {}` to silence it. Every model reference states its licence. |
 | <a id="property-registry-1"></a> `registry?` | [`Registry`](#registry) | - |
 | <a id="property-stub"></a> `stub?` | `boolean` | Route every request to the stub provider (the `?stub` switch). |
 | <a id="property-timers"></a> `timers?` | [`HubTimers`](#hubtimers) | - |
@@ -1417,6 +1417,26 @@ pinned repos.
 
 ***
 
+### firstInSession()
+
+```ts
+function firstInSession(model): boolean;
+```
+
+True the first time a model is named in this page session; shared by every hackbuild package through a global symbol.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `model` | `string` |
+
+#### Returns
+
+`boolean`
+
+***
+
 ### fitOf()
 
 ```ts
@@ -1592,6 +1612,30 @@ SHA-256 of a Hugging Face resolve URL at a pinned commit, or undefined (other ho
 #### Returns
 
 `string` \| `undefined`
+
+***
+
+### pinnedUrl()
+
+```ts
+function pinnedUrl(url, revisionFor?): string;
+```
+
+A Hugging Face resolve URL at the pinned commit when it names a pinned
+repo at `main` (transformers.js lists files at main before it loads at
+the revision it was given); any other URL comes back unchanged.
+`revisionFor` names revisions for repos outside the pins.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `url` | `string` |
+| `revisionFor?` | (`repo`) => `string` \| `undefined` |
+
+#### Returns
+
+`string`
 
 ***
 

@@ -25,7 +25,7 @@ export {
 } from "./record.js";
 export { createRegistry, validateRecord, sizeClass, RegistryError, type Registry, type Query, type SizeClass } from "./registry.js";
 export { CATALOG } from "./catalog.js";
-export { PINS, PINNED_AT, pinOf, withPin, pinnedSha, pinnedBase, type PinFile, type RepoPin } from "./pinning.js";
+export { PINS, PINNED_AT, pinOf, withPin, pinnedSha, pinnedBase, pinnedUrl, firstInSession, type PinFile, type RepoPin } from "./pinning.js";
 export {
   createHub,
   stubRecord,

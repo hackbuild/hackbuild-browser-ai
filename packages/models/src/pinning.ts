@@ -40,3 +40,26 @@ export function pinnedSha(url: string): string | undefined {
 export function pinnedBase(repo: string, fallback = "main"): string {
   return `https://huggingface.co/${repo}/resolve/${pinOf(repo)?.revision ?? fallback}/`;
 }
+
+/**
+ * A Hugging Face resolve URL at the pinned commit when it names a pinned
+ * repo at `main` (transformers.js lists files at main before it loads at
+ * the revision it was given); any other URL comes back unchanged.
+ * `revisionFor` names revisions for repos outside the pins.
+ */
+export function pinnedUrl(url: string, revisionFor?: (repo: string) => string | undefined): string {
+  const m = HF.exec(url);
+  if (!m || m[2] !== "main") return url;
+  const rev = revisionFor?.(m[1]!) ?? pinOf(m[1])?.revision;
+  return rev ? `https://huggingface.co/${m[1]}/resolve/${rev}/${m[3]}` : url;
+}
+
+const SEEN = Symbol.for("hackbuild.licence.seen");
+/** True the first time a model is named in this page session; shared by every hackbuild package through a global symbol. */
+export function firstInSession(model: string): boolean {
+  const g = globalThis as unknown as Record<symbol, Set<string> | undefined>;
+  const seen = (g[SEEN] ??= new Set<string>());
+  if (seen.has(model)) return false;
+  seen.add(model);
+  return true;
+}

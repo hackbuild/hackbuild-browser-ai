@@ -2,7 +2,7 @@
 
 Download model weights once, resume them when the download breaks, check their SHA-256, and keep them on the machine for the next visit.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/weights)](https://www.npmjs.com/package/@hackbuild/weights) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 9.3 kB measured](https://img.shields.io/badge/gzip-9.3%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/weights)](https://www.npmjs.com/package/@hackbuild/weights) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 9.7 kB measured](https://img.shields.io/badge/gzip-9.7%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 ## What it does
 
@@ -168,8 +168,8 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 9,297 bytes | 9,761 bytes |
-| `dist/single/index.iife.js` (single file build) | 9,225 bytes | 9,686 bytes |
+| `dist/index.js` (main entry, imports external) | 9,741 bytes | 10,228 bytes |
+| `dist/single/index.iife.js` (single file build) | 9,666 bytes | 10,149 bytes |
 
 Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

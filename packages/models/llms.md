@@ -153,6 +153,12 @@ const FALLBACK_BUDGET_MB: number
 Budget when the browser does not report device memory.
 
 ```ts
+function firstInSession(model: string): boolean
+```
+
+True the first time a model is named in this page session; shared by every hackbuild package through a global symbol.
+
+```ts
 type Fit = "fits" | "fits on cpu, slow" | "needs f16" | "needs webgpu" | "over memory" | "over storage" | "cannot run here"
 ```
 
@@ -434,6 +440,12 @@ function pinnedSha(url: string): string | undefined
 ```
 
 SHA-256 of a Hugging Face resolve URL at a pinned commit, or undefined (other host, unpinned repo, other revision).
+
+```ts
+function pinnedUrl(url: string, revisionFor?: (repo: string) => string | undefined): string
+```
+
+A Hugging Face resolve URL at the pinned commit when it names a pinned repo at `main` (transformers.js lists files at main before it loads at the revision it was given); any other URL comes back unchanged.
 
 ```ts
 function pinOf(repo: string | undefined): RepoPin | undefined

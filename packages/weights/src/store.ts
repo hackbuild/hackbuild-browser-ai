@@ -62,7 +62,11 @@ export interface StoreOptions {
   backends?: "auto" | readonly (BackendName | Backend)[];
   partBytes?: number;
   fetch?: typeof fetch;
-  /** Called once per key per store with the licence line. Default console.info. */
+  /**
+   * Called once per model per store with the licence line (a Hugging Face
+   * repo, or the URL's folder, is one model). Default: one console.info
+   * line per model per page session; pass `() => {}` to silence it.
+   */
   onNotice?: (line: string) => void;
   /** navigator.storage.estimate, injectable. */
   estimate?: () => Promise<{ usage?: number; quota?: number }>;
@@ -190,7 +194,7 @@ async function assemble(b: Backend, meta: Meta): Promise<Blob | null> {
 export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightStore> {
   const partBytes = opts.partBytes ?? 128 * 1024 * 1024;
   const doFetch = opts.fetch ?? globalThis.fetch.bind(globalThis);
-  const notice = opts.onNotice ?? ((l: string) => console.info(l));
+  const notice = opts.onNotice;
   const now = opts.now ?? (() => Date.now());
   let backend: Backend | null = null;
   for (const b of pickBackends(opts)) {
@@ -233,9 +237,13 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
   const onceMap = new Map<string, Promise<Uint8Array>>();
 
   const tellLicence = (key: string, licence: string) => {
-    if (noticed.has(key)) return;
-    noticed.add(key);
-    notice(`weights ${key}: licence ${licence}. the weights are not part of this library.`);
+    const model = modelOf(key);
+    if (noticed.has(model)) return;
+    noticed.add(model);
+    const first = firstInSession(model);
+    const line = `weights ${model}: licence ${licence}. the weights are not part of this library.`;
+    if (notice) notice(line);
+    else if (first) console.info(line);
   };
 
   const estimate = async (): Promise<Estimate> => {
@@ -547,4 +555,24 @@ export async function openWeightStore(opts: StoreOptions = {}): Promise<WeightSt
     },
   };
   return store;
+}
+
+const HF_REPO = /^https:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\//;
+/** The model a weight key belongs to: its Hugging Face repo, the folder of any other URL, or a non URL key as is. */
+export function modelOf(key: string): string {
+  const m = HF_REPO.exec(key);
+  if (m) return m[1]!;
+  if (!/^https?:\/\//.test(key)) return key;
+  const cut = key.split("?")[0]!.lastIndexOf("/");
+  return cut > 0 ? key.slice(0, cut) : key;
+}
+
+const SEEN = Symbol.for("hackbuild.licence.seen");
+/** True the first time a model is named in this page session; shared by every hackbuild package through a global symbol. */
+export function firstInSession(model: string): boolean {
+  const g = globalThis as unknown as Record<symbol, Set<string> | undefined>;
+  const seen = (g[SEEN] ??= new Set<string>());
+  if (seen.has(model)) return false;
+  seen.add(model);
+  return true;
 }

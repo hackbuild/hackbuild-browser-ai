@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/transcribe",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Speech to text in a tab: the quiet speech front end, silence reel packing with a source map, Whisper and Moonshine records for the models hub, a phantom text filter, a live segmenter, a Web Speech adapter and a stub.",
   "type": "module",
   "license": "MIT",
@@ -34,8 +34,8 @@
   },
   "dependencies": {
     "@hackbuild/ai-env": "0.1.2",
-    "@hackbuild/models": "0.2.2",
-    "@hackbuild/devices": "0.1.3",
+    "@hackbuild/models": "0.2.3",
+    "@hackbuild/devices": "0.1.4",
     "@hackbuild/audio-dsp": "0.1.2"
   }
 }

@@ -484,7 +484,7 @@ estimate, persistence and Web Locks.
 | <a id="property-fetch"></a> `fetch?` | (`input`, `init?`) => `Promise`\<`Response`\> | - |
 | <a id="property-locks"></a> `locks?` | `false` \| [`LocksLike`](#lockslike) | Web Locks, so pages and workers of one origin share one download per key: the second page waits, then reads what the first stored. Default navigator.locks where present; false turns it off. |
 | <a id="property-now"></a> `now?` | () => `number` | - |
-| <a id="property-onnotice"></a> `onNotice?` | (`line`) => `void` | Called once per key per store with the licence line. Default console.info. |
+| <a id="property-onnotice"></a> `onNotice?` | (`line`) => `void` | Called once per model per store with the licence line (a Hugging Face repo, or the URL's folder, is one model). Default: one console.info line per model per page session; pass `() => {}` to silence it. |
 | <a id="property-partbytes"></a> `partBytes?` | `number` | - |
 | <a id="property-persist"></a> `persist?` | () => `Promise`\<`boolean`\> | navigator.storage.persist and persisted, injectable. |
 | <a id="property-persisted"></a> `persisted?` | () => `Promise`\<`boolean`\> | - |
@@ -954,14 +954,16 @@ A cache object for transformers.js (`env.useCustomCache = true;
 env.customCache = transformersCache(store, ...)`). URLs that
 `licenceFor` names are downloaded through the store on `match`, so they
 get parts, resume and the licence line; other URLs pass through to
-transformers.js's own fetch and are stored on `put`.
+transformers.js's own fetch and are stored on `put`. Keys that are not
+http(s) URLs (the local model path) miss without a fetch.
 
 #### Parameters
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `store` | [`WeightStore`](#weightstore) | - |
-| `opts` | \{ `licenceFor`: (`url`) => `string` \| `null`; `onProgress?`: (`p`) => `void`; `sha256For?`: (`url`) => `string` \| `undefined`; \} | - |
+| `opts` | \{ `keyFor?`: (`url`) => `string`; `licenceFor`: (`url`) => `string` \| `null`; `onProgress?`: (`p`) => `void`; `sha256For?`: (`url`) => `string` \| `undefined`; \} | - |
+| `opts.keyFor?` | (`url`) => `string` | The URL a request is stored and fetched under, e.g. a resolve/main URL moved to its pinned revision (pinnedUrl from @hackbuild/models), so one file is fetched once. |
 | `opts.licenceFor` | (`url`) => `string` \| `null` | - |
 | `opts.onProgress?` | (`p`) => `void` | - |
 | `opts.sha256For?` | (`url`) => `string` \| `undefined` | SHA-256 for a URL when known (e.g. pinnedSha from @hackbuild/models); the store checks it. |

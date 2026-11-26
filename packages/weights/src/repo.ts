@@ -92,12 +92,15 @@ export async function ortExternalData(files: Map<string, Blob>, graphPath: strin
   return out;
 }
 
+const REMOTE = /^https?:\/\//;
+
 /**
  * A cache object for transformers.js (`env.useCustomCache = true;
  * env.customCache = transformersCache(store, ...)`). URLs that
  * `licenceFor` names are downloaded through the store on `match`, so they
  * get parts, resume and the licence line; other URLs pass through to
- * transformers.js's own fetch and are stored on `put`.
+ * transformers.js's own fetch and are stored on `put`. Keys that are not
+ * http(s) URLs (the local model path) miss without a fetch.
  */
 export function transformersCache(
   store: WeightStore,
@@ -106,12 +109,19 @@ export function transformersCache(
     /** SHA-256 for a URL when known (e.g. pinnedSha from @hackbuild/models); the store checks it. */
     sha256For?: (url: string) => string | undefined;
     onProgress?: (p: Progress) => void;
+    /** The URL a request is stored and fetched under, e.g. a resolve/main URL moved to its pinned revision (pinnedUrl from @hackbuild/models), so one file is fetched once. */
+    keyFor?: (url: string) => string;
   },
 ): { match(req: string | Request): Promise<Response | undefined>; put(req: string | Request, res: Response): Promise<void> } {
-  const urlOf = (r: string | Request) => (typeof r === "string" ? r : r.url);
+  const urlOf = (r: string | Request) => {
+    const u = typeof r === "string" ? r : r.url;
+    return REMOTE.test(u) && opts.keyFor ? opts.keyFor(u) : u;
+  };
   return {
     async match(req) {
       const url = urlOf(req);
+      // transformers.js asks for its local path first (/models/<repo>/...): never fetch that from the page origin
+      if (!REMOTE.test(url)) return undefined;
       const licence = opts.licenceFor(url);
       if (licence !== null) {
         const o: GetOptions = opts.onProgress ? { onProgress: opts.onProgress } : {};
@@ -129,6 +139,7 @@ export function transformersCache(
     },
     async put(req, res) {
       const url = urlOf(req);
+      if (!REMOTE.test(url)) return;
       if (await store.has(url)) return;
       await store.put({ key: url, url, licence: opts.licenceFor(url) ?? "unknown, not stated by the caller" }, await res.blob());
     },

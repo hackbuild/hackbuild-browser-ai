@@ -2,7 +2,7 @@
 
 Put a model picker, a chat, a transcriber, a mask studio or a camera frame on your page, drawn with the hackbuild-ui stylesheet, as custom elements or Vue components.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/ai-views)](https://www.npmjs.com/package/@hackbuild/ai-views) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 21.5 kB measured](https://img.shields.io/badge/gzip-21.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/ai-views)](https://www.npmjs.com/package/@hackbuild/ai-views) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 21.6 kB measured](https://img.shields.io/badge/gzip-21.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet.
 
@@ -254,7 +254,7 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 21,494 bytes | 22,568 bytes |
+| `dist/index.js` (main entry, imports external) | 21,595 bytes | 22,674 bytes |
 | `dist/single/elements.iife.js` (single file build) | 100,083 bytes | 105,087 bytes |
 
 Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed

@@ -20,6 +20,7 @@
 import type { Env } from "@hackbuild/ai-env";
 import { ladderFor, walkLadder, type Capability, type LadderFailure, type ModelRecord, type Provider, type Rung } from "./record.js";
 import { createRegistry, type Registry, type SizeClass } from "./registry.js";
+import { firstInSession } from "./pinning.js";
 
 /**
  * What a factory gets for one rung: the record, the rung, the env, the abort signal, the hub,
@@ -179,7 +180,8 @@ export interface HubOptions {
   timers?: HubTimers;
   /**
    * Called once per record, before its first load, with the weight licence
-   * line. Default console.info. Every model reference states its licence.
+   * line. Default: one console.info line per model per page session; pass
+   * `() => {}` to silence it. Every model reference states its licence.
    */
   onLicence?: (line: string, record: ModelRecord) => void;
 }
@@ -349,7 +351,10 @@ export function createHub(opts: HubOptions = {}): Hub {
         if (!told.has(record.id)) {
           told.add(record.id);
           const rev = record.source.revision ? ` at ${record.source.revision.slice(0, 7)}` : "";
-          (opts.onLicence ?? ((l: string) => console.info(l)))(`model ${record.id}${rev}: weight licence ${record.licence}. the weights are not part of this library.`, record);
+          const line = `model ${record.id}${rev}: weight licence ${record.licence}. the weights are not part of this library.`;
+          const first = firstInSession(record.source.repo ?? record.source.modelId ?? record.source.url ?? record.id);
+          if (opts.onLicence) opts.onLicence(line, record);
+          else if (first) console.info(line);
         }
         const factory = factories.get(record.provider);
         if (!factory) throw new HubError("no-provider", `no factory for provider ${record.provider}; call hub.provide("${record.provider}", ...)`);

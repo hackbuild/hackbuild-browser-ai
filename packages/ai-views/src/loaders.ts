@@ -17,7 +17,7 @@ import type { Dsp } from "@hackbuild/audio-dsp";
 import type { OrtModule, TjsModule } from "@hackbuild/devices";
 import type { Embedder } from "@hackbuild/embed";
 import type { ClipTokenize, FormOptions, ImageGenerator } from "@hackbuild/imagegen";
-import { createHub, createRegistry, type FactoryContext, type Hub, type ModelRecord } from "@hackbuild/models";
+import { createHub, createRegistry, pinnedUrl, type FactoryContext, type Hub, type ModelRecord } from "@hackbuild/models";
 import type { Engine } from "@hackbuild/speak";
 import type { WeightStore } from "@hackbuild/weights";
 import { hfResolve } from "@hackbuild/weights";
@@ -128,6 +128,11 @@ function licenceFor(url: string): string | null {
   return null;
 }
 
+/** The pinned revision of the record a Hugging Face repo belongs to, so resolve/main requests share one stored file. */
+function revisionFor(repo: string): string | undefined {
+  return ALL_RECORDS.find((r) => (r.source.modelId ?? r.source.repo) === repo)?.source.revision;
+}
+
 async function makeRuntime(o: JobLoaderOptions): Promise<Runtime> {
   const [{ loadOrt, loadTransformers, ortProvider, runtimeLoader, tjsProvider }, { openWeightStore, transformersCache }] = await Promise.all([import("@hackbuild/devices"), import("@hackbuild/weights")]);
   const [env, store] = await Promise.all([o.env ?? probe(), o.store ?? openWeightStore()]);
@@ -135,7 +140,7 @@ async function makeRuntime(o: JobLoaderOptions): Promise<Runtime> {
   const m = o.modules ?? {};
   const rt: Runtime = { hub, store, modules: m, tokenizers: new Map() };
   const tjsModule = m.transformers ?? loadTransformers();
-  const tjs = tjsProvider({ runtime: tjsModule, cache: transformersCache(store, { licenceFor }) });
+  const tjs = tjsProvider({ runtime: tjsModule, cache: transformersCache(store, { licenceFor, keyFor: (u) => pinnedUrl(u, revisionFor) }) });
   const [vision, chatTjs, embed] = await Promise.all([import("@hackbuild/vision"), import("@hackbuild/chat/transformers"), import("@hackbuild/embed")]);
   tjs.loader("depth", vision.depthLoader);
   tjs.loader("vision.caption", vision.vlmLoader);

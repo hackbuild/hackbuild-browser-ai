@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/vision",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Perception through the models hub: depth (Depth Anything V2 small), detection (MediaPipe EfficientDet, YOLO v8 external and v10 at three sizes), segmentation (prompted SAM, FastSAM segment everything, selection rasterisers, no model auto masks, per instance export), face, hand and pose landmarks with a fallback chain, captions and questions through small VLMs, a webcam loop helper and a result cache.",
   "type": "module",
   "license": "MIT",
@@ -38,9 +38,9 @@
   },
   "dependencies": {
     "@hackbuild/ai-env": "0.1.2",
-    "@hackbuild/models": "0.2.2",
-    "@hackbuild/devices": "0.1.3",
-    "@hackbuild/weights": "0.1.2"
+    "@hackbuild/models": "0.2.3",
+    "@hackbuild/devices": "0.1.4",
+    "@hackbuild/weights": "0.1.3"
   },
   "peerDependencies": {
     "@virgilvox/hackbuild-ui": ">=0.10.0 <0.11.0"
