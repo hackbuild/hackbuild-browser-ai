@@ -1,0 +1,95 @@
+# hackbuild-browser-ai
+
+> hackbuild-browser-ai is a set of ESM packages under @hackbuild that run language, vision and speech models in a browser tab: one chat interface over local runtimes (WebLLM, wllama, transformers.js, the Chrome Prompt API) and remote endpoints, a resumable weight store, structured output for small models, memory with a Rust wasm core, speech in and out, transcription, vision, image generation, character cards and an agent loop. Runtimes are optional peers that you load and pass in; weights are never bundled and load from their upstream host through @hackbuild/weights; every package has a single file build that runs from file://.
+
+Every package is ESM only with types included, installs from npm under @hackbuild, and is MIT. Each llms.md below lists the package's exports with signatures, minimal examples and the mistakes to avoid. Code: https://github.com/hackbuild/hackbuild-browser-ai
+
+## Packages
+
+- [@hackbuild/act](https://hackbuild.github.io/hackbuild-browser-ai/docs/act/llms.md): Let a language model act while it speaks: mood, gesture and posture tags in its reply fire when the voice reaches them, limited to names your avatar can realize.
+- [@hackbuild/agent](https://hackbuild.github.io/hackbuild-browser-ai/docs/agent/llms.md): Run an agent turn sized for small models in a browser tab: perceive, recall, decide, act and reflect, over tools you give it.
+- [@hackbuild/ai-elements](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-elements/llms.md): Deprecated: use [@hackbuild/ai-views](../ai-views/README.md), which draws the same views with hackbuild-ui as custom elements and Vue components.
+- [@hackbuild/ai-env](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-env/llms.md): Find out what the tab can run, and load runtimes and workers in a way that also works from a file:// page.
+- [@hackbuild/ai-views](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-views/llms.md): Put a model picker, a chat, a transcriber, a mask studio or a camera frame on your page, drawn with the hackbuild-ui stylesheet, as custom elements or Vue components.
+- [@hackbuild/audio-dsp](https://hackbuild.github.io/hackbuild-browser-ai/docs/audio-dsp/llms.md): Filter, clean, measure and time speech and music in the tab on a Rust wasm core, and write the WAV, MIDI, subtitle and zip files the results go into.
+- [@hackbuild/biosignal](https://hackbuild.github.io/hackbuild-browser-ai/docs/biosignal/llms.md): Filter EEG, train a Riemannian classifier on it and cross validate it without leaks, in a Rust wasm core that runs in your tab.
+- [@hackbuild/character](https://hackbuild.github.io/hackbuild-browser-ai/docs/character/llms.md): Read, upgrade, check and write character cards in the tab, as JSON, PNG or CHARX, with a profile that names a character's body, voice and actions.
+- [@hackbuild/chat](https://hackbuild.github.io/hackbuild-browser-ai/docs/chat/llms.md): Stream chat replies from WebLLM, wllama, transformers.js, the Chrome Prompt API or a remote endpoint through one interface.
+- [@hackbuild/converse](https://hackbuild.github.io/hackbuild-browser-ai/docs/converse/llms.md): Run a conversation over a streaming chat engine with the history rules small models need, and save it as a versioned chat session.
+- [@hackbuild/depth-mesh](https://hackbuild.github.io/hackbuild-browser-ai/docs/depth-mesh/llms.md): Turn a depth map, a photo or turntable silhouettes into a closed solid you can print, with a Rust wasm core that runs in your tab.
+- [@hackbuild/devices](https://hackbuild.github.io/hackbuild-browser-ai/docs/devices/llms.md): Plug onnxruntime-web and transformers.js into the models hub, with device ladders, pinned runtime imports and failure lines your users can read.
+- [@hackbuild/embed](https://hackbuild.github.io/hackbuild-browser-ai/docs/embed/llms.md): Turn sentences into vectors in the tab, for memory recall and action matching, with an id that changes only when the vectors would.
+- [@hackbuild/imagegen](https://hackbuild.github.io/hackbuild-browser-ai/docs/imagegen/llms.md): Generate an image from a prompt in your tab with SD-Turbo or SD 1.5 on onnxruntime-web WebGPU, seeded so the same seed gives the same start.
+- [@hackbuild/listen](https://hackbuild.github.io/hackbuild-browser-ai/docs/listen/llms.md): You feed it microphone blocks and it hands back each thing the person said as text, and tells you when they talk over your character.
+- [@hackbuild/media](https://hackbuild.github.io/hackbuild-browser-ai/docs/media/llms.md): Decode a file's audio at the rate a model wants, pick keyframes from a video, and record a canvas, all in the tab.
+- [@hackbuild/memory](https://hackbuild.github.io/hackbuild-browser-ai/docs/memory/llms.md): Give an agent or character in a browser tab a memory you can add to, recall from and fit into a prompt, with a wasm core and IndexedDB storage.
+- [@hackbuild/models](https://hackbuild.github.io/hackbuild-browser-ai/docs/models/llms.md): Describe each model once, with its runtime, device ladder, size and weight licence, and let a hub load the one that fits this machine.
+- [@hackbuild/notes](https://hackbuild.github.io/hackbuild-browser-ai/docs/notes/llms.md): Turn a recording into notes, drum hits, a tempo and a MIDI file, in the tab.
+- [@hackbuild/speak](https://hackbuild.github.io/hackbuild-browser-ai/docs/speak/llms.md): You give it a reply as it streams and it speaks it through the first voice engine that works, telling you which character of your text the voice has reached.
+- [@hackbuild/stems](https://hackbuild.github.io/hackbuild-browser-ai/docs/stems/llms.md): Split a song into drums, bass, other and vocals with htdemucs, in the tab.
+- [@hackbuild/structured](https://hackbuild.github.io/hackbuild-browser-ai/docs/structured/llms.md): Get a tool decision or tagged text out of a small model in the tab, in the format that model and runtime can keep to.
+- [@hackbuild/transcribe](https://hackbuild.github.io/hackbuild-browser-ai/docs/transcribe/llms.md): Turn a recording into timed text in the tab, with Whisper or Moonshine behind a front end that finds quiet speech and drops the lines a model writes over silence.
+- [@hackbuild/vision](https://hackbuild.github.io/hackbuild-browser-ai/docs/vision/llms.md): Get depth, objects, masks, landmarks and captions from an image or a webcam in your tab, through one models hub that shares the GPU with your scene.
+- [@hackbuild/weights](https://hackbuild.github.io/hackbuild-browser-ai/docs/weights/llms.md): Download model weights once, resume them when the download breaks, check their SHA-256, and keep them on the machine for the next visit.
+
+## Quick starts
+
+- [act quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/act/quick.ts): the smallest program for @hackbuild/act, typechecked in CI
+- [agent quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/agent/quick.ts): the smallest program for @hackbuild/agent, typechecked in CI
+- [ai-env quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-env/quick.ts): the smallest program for @hackbuild/ai-env, typechecked in CI
+- [ai-views quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-views/quick.ts): the smallest program for @hackbuild/ai-views, typechecked in CI
+- [audio-dsp quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/audio-dsp/quick.ts): the smallest program for @hackbuild/audio-dsp, typechecked in CI
+- [biosignal quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/biosignal/quick.ts): the smallest program for @hackbuild/biosignal, typechecked in CI
+- [character quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/character/quick.ts): the smallest program for @hackbuild/character, typechecked in CI
+- [chat quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/chat/quick.ts): the smallest program for @hackbuild/chat, typechecked in CI
+- [converse quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/converse/quick.ts): the smallest program for @hackbuild/converse, typechecked in CI
+- [depth-mesh quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/depth-mesh/quick.ts): the smallest program for @hackbuild/depth-mesh, typechecked in CI
+- [devices quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/devices/quick.ts): the smallest program for @hackbuild/devices, typechecked in CI
+- [embed quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/embed/quick.ts): the smallest program for @hackbuild/embed, typechecked in CI
+- [imagegen quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/imagegen/quick.ts): the smallest program for @hackbuild/imagegen, typechecked in CI
+- [listen quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/listen/quick.ts): the smallest program for @hackbuild/listen, typechecked in CI
+- [media quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/media/quick.ts): the smallest program for @hackbuild/media, typechecked in CI
+- [memory quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/memory/quick.ts): the smallest program for @hackbuild/memory, typechecked in CI
+- [models quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/models/quick.ts): the smallest program for @hackbuild/models, typechecked in CI
+- [notes quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/notes/quick.ts): the smallest program for @hackbuild/notes, typechecked in CI
+- [speak quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/speak/quick.ts): the smallest program for @hackbuild/speak, typechecked in CI
+- [stems quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/stems/quick.ts): the smallest program for @hackbuild/stems, typechecked in CI
+- [structured quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/structured/quick.ts): the smallest program for @hackbuild/structured, typechecked in CI
+- [transcribe quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/transcribe/quick.ts): the smallest program for @hackbuild/transcribe, typechecked in CI
+- [vision quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/vision/quick.ts): the smallest program for @hackbuild/vision, typechecked in CI
+- [weights quick start](https://hackbuild.github.io/hackbuild-browser-ai/docs/weights/quick.ts): the smallest program for @hackbuild/weights, typechecked in CI
+
+## Docs
+
+- [getting started](https://hackbuild.github.io/hackbuild-browser-ai/docs/): install, the first program, and how the packages fit
+- [concepts](https://hackbuild.github.io/hackbuild-browser-ai/docs/concepts.html): runtimes passed in, the weight store, file:// builds, labels on numbers
+- [examples](https://hackbuild.github.io/hackbuild-browser-ai/): the live demo pages
+
+## Optional
+
+- [@hackbuild/act API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/act/api/): every export, generated by TypeDoc
+- [@hackbuild/agent API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/agent/api/): every export, generated by TypeDoc
+- [@hackbuild/ai-elements API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-elements/api/): every export, generated by TypeDoc
+- [@hackbuild/ai-env API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-env/api/): every export, generated by TypeDoc
+- [@hackbuild/ai-views API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-views/api/): every export, generated by TypeDoc
+- [@hackbuild/audio-dsp API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/audio-dsp/api/): every export, generated by TypeDoc
+- [@hackbuild/biosignal API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/biosignal/api/): every export, generated by TypeDoc
+- [@hackbuild/character API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/character/api/): every export, generated by TypeDoc
+- [@hackbuild/chat API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/chat/api/): every export, generated by TypeDoc
+- [@hackbuild/converse API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/converse/api/): every export, generated by TypeDoc
+- [@hackbuild/depth-mesh API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/depth-mesh/api/): every export, generated by TypeDoc
+- [@hackbuild/devices API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/devices/api/): every export, generated by TypeDoc
+- [@hackbuild/embed API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/embed/api/): every export, generated by TypeDoc
+- [@hackbuild/imagegen API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/imagegen/api/): every export, generated by TypeDoc
+- [@hackbuild/listen API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/listen/api/): every export, generated by TypeDoc
+- [@hackbuild/media API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/media/api/): every export, generated by TypeDoc
+- [@hackbuild/memory API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/memory/api/): every export, generated by TypeDoc
+- [@hackbuild/models API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/models/api/): every export, generated by TypeDoc
+- [@hackbuild/notes API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/notes/api/): every export, generated by TypeDoc
+- [@hackbuild/speak API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/speak/api/): every export, generated by TypeDoc
+- [@hackbuild/stems API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/stems/api/): every export, generated by TypeDoc
+- [@hackbuild/structured API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/structured/api/): every export, generated by TypeDoc
+- [@hackbuild/transcribe API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/transcribe/api/): every export, generated by TypeDoc
+- [@hackbuild/vision API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/vision/api/): every export, generated by TypeDoc
+- [@hackbuild/weights API reference](https://hackbuild.github.io/hackbuild-browser-ai/docs/weights/api/): every export, generated by TypeDoc
+- [llms-full.txt](https://hackbuild.github.io/hackbuild-browser-ai/llms-full.txt): this file and every llms.md in one file
