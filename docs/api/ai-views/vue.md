@@ -156,6 +156,7 @@ Vue component that shows what the next request carries against the context budge
 
 ```ts
 const ExportMenu: DefineComponent<{
+  go: boolean;
   queue: TranscribeQueue;
   tool: string;
 }, () => VNode<RendererNode, RendererElement, {
@@ -165,10 +166,12 @@ const ExportMenu: DefineComponent<{
 }, {
 }, ComponentOptionsMixin, ComponentOptionsMixin, {
 }, string, PublicProps, ToResolvedProps<{
+  go: boolean;
   queue: TranscribeQueue;
   tool: string;
 }, {
 }>, {
+  go: boolean;
   tool: string;
 }, {
 }, {

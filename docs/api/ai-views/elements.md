@@ -1395,6 +1395,7 @@ function mountExportMenu(
 ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and
 every finished transcript as one zip with a manifest, plus undo and redo of
 edits. Nothing shows until there is text; undo shows once there is a change.
+`go` makes the first export the one pink action.
 
 #### Parameters
 
@@ -1402,7 +1403,8 @@ edits. Nothing shows until there is text; undo shows once there is a change.
 | ------ | ------ |
 | `host` | `HTMLElement` |
 | `queue` | [`TranscribeQueue`](index.md#transcribequeue) |
-| `o?` | \{ `save?`: (`name`, `data`, `type`) => `void`; `tool?`: `string`; \} |
+| `o?` | \{ `go?`: `boolean`; `save?`: (`name`, `data`, `type`) => `void`; `tool?`: `string`; \} |
+| `o.go?` | `boolean` |
 | `o.save?` | (`name`, `data`, `type`) => `void` |
 | `o.tool?` | `string` |
 

@@ -271,15 +271,16 @@ export function mountTranscriptExports(host: HTMLElement, queue: TranscribeQueue
  * ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and
  * every finished transcript as one zip with a manifest, plus undo and redo of
  * edits. Nothing shows until there is text; undo shows once there is a change.
+ * `go` makes the first export the one pink action.
  */
-export function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o: { save?: (name: string, data: string | Uint8Array, type: string) => void; tool?: string } = {}): Mounted {
+export function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o: { save?: (name: string, data: string | Uint8Array, type: string) => void; tool?: string; go?: boolean } = {}): Mounted {
   const l = listeners();
   const save = o.save ?? ((name: string, data: string | Uint8Array, type: string) => download(name, typeof data === "string" ? data : new Blob([data as BlobPart], { type }), type));
   const draw = (s: QueueSnapshot) => {
     const c = pickedOf(s);
     const done = s.channels.filter((x) => x.segments.length).length;
     host.innerHTML = c?.segments.length
-      ? `<div class="hb-toolbar" role="group" aria-label="export">${(["txt", "srt", "vtt", "json"] as const).map((k) => `<button type="button" class="hb-btn" data-ex="${k}">${k}</button>`).join("")}<button type="button" class="hb-btn" data-copy>${ICON.copy}copy</button>${done ? `<button type="button" class="hb-btn" data-zip>all ${done} as zip</button>` : ""}${s.canUndo ? `<button type="button" class="hb-iconbtn" data-undo aria-label="undo the last edit" title="undo">${ICON.undo}</button>` : ""}${s.canRedo ? `<button type="button" class="hb-iconbtn" data-redo aria-label="redo" title="redo">${ICON.redo}</button>` : ""}</div>`
+      ? `<div class="hb-toolbar" role="group" aria-label="export">${(["txt", "srt", "vtt", "json"] as const).map((k, i) => `<button type="button" class="hb-btn${o.go && i === 0 ? " hb-btn-go" : ""}" data-ex="${k}">${o.go && i === 0 ? `save ${k}` : k}</button>`).join("")}<button type="button" class="hb-btn" data-copy>${ICON.copy}copy</button>${done ? `<button type="button" class="hb-btn" data-zip>all ${done} as zip</button>` : ""}${s.canUndo ? `<button type="button" class="hb-iconbtn" data-undo aria-label="undo the last edit" title="undo">${ICON.undo}</button>` : ""}${s.canRedo ? `<button type="button" class="hb-iconbtn" data-redo aria-label="redo" title="redo">${ICON.redo}</button>` : ""}</div>`
       : "";
   };
   l.on(host, "click", (e) => {

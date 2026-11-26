@@ -1983,7 +1983,7 @@ function mountContextMeter(host: HTMLElement, thread: ChatThread, o?: { budget?:
 The context meter (hackbuild-ui `.hb-ctxmeter`): what the next request carries against the model's context.
 
 ```ts
-function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o?: { save?: (name: string, data: string | Uint8Array<ArrayBufferLike>, type: string) => void; tool?: string }): Mounted
+function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o?: { go?: boolean; save?: (name: string, data: string | Uint8Array<ArrayBufferLike>, type: string) => void; tool?: string }): Mounted
 ```
 
 ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and every finished transcript as one zip with a manifest, plus undo and redo of edits.
@@ -3011,7 +3011,7 @@ const ContextMeter: DefineComponent<{ budget: number; system: string; thread: Ch
 Vue component that shows what the next request carries against the context budget.
 
 ```ts
-const ExportMenu: DefineComponent<{ queue: TranscribeQueue; tool: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ queue: TranscribeQueue; tool: string }, {}>, { tool: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+const ExportMenu: DefineComponent<{ go: boolean; queue: TranscribeQueue; tool: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ go: boolean; queue: TranscribeQueue; tool: string }, {}>, { go: boolean; tool: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
 Vue component for the export menu of a transcribe queue: four formats, copy, all as zip, undo and redo.

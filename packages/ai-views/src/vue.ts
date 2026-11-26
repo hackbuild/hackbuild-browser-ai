@@ -129,8 +129,8 @@ export const TranscribeDrop = defineComponent({
 /** Vue component for the export menu of a transcribe queue: four formats, copy, all as zip, undo and redo. */
 export const ExportMenu = defineComponent({
   name: "ExportMenu",
-  props: { queue: { type: Object as PropType<Queue>, required: true }, tool: { type: String, default: "" } },
-  setup: hosted<{ queue: Queue; tool: string }>((host, p) => mountExportMenu(host, p.queue, p.tool ? { tool: p.tool } : {}), (p) => [p.queue]),
+  props: { queue: { type: Object as PropType<Queue>, required: true }, tool: { type: String, default: "" }, go: { type: Boolean, default: false } },
+  setup: hosted<{ queue: Queue; tool: string; go: boolean }>((host, p) => mountExportMenu(host, p.queue, { go: p.go, ...(p.tool ? { tool: p.tool } : {}) }), (p) => [p.queue, p.go]),
 });
 
 /** Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used). */
