@@ -239,7 +239,7 @@ mounted view.
 ```ts
 const MaskRack: DefineComponent<{
   name: string;
-  part: "found" | "mask" | "saved" | "export";
+  part: "export" | "found" | "mask" | "saved";
   studio: MaskStudio;
 }, () => VNode<RendererNode, RendererElement, {
 [key: string]: any;
@@ -249,12 +249,12 @@ const MaskRack: DefineComponent<{
 }, ComponentOptionsMixin, ComponentOptionsMixin, {
 }, string, PublicProps, ToResolvedProps<{
   name: string;
-  part: "found" | "mask" | "saved" | "export";
+  part: "export" | "found" | "mask" | "saved";
   studio: MaskStudio;
 }, {
 }>, {
   name: string;
-  part: "found" | "mask" | "saved" | "export";
+  part: "export" | "found" | "mask" | "saved";
 }, {
 }, {
 }, {
@@ -396,6 +396,10 @@ Vue component that shows a recall trace as a table.
 
 ```ts
 const MemoryPane: DefineComponent<{
+  acts?: readonly object[];
+  by: "source" | "kind";
+  exportLabel: string;
+  kinds?: Record<string, string>;
   memory: MemoryLike;
   name: string;
 }, () => VNode<RendererNode, RendererElement, {
@@ -403,10 +407,18 @@ const MemoryPane: DefineComponent<{
 }>, {
 }, {
 }, {
-}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane")[], "change" | "pane", PublicProps, ToResolvedProps<{
+}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane" | "act")[], "change" | "pane" | "act", PublicProps, ToResolvedProps<{
+  acts?: readonly object[];
+  by: "source" | "kind";
+  exportLabel: string;
+  kinds?: Record<string, string>;
   memory: MemoryLike;
   name: string;
-}, ("change" | "pane")[]>, {
+}, ("change" | "pane" | "act")[]>, {
+  acts: readonly object[] | undefined;
+  by: "source" | "kind";
+  exportLabel: string;
+  kinds: Record<string, string>;
   name: string;
 }, {
 }, {
@@ -667,6 +679,41 @@ const TranscriptView: DefineComponent<{
 ```
 
 Vue component for the selected transcript, or its export buttons when `exports` is set.
+
+***
+
+### VoiceClone
+
+```ts
+const VoiceClone: DefineComponent<{
+  can: boolean;
+  hint: string;
+  seconds: number;
+  speaker: Speaker;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, {
+}, string, PublicProps, ToResolvedProps<{
+  can: boolean;
+  hint: string;
+  seconds: number;
+  speaker: Speaker;
+}, {
+}>, {
+  can: boolean;
+  hint: string;
+  seconds: number;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for the voice clone row of a speaker; `can` says the loaded voice clones.
 
 ***
 

@@ -926,6 +926,24 @@ used(labels): void;
 
 ***
 
+### MemoryPaneOptions
+
+Options of a memory pane.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-acts"></a> `acts?` | readonly `object`[] | Extra footer actions, as consolidate; `onAct` gets the id. |
+| <a id="property-by"></a> `by?` | `"source"` \| `"kind"` | The chip filter: by source (default) or by kind. |
+| <a id="property-exportlabel"></a> `exportLabel?` | `string` | The export button's words (default "export"). |
+| <a id="property-kinds"></a> `kinds?` | `Readonly`\<`Record`\<`string`, `string`\>\> | Chip words for kinds, as \{ doc: "imported", lore: "background" \}. |
+| <a id="property-name-2"></a> `name?` | `string` | - |
+| <a id="property-onact"></a> `onAct?` | (`id`) => `void` | - |
+| <a id="property-onchange"></a> `onChange?` | () => `void` | - |
+
+***
+
 ### ModelSelectElement
 
 The `<model-select>` element: set `pick`, `env`, `loader` or `records` on it before or after it
@@ -1454,7 +1472,7 @@ The rack parts: what was found, the mask tools' settings, and the exports once t
 | ------ | ------ |
 | `host` | `HTMLElement` |
 | `studio` | [`MaskStudio`](#maskstudio) |
-| `part` | `"found"` \| `"mask"` \| `"saved"` \| `"export"` |
+| `part` | `"export"` \| `"found"` \| `"mask"` \| `"saved"` |
 | `o?` | \{ `name?`: `string`; \} |
 | `o.name?` | `string` |
 
@@ -1559,7 +1577,7 @@ function mountMemoryPane(
 ): MemoryPaneHandle;
 ```
 
-The memory pane: counts, search, a source filter, add a note, the list with protect and forget, export, import, erase.
+The memory pane: counts, search, a source or kind filter, add a note, the list with protect and forget, export, import, erase.
 
 #### Parameters
 
@@ -1567,9 +1585,7 @@ The memory pane: counts, search, a source filter, add a note, the list with prot
 | ------ | ------ |
 | `host` | `HTMLElement` |
 | `mem` | [`MemoryLike`](#memorylike) |
-| `o?` | \{ `name?`: `string`; `onChange?`: () => `void`; \} |
-| `o.name?` | `string` |
-| `o.onChange?` | () => `void` |
+| `o?` | [`MemoryPaneOptions`](#memorypaneoptions) |
 
 #### Returns
 
@@ -1793,6 +1809,35 @@ The selected channel's transcript over a host.
 | `host` | `HTMLElement` |
 | `queue` | [`TranscribeQueue`](index.md#transcribequeue) |
 | `o?` | [`TranscriptViewOptions`](#transcriptviewoptions) |
+
+#### Returns
+
+`Mounted`
+
+***
+
+### mountVoiceClone()
+
+```ts
+function mountVoiceClone(
+   host, 
+   sp, 
+   o?
+): Mounted;
+```
+
+The voice clone row of a speaker: clone from an audio file, record `seconds` of mic, download the clone as wav, clear it.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `sp` | [`Speaker`](index.md#speaker) |
+| `o?` | \{ `can?`: () => `boolean`; `hint?`: `string`; `seconds?`: `number`; \} |
+| `o.can?` | () => `boolean` |
+| `o.hint?` | `string` |
+| `o.seconds?` | `number` |
 
 #### Returns
 

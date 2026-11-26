@@ -16,7 +16,8 @@ import type { FrameResults } from "./frame.js";
 import { mountModelJobs, mountModelSelect } from "./mount-model.js";
 import { mountChatList, mountChatPane, mountComposer, mountContextMeter } from "./mount-chat.js";
 import { mountExportMenu, mountTranscribeDrop, mountTranscribeQueue, mountTranscriptExports, mountTranscriptView, type TranscribeDropHandle } from "./mount-transcribe.js";
-import { mountMemoryPane, mountPersonaRack, mountSessionMenu, mountSourcesDrop, mountVoiceRow, type MemoryLike, type MemoryPaneHandle, type SourcesDropOptions } from "./mount-talk.js";
+import { mountMemoryPane, mountPersonaRack, mountSessionMenu, mountSourcesDrop, mountVoiceClone, mountVoiceRow, type MemoryLike, type MemoryPaneHandle, type MemoryPaneOptions, type SourcesDropOptions } from "./mount-talk.js";
+import type { Speaker } from "./speaker.js";
 import type { PersonaRack as PersonaState, VoiceRow as VoiceState } from "./talk.js";
 import { mountMaskRack, mountMaskStudio, mountMaskTools, mountMaskVerbs, type MaskModels, type MaskStudio as Studio } from "./mount-mask.js";
 import { mountMemoryInspector, type RecallLike } from "./memory.js";
@@ -136,11 +137,18 @@ export const ExportMenu = defineComponent({
 /** Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used). */
 export const MemoryPane = defineComponent({
   name: "MemoryPane",
-  props: { memory: { type: Object as PropType<MemoryLike>, required: true }, name: { type: String, default: "memory" } },
-  emits: ["pane", "change"],
-  setup: hosted<{ memory: MemoryLike; name: string }>(
+  props: {
+    memory: { type: Object as PropType<MemoryLike>, required: true },
+    name: { type: String, default: "memory" },
+    by: { type: String as PropType<"source" | "kind">, default: "source" },
+    kinds: { type: Object as PropType<Record<string, string>>, default: undefined },
+    exportLabel: { type: String, default: "export" },
+    acts: { type: Array as PropType<MemoryPaneOptions["acts"]>, default: undefined },
+  },
+  emits: ["pane", "change", "act"],
+  setup: hosted<{ memory: MemoryLike; name: string; by: "source" | "kind"; kinds?: Record<string, string> | undefined; exportLabel: string; acts?: MemoryPaneOptions["acts"] | undefined }>(
     (host, p, emit) => {
-      const m: MemoryPaneHandle = mountMemoryPane(host, p.memory, { name: p.name, onChange: () => emit("change") });
+      const m: MemoryPaneHandle = mountMemoryPane(host, p.memory, { name: p.name, by: p.by, exportLabel: p.exportLabel, onChange: () => emit("change"), onAct: (id) => emit("act", id), ...(p.kinds ? { kinds: p.kinds } : {}), ...(p.acts ? { acts: p.acts } : {}) });
       emit("pane", m);
       return m;
     },
@@ -167,6 +175,13 @@ export const VoiceRow = defineComponent({
   name: "VoiceRow",
   props: { row: { type: Object as PropType<VoiceState>, required: true }, test: { type: String, default: "" } },
   setup: hosted<{ row: VoiceState; test: string }>((host, p) => mountVoiceRow(host, p.row, p.test ? { test: p.test } : {}), (p) => [p.row]),
+});
+
+/** Vue component for the voice clone row of a speaker; `can` says the loaded voice clones. */
+export const VoiceClone = defineComponent({
+  name: "VoiceClone",
+  props: { speaker: { type: Object as PropType<Speaker>, required: true }, can: { type: Boolean, default: true }, seconds: { type: Number, default: 10 }, hint: { type: String, default: "" } },
+  setup: hosted<{ speaker: Speaker; can: boolean; seconds: number; hint: string }>((host, p) => mountVoiceClone(host, p.speaker, { seconds: p.seconds, can: () => p.can, ...(p.hint ? { hint: p.hint } : {}) }), (p) => [p.speaker, p.can]),
 });
 
 /** Vue component for the session menu of a chat list; emits `import` with the number of chats. */

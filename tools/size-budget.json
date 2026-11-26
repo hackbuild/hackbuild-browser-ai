@@ -105,8 +105,8 @@
       "dist/single/index.iife.js": 5988
     },
     "@hackbuild/ai-views": {
-      "main: dist/index.js bundled": 20078,
-      "dist/single/elements.iife.js": 95538
+      "main: dist/index.js bundled": 21277,
+      "dist/single/elements.iife.js": 97233
     }
   }
 }

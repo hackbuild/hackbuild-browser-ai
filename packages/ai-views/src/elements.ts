@@ -30,7 +30,7 @@ import { mountMemoryInspector, type MemoryInspector, type RecallLike } from "./m
 export { mountModelSelect, mountModelJobs, pickSheet, gateWords, chipWords, shortName, type ModelSelectOptions } from "./mount-model.js";
 export { mountChatPane, mountComposer, mountChatList, mountContextMeter, turnHtml, type ChatPaneOptions, type ComposerOptions } from "./mount-chat.js";
 export { mountExportMenu, isMedia, droppedFiles } from "./mount-transcribe.js";
-export { mountMemoryPane, mountSourcesDrop, mountPersonaRack, mountVoiceRow, mountSessionMenu, protect, isProtected, type MemoryLike, type MemoryPaneHandle, type SourcesDropOptions } from "./mount-talk.js";
+export { mountMemoryPane, mountSourcesDrop, mountPersonaRack, mountVoiceRow, mountVoiceClone, mountSessionMenu, protect, isProtected, type MemoryLike, type MemoryPaneHandle, type MemoryPaneOptions, type SourcesDropOptions } from "./mount-talk.js";
 export { mountTranscribeDrop, mountTranscriptView, mountTranscribeQueue, mountTranscriptExports, transcriptHtml, type TranscribeDropOptions, type TranscribeDropHandle, type TranscriptViewOptions } from "./mount-transcribe.js";
 export { mountMaskStudio, mountMaskTools, mountMaskVerbs, mountMaskRack, type MaskStudio, type MaskModels, type MaskStudioOptions, type FoundMask, type StudioState, type StudioTool } from "./mount-mask.js";
 export { mountFrameView, mountCameraFeed, type FrameView, type FrameViewOptions, type CameraFeed, type CameraFeedOptions } from "./mount-frame.js";

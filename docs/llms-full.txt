@@ -1933,6 +1933,20 @@ interface MemoryPaneHandle extends Mounted {
 A memory pane over a host: `refresh` after the store changes elsewhere, `used` to mark what the last reply used.
 
 ```ts
+interface MemoryPaneOptions {
+  acts?: readonly { id: string; label: string }[];
+  by?: "source" | "kind";
+  exportLabel?: string;
+  kinds?: Readonly<Record<string, string>>;
+  name?: string;
+  onAct?: (id: string) => void;
+  onChange?: () => void;
+}
+```
+
+Options of a memory pane.
+
+```ts
 interface ModelSelectElement extends HTMLElement {
   env: Env | undefined;
   loader: Loader | undefined;
@@ -1995,7 +2009,7 @@ function mountFrameView(host: HTMLElement, o?: FrameViewOptions): FrameView
 Draws a frame in a camera tile on a host, with boxes, landmarks, a corner tag and a caption over it.
 
 ```ts
-function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "found" | "mask" | "saved" | "export", o?: { name?: string }): Mounted
+function mountMaskRack(host: HTMLElement, studio: MaskStudio, part: "export" | "found" | "mask" | "saved", o?: { name?: string }): Mounted
 ```
 
 The rack parts: what was found, the mask tools' settings, and the exports once there is a mask.
@@ -2025,10 +2039,10 @@ function mountMemoryInspector(host: HTMLElement, rec?: RecallLike | null): Memor
 Shows a recall trace as a table on a host.
 
 ```ts
-function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o?: { name?: string; onChange?: () => void }): MemoryPaneHandle
+function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o?: MemoryPaneOptions): MemoryPaneHandle
 ```
 
-The memory pane: counts, search, a source filter, add a note, the list with protect and forget, export, import, erase.
+The memory pane: counts, search, a source or kind filter, add a note, the list with protect and forget, export, import, erase.
 
 ```ts
 function mountModelJobs(host: HTMLElement, jobs: JobsPick, o?: { go?: boolean }): Mounted
@@ -2083,6 +2097,12 @@ function mountTranscriptView(host: HTMLElement, queue: TranscribeQueue, o?: Tran
 ```
 
 The selected channel's transcript over a host.
+
+```ts
+function mountVoiceClone(host: HTMLElement, sp: Speaker, o?: { can?: () => boolean; hint?: string; seconds?: number }): Mounted
+```
+
+The voice clone row of a speaker: clone from an audio file, record `seconds` of mic, download the clone as wav, clear it.
 
 ```ts
 function mountVoiceRow(host: HTMLElement, row: VoiceRow, o?: { test?: string }): Mounted
@@ -2225,6 +2245,12 @@ function boxWords(b: FrameBox): string
 ```
 
 "cup 94%", or the label alone, or the score alone.
+
+```ts
+function canClone(e: unknown): e is PocketEngine
+```
+
+True when the engine clones a voice from reference audio.
 
 ```ts
 interface Channel {
@@ -2797,6 +2823,49 @@ function sizeWords(r: ModelRecord): string | undefined
 Download words: "1.7 gb".
 
 ```ts
+function speaker(engine: () => Engine | null, o?: SpeakerOptions): Speaker
+```
+
+A speaker over the engine `engine()` returns at each line (null: text only, timed by `play`).
+
+```ts
+interface Speaker {
+  readonly cloned: boolean;
+  clearClone(): void;
+  cloneFile(file: Blob): Promise<number>;
+  cloneMic(seconds: number, onTick?: (left: number) => void): Promise<number>;
+  cloneWav(): Blob | null;
+  say(text: string): Promise<void>;
+  stop(): void;
+  subscribe(fn: () => void): () => void;
+}
+```
+
+Spoken lines in order, and the clone.
+
+```ts
+interface SpeakerOptions {
+  config?: () => VoiceConfig;
+  halt?: () => void;
+  onLine?: (text: string) => void;
+  play?: (line: SpokenLine) => Promise<void>;
+}
+```
+
+Options of `speaker`.
+
+```ts
+interface SpokenLine {
+  audio?: AudioBuffer;
+  phonemes?: readonly { phoneme?: string; t0: number; t1: number }[];
+  text: string;
+  words?: readonly { end?: number; start?: number; t0: number; t1: number; text?: string }[];
+}
+```
+
+One line ready to play: the text, and for a rendering engine the audio with its word and phoneme times.
+
+```ts
 function storedIds(store: Pick<WeightStore, "keys">, records: readonly ModelRecord[]): Promise<string[]>
 ```
 
@@ -3023,7 +3092,7 @@ const FrameView: DefineComponent<ExtractPropTypes<{ mirror: { default: boolean; 
 Vue component that draws a frame with boxes, landmarks and a caption; emits `view` with the mounted view.
 
 ```ts
-const MaskRack: DefineComponent<{ name: string; part: "found" | "mask" | "saved" | "export"; studio: MaskStudio }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ name: string; part: "found" | "mask" | "saved" | "export"; studio: MaskStudio }, {}>, { name: string; part: "found" | "mask" | "saved" | "export" }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+const MaskRack: DefineComponent<{ name: string; part: "export" | "found" | "mask" | "saved"; studio: MaskStudio }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ name: string; part: "export" | "found" | "mask" | "saved"; studio: MaskStudio }, {}>, { name: string; part: "export" | "found" | "mask" | "saved" }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
 Vue component for one rack part of a mask studio: found, mask, saved or export.
@@ -3053,7 +3122,7 @@ const MemoryInspector: DefineComponent<ExtractPropTypes<{ recall: { default: nul
 Vue component that shows a recall trace as a table.
 
 ```ts
-const MemoryPane: DefineComponent<{ memory: MemoryLike; name: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane")[], "change" | "pane", PublicProps, ToResolvedProps<{ memory: MemoryLike; name: string }, ("change" | "pane")[]>, { name: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+const MemoryPane: DefineComponent<{ acts?: readonly { id: string; label: string }[]; by: "source" | "kind"; exportLabel: string; kinds?: Record<string, string>; memory: MemoryLike; name: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane" | "act")[], "change" | "pane" | "act", PublicProps, ToResolvedProps<{ acts?: readonly { id: string; label: string }[]; by: "source" | "kind"; exportLabel: string; kinds?: Record<string, string>; memory: MemoryLike; name: string }, ("change" | "pane" | "act")[]>, { acts: readonly { id: string; label: string }[] | undefined; by: "source" | "kind"; exportLabel: string; kinds: Record<string, string>; name: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
 Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used).
@@ -3105,6 +3174,12 @@ const TranscriptView: DefineComponent<{ exports: boolean; queue: TranscribeQueue
 ```
 
 Vue component for the selected transcript, or its export buttons when `exports` is set.
+
+```ts
+const VoiceClone: DefineComponent<{ can: boolean; hint: string; seconds: number; speaker: Speaker }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ can: boolean; hint: string; seconds: number; speaker: Speaker }, {}>, { can: boolean; hint: string; seconds: number }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for the voice clone row of a speaker; `can` says the loaded voice clones.
 
 ```ts
 const VoiceRow: DefineComponent<{ row: VoiceRow; test: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ row: VoiceRow; test: string }, {}>, { test: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>

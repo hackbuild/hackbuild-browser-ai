@@ -28,4 +28,5 @@ export { transcribeQueue, type TranscribeQueue, type Transcriber, type RunResult
 export { fitMap, toView, boxWords, frameTag, labelColour, type FrameBox, type FrameLandmarks, type FrameResults } from "./frame.js";
 export { traceRows, inspectorHtml, type TraceRow, type RecallLike } from "./memory.js";
 export { jobLoader, asImage, RUNTIME_URLS, type JobLoaderOptions, type JobValues, type RuntimeModules, type DetectFn, type DepthFn, type AskFn, type ImageJob } from "./loaders.js";
+export { speaker, canClone, type Speaker, type SpeakerOptions, type SpokenLine } from "./speaker.js";
 export { personaRack, voiceRow, type Persona, type PersonaPresetX, type PersonaRack, type VoiceRow } from "./talk.js";

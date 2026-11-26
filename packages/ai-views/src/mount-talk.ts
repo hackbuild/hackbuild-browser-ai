@@ -11,6 +11,7 @@ import { type Kind, type StoredItem, type EditPatch, type ExportData, type Recal
 import { memoryCounts, scoreText, PERSONA_TEMPLATE, insertTemplate, costLine, tokenEstimate } from "@virgilvox/hackbuild-ui/vanilla";
 import type { ChatList } from "./chat.js";
 import type { PersonaRack, Persona, VoiceRow } from "./talk.js";
+import type { Speaker } from "./speaker.js";
 import { download, esc, listeners, type Mounted } from "./dom.js";
 
 /* ---------- MemoryPane ---------- */
@@ -50,8 +51,23 @@ export async function protect(mem: Pick<MemoryLike, "edit">, it: StoredItem, on:
 
 const sourceOf = (it: StoredItem) => (typeof it.meta?.source === "string" ? (it.meta.source as string).split("/")[0]! : it.kind === "doc" ? it.section ?? "file" : "notes");
 
-/** The memory pane: counts, search, a source filter, add a note, the list with protect and forget, export, import, erase. */
-export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: { name?: string; onChange?: () => void } = {}): MemoryPaneHandle {
+/** Options of a memory pane. */
+export interface MemoryPaneOptions {
+  name?: string;
+  onChange?: () => void;
+  /** The chip filter: by source (default) or by kind. */
+  by?: "source" | "kind";
+  /** Chip words for kinds, as { doc: "imported", lore: "background" }. */
+  kinds?: Readonly<Record<string, string>>;
+  /** The export button's words (default "export"). */
+  exportLabel?: string;
+  /** Extra footer actions, as consolidate; `onAct` gets the id. */
+  acts?: readonly { id: string; label: string }[];
+  onAct?: (id: string) => void;
+}
+
+/** The memory pane: counts, search, a source or kind filter, add a note, the list with protect and forget, export, import, erase. */
+export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: MemoryPaneOptions = {}): MemoryPaneHandle {
   const l = listeners();
   let query = "";
   let source = "";
@@ -67,10 +83,12 @@ export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: { name?: 
   const box = document.createElement("div");
   host.replaceChildren(box, file);
   const changed = () => (o.onChange?.(), draw());
+  const groupOf = (it: StoredItem) => (o.by === "kind" ? (isProtected(it) ? String(it.meta?.was ?? it.kind) : it.kind) : sourceOf(it));
+  const groupWord = (g: string) => (o.by === "kind" ? o.kinds?.[g] ?? g : g);
   const draw = () => {
     const all = mem.all();
-    const sources = [...new Set(all.map(sourceOf))];
-    let shown = all.filter((it) => !source || sourceOf(it) === source);
+    const sources = [...new Set(all.map(groupOf))];
+    let shown = all.filter((it) => !source || groupOf(it) === source);
     if (hits) shown = shown.filter((it) => hits!.has(it.id)).sort((a, b) => hits!.get(b.id)! - hits!.get(a.id)!);
     else shown = shown.slice().sort((a, b) => b.created - a.created);
     const focus = document.activeElement === box.querySelector("[data-q]");
@@ -78,7 +96,7 @@ export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: { name?: 
       `<section class="hb-mempanel" aria-label="${esc(o.name ?? "memory")}">` +
       `<div class="hb-mempanel-sec"><p class="hb-mempanel-counts">${esc(memoryCounts(all.map((it) => ({ id: String(it.id), text: it.text, kind: it.kind }))) || "nothing stored")}</p></div>` +
       `<div class="hb-mempanel-sec"><input class="hb-input" type="search" data-q placeholder="search memory" aria-label="search memory" value="${esc(query)}">` +
-      (sources.length > 1 ? `<div class="hb-chipgroup" role="group" aria-label="source"><button type="button" class="hb-chip${source ? "" : " is-on"}" data-src="" aria-pressed="${!source}">all</button>${sources.map((s) => `<button type="button" class="hb-chip${s === source ? " is-on" : ""}" data-src="${esc(s)}" aria-pressed="${s === source}">${esc(s)}</button>`).join("")}</div>` : "") +
+      (sources.length > 1 ? `<div class="hb-chipgroup" role="group" aria-label="${o.by === "kind" ? "kind" : "source"}"><button type="button" class="hb-chip${source ? "" : " is-on"}" data-src="" aria-pressed="${!source}">all</button>${sources.map((s) => `<button type="button" class="hb-chip${s === source ? " is-on" : ""}" data-src="${esc(s)}" aria-pressed="${s === source}">${esc(groupWord(s))}</button>`).join("")}</div>` : "") +
       `</div>` +
       `<div class="hb-mempanel-sec"><textarea class="hb-textarea" rows="2" data-note placeholder="a fact to keep" aria-label="add a note"></textarea><div class="hb-mempanel-row"><button type="button" class="hb-btn hb-btn-sm" data-add>add</button></div></div>` +
       `<div class="hb-mempanel-sec"><h3 class="hb-mempanel-hd">${query ? "matches" : "notes"} (${shown.length})</h3>` +
@@ -97,7 +115,7 @@ export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: { name?: 
             .join("")}</div>`
         : `<p class="hb-mempanel-empty">${query ? "nothing matches. try other words." : "nothing stored yet. add a note, drop a file, or talk and it fills."}</p>`) +
       `</div>` +
-      `<div class="hb-mempanel-foot"><button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-export>export</button><button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-import>import</button>${all.length ? `<button type="button" class="hb-btn hb-btn-2 hb-btn-sm hb-mempanel-wipe${wipe ? " is-armed" : ""}" data-wipe>${wipe ? "erase everything?" : "erase all"}</button>` : ""}</div></section>`;
+      `<div class="hb-mempanel-foot">${all.length ? (o.acts ?? []).map((a) => `<button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-act="${esc(a.id)}">${esc(a.label)}</button>`).join("") : ""}<button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-export>${esc(o.exportLabel ?? "export")}</button><button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-import>import</button>${all.length ? `<button type="button" class="hb-btn hb-btn-2 hb-btn-sm hb-mempanel-wipe${wipe ? " is-armed" : ""}" data-wipe>${wipe ? "erase everything?" : "erase all"}</button>` : ""}</div></section>`;
     if (focus) {
       const q = box.querySelector<HTMLInputElement>("[data-q]")!;
       q.focus();
@@ -153,6 +171,8 @@ export function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o: { name?: 
       if (text) void mem.add(text, { kind: "fact" }).then(changed);
       return;
     }
+    const act = t.closest<HTMLElement>("[data-act]");
+    if (act) return o.onAct?.(act.dataset.act ?? "");
     if (t.closest("[data-export]")) return download(`memory-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(mem.export(), null, 2), "application/json");
     if (t.closest("[data-import]")) return file.click();
     if (t.closest("[data-wipe]")) {
@@ -379,6 +399,71 @@ export function mountVoiceRow(host: HTMLElement, row: VoiceRow, o: { test?: stri
   });
   l.add(row.subscribe(draw));
   return { dispose: () => (row.stop(), l.off()) };
+}
+
+/* ---------- VoiceClone ---------- */
+
+/** The voice clone row of a speaker: clone from an audio file, record `seconds` of mic, download the clone as wav, clear it. */
+export function mountVoiceClone(host: HTMLElement, sp: Speaker, o: { seconds?: number; can?: () => boolean; hint?: string } = {}): Mounted {
+  const l = listeners();
+  const secs = o.seconds ?? 10;
+  const file = document.createElement("input");
+  file.type = "file";
+  file.accept = "audio/*";
+  file.hidden = true;
+  const box = document.createElement("div");
+  host.replaceChildren(box, file);
+  let note = "";
+  let busy = false;
+  const draw = () => {
+    const can = o.can?.() ?? true;
+    box.innerHTML =
+      `<div>` +
+      (can
+        ? `<div class="hb-toolbar" role="group" aria-label="voice clone"><button type="button" class="hb-btn hb-btn-sm" data-file${busy ? " disabled" : ""}>clone from audio file</button><button type="button" class="hb-btn hb-btn-sm" data-rec${busy ? " disabled" : ""}>record ${secs} s</button>${sp.cloned ? `<button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-wav>download clone, wav</button><button type="button" class="hb-btn hb-btn-2 hb-btn-sm" data-clear>clear clone</button>` : ""}</div>`
+        : "") +
+      `<p class="hb-note" role="status">${esc(note || (can ? o.hint ?? `clones a voice from ${secs} s of audio. nothing leaves this tab.` : "this voice cannot clone. load pocket in the voice list."))}</p></div>`;
+  };
+  const fail = (err: unknown) => {
+    const name = (err as { name?: string }).name ?? "";
+    note = name === "NotAllowedError" || name === "SecurityError" ? "the mic is blocked. allow it in the address bar, or clone from a file." : err instanceof Error ? err.message : String(err);
+  };
+  l.on(box, "click", (e) => {
+    const t = e.target as Element;
+    if (t.closest("[data-file]")) return file.click();
+    if (t.closest("[data-wav]")) {
+      const w = sp.cloneWav();
+      if (w) download("voice-clone.wav", w, "audio/wav");
+      return;
+    }
+    if (t.closest("[data-clear]")) {
+      sp.clearClone();
+      note = "clone cleared. the voice is its own again.";
+      return draw();
+    }
+    if (t.closest("[data-rec]") && !busy) {
+      busy = true;
+      void sp
+        .cloneMic(secs, (left) => ((note = `recording, ${left} s left`), draw()))
+        .then((s) => (note = `cloned from ${s.toFixed(1)} s of your mic.`), fail)
+        .finally(() => ((busy = false), draw()));
+    }
+  });
+  l.on(file, "change", () => {
+    const f = file.files?.[0];
+    file.value = "";
+    if (!f) return;
+    busy = true;
+    note = "cloning...";
+    draw();
+    void sp
+      .cloneFile(f)
+      .then((s) => (note = `cloned from ${s.toFixed(1)} s of ${f.name}.`), fail)
+      .finally(() => ((busy = false), draw()));
+  });
+  l.add(sp.subscribe(draw));
+  draw();
+  return { dispose: () => l.off() };
 }
 
 /* ---------- SessionMenu ---------- */

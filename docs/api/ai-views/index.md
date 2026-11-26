@@ -1235,6 +1235,153 @@ The runtime modules, each a function that imports it. Tests pass fakes; a page l
 
 ***
 
+### Speaker
+
+Spoken lines in order, and the clone.
+
+#### Properties
+
+| Property | Modifier | Type |
+| ------ | ------ | ------ |
+| <a id="property-cloned"></a> `cloned` | `readonly` | `boolean` |
+
+#### Methods
+
+##### clearClone()
+
+```ts
+clearClone(): void;
+```
+
+###### Returns
+
+`void`
+
+##### cloneFile()
+
+```ts
+cloneFile(file): Promise<number>;
+```
+
+Clones from an audio file; resolves to seconds of reference used.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `file` | `Blob` |
+
+###### Returns
+
+`Promise`\<`number`\>
+
+##### cloneMic()
+
+```ts
+cloneMic(seconds, onTick?): Promise<number>;
+```
+
+Records `seconds` of mic and clones from it; `onTick` gets the seconds left.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `seconds` | `number` |
+| `onTick?` | (`left`) => `void` |
+
+###### Returns
+
+`Promise`\<`number`\>
+
+##### cloneWav()
+
+```ts
+cloneWav(): Blob | null;
+```
+
+The prepared reference as a wav, or null with no clone.
+
+###### Returns
+
+`Blob` \| `null`
+
+##### say()
+
+```ts
+say(text): Promise<void>;
+```
+
+Queues a line; resolves when it has been said or dropped.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### stop()
+
+```ts
+stop(): void;
+```
+
+###### Returns
+
+`void`
+
+##### subscribe()
+
+```ts
+subscribe(fn): () => void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `fn` | () => `void` |
+
+###### Returns
+
+() => `void`
+
+***
+
+### SpeakerOptions
+
+Options of `speaker`.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-config"></a> `config?` | () => `VoiceConfig` | The voice config each line uses; a clone sets its own. |
+| <a id="property-halt"></a> `halt?` | () => `void` | Stops what `play` is playing. |
+| <a id="property-online"></a> `onLine?` | (`text`) => `void` | Each line as it starts, for a caption. |
+| <a id="property-play"></a> `play?` | (`line`) => `Promise`\<`void`\> | Plays one line; resolves when it is over. A character stage's `say` fits. With none, the line is dropped after `onLine`. |
+
+***
+
+### SpokenLine
+
+One line ready to play: the text, and for a rendering engine the audio with its word and phoneme times.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-audio"></a> `audio?` | `AudioBuffer` |
+| <a id="property-phonemes"></a> `phonemes?` | readonly `object`[] |
+| <a id="property-text"></a> `text` | `string` |
+| <a id="property-words"></a> `words?` | readonly `object`[] |
+
+***
+
 ### ThreadOptions
 
 Options for `chatThread` and `chatList`: engine, system prompt, memory recall, the no engine
@@ -1287,7 +1434,7 @@ went to the model.
 | <a id="property-rank"></a> `rank` | `number` | - |
 | <a id="property-rrf"></a> `rrf` | `string` | - |
 | <a id="property-score-2"></a> `score` | `string` | - |
-| <a id="property-text"></a> `text` | `string` | - |
+| <a id="property-text-1"></a> `text` | `string` | - |
 | <a id="property-used"></a> `used` | `boolean` | Inside the hits handed to the model. |
 
 ***
@@ -1571,7 +1718,7 @@ One chat turn: role, text, reasoning, time, whether it is done, memory used, sta
 | <a id="property-note-1"></a> `note?` | `string` | "stopped", "failed: ...". |
 | <a id="property-role"></a> `role` | `"user"` \| `"assistant"` | - |
 | <a id="property-stats-2"></a> `stats?` | `string` | "31.2 tok/s, first word 0.64 s, 44 tok (measured)". |
-| <a id="property-text-1"></a> `text` | `string` | - |
+| <a id="property-text-2"></a> `text` | `string` | - |
 | <a id="property-think"></a> `think` | `string` | Reasoning, shown in a fold under the reply. |
 
 ***
@@ -1975,6 +2122,26 @@ function boxWords(b): string;
 #### Returns
 
 `string`
+
+***
+
+### canClone()
+
+```ts
+function canClone(e): e is PocketEngine;
+```
+
+True when the engine clones a voice from reference audio.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `e` | `unknown` |
+
+#### Returns
+
+`e is PocketEngine`
 
 ***
 
@@ -2430,6 +2597,27 @@ Download words: "1.7 gb". Null for a record with no download or an unknown size.
 #### Returns
 
 `string` \| `undefined`
+
+***
+
+### speaker()
+
+```ts
+function speaker(engine, o?): Speaker;
+```
+
+A speaker over the engine `engine()` returns at each line (null: text only, timed by `play`).
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `engine` | () => `Engine` \| `null` |
+| `o?` | [`SpeakerOptions`](#speakeroptions) |
+
+#### Returns
+
+[`Speaker`](#speaker)
 
 ***
 
