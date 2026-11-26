@@ -8,7 +8,9 @@
   "include": ["src"],
   "references": [
     { "path": "../ai-env" },
+    { "path": "../audio-dsp" },
     { "path": "../chat" },
+    { "path": "../devices" },
     { "path": "../embed" },
     { "path": "../imagegen" },
     { "path": "../memory" },

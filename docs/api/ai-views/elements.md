@@ -929,6 +929,26 @@ The tag names define() registers, before any prefix.
 
 ## Functions
 
+### chipWords()
+
+```ts
+function chipWords(s): string;
+```
+
+The chip's words: the short name, then the download size, or the state once it moves.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `s` | [`PickSnapshot`](index.md#picksnapshot) |
+
+#### Returns
+
+`string`
+
+***
+
 ### define()
 
 ```ts
@@ -1411,6 +1431,28 @@ The sheet of one pick, in a drawer on the body. Opens on `open()`.
 #### Returns
 
 `Mounted` & `object`
+
+***
+
+### shortName()
+
+```ts
+function shortName(name): string;
+```
+
+A model name cut for the bar chip: filler words (instruct, chat, quant tags)
+go, and a name of more than three words keeps its first two and its last,
+which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `name` | `string` |
+
+#### Returns
+
+`string`
 
 ***
 

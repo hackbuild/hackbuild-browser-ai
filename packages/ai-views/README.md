@@ -2,7 +2,7 @@
 
 Put a model picker, a chat, a transcriber, a mask studio or a camera frame on your page, drawn with the hackbuild-ui stylesheet, as custom elements or Vue components.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/ai-views)](https://www.npmjs.com/package/@hackbuild/ai-views) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 12.4 kB measured](https://img.shields.io/badge/gzip-12.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/ai-views)](https://www.npmjs.com/package/@hackbuild/ai-views) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.9 kB measured](https://img.shields.io/badge/gzip-16.9%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet.
 
@@ -91,7 +91,25 @@ const thread = chatThread({ engine });
 
 ### picks and loaders
 
-A pick loads only through its loader (none is an error the row shows), runs it for every row, a no download row included, and keeps its result on `snapshot().loaded`; `remove()` deletes through `onRemove`. It starts on the first "start here" record that fits, else the first fast or steady one. `weightsLoader(store)` fetches a record's files through @hackbuild/weights; a record that loads through its runtime (WebLLM, MediaPipe and the like) needs a loader from the page. `useJobsPick` joins pickers as a rack with a line per job, presets with their download totals, and load all.
+A pick loads only through its loader (none is an error the row shows), runs it for every row, a no download row included, and keeps its result on `snapshot().loaded`; `remove()` deletes through `onRemove`. It starts on the first "start here" record that fits, else the first fast or steady one. `weightsLoader(store)` fetches a record's files through @hackbuild/weights; a record that loads through its runtime (WebLLM, MediaPipe and the like) takes `jobLoader(job)`. `useJobsPick` joins pickers as a rack with a line per job, presets with their download totals, and load all.
+
+### real loads
+
+`jobLoader(job, { store?, env?, allowGplPhonemizer? })` is the loader a page passes to `useModelPick(job, { loader })`. A load imports the runtime from its pinned CDN only when the person presses load, fetches weights through @hackbuild/weights where the runtime does not fetch its own, sends progress to the row, stops on the row's stop, and fails in plain words. One models hub serves every loader made with the same options object. Probe the machine with `probe()` from @hackbuild/ai-env and pass it to the pick as `env`.
+
+| job | resolves to | runtimes |
+|---|---|---|
+| chat | a @hackbuild/chat `ChatEngine` | WebLLM, wllama (gguf through the weight store), transformers.js, the browser's built in model |
+| transcribe | a `Transcriber` for TranscribeDrop | whisper on transformers.js, the dsp core inlined |
+| detect | `(image) => FrameBox[]` | MediaPipe EfficientDet, YOLO on onnxruntime web |
+| masks | `MaskModels`: click segment, and segment everything from a 4 by 3 grid of points | SlimSAM on transformers.js; FastSAM is refused until it has a decoder |
+| depth | `(image) => { width, height, data }`, 0 to 1, larger is nearer | Depth Anything on transformers.js |
+| vision | `(image, question?) => string`, a caption without a question | SmolVLM, LFM2-VL, Gemma on transformers.js |
+| image | an imagegen `ImageGenerator` with its CLIP `tokenize` and `make(form)` | onnxruntime web; the tokenizer on transformers.js |
+| voice | a loaded @hackbuild/speak `Engine` | the system voice (no download), bellows, pocket tts, kokoro (gpl phonemizer, opt in) |
+| embed | an @hackbuild/embed `Embedder` | static potion files, transformers.js |
+
+The bar chip shows the name cut short (`shortName`: "hermes 3 llama 3.2 3b" reads "hermes 3 3b") and the size, then the state once a load moves; the full name is its label.
 
 ### views
 
@@ -115,6 +133,7 @@ Jobs and their records: chat (the chat rows of the @hackbuild/models catalogue),
 | [`useModelPick`](../../docs/api/ai-views/index.md#usemodelpick) | a model picker for one job |
 | [`useJobsPick`](../../docs/api/ai-views/index.md#usejobspick) | pickers for several jobs as one rack |
 | [`weightsLoader`](../../docs/api/ai-views/index.md#weightsloader) | a loader that fetches files through a weight store |
+| [`jobLoader`](../../docs/api/ai-views/index.md#jobloader) | the real loader of a job: runtime and weights at load time |
 | [`chatThread`](../../docs/api/ai-views/index.md#chatthread) | a chat thread over an engine |
 | [`chatList`](../../docs/api/ai-views/index.md#chatlist) | several chats, one open |
 | [`transcribeQueue`](../../docs/api/ai-views/index.md#transcribequeue) | a queue of files to transcribe, with edits and exports |
@@ -223,10 +242,11 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 |---|---|---|
 | 2026-11-25 | `npx vitest run packages/ai-views` | pass: every job has the records above with a speed word and a verdict; rows carry size, memory, backend, marks, detail and options, and a row that does not fit names why; a pick loads with progress, cancels and keeps a failure's words; presets total their download; the chat thread streams with the reasoning apart and memory used; the queue runs, edits with undo and exports; the frame mapping crops and mirrors; define registers every element |
 | 2026-11-25 | `node tools/smoke-views.mjs`, headless | pass: one smoke per demo page on stub providers with no weights |
+| 2026-11-25 | `npx vitest run packages/ai-views/test/loaders.test.ts` | pass: jobLoader loads a transformers.js chat model and a depth model through fake runtime modules, a WebLLM model through a fake module, refuses kokoro without the opt in and FastSAM in plain words, stops on abort, imports nothing before a load, makes no network request; the chip cuts a name and shows its size |
 
 ### Not verified by anything
 
-- A real model through any view in this package (the demos use stubs).
+- A real model through jobLoader or any view in this package: tests use fake runtime modules and the demos stubs; no weights were fetched. The transcribe, detect, masks, vision, image, voice and embed paths of jobLoader have no test of their own yet.
 - Touch drawing on a phone.
 - Screen readers.
 
@@ -234,8 +254,8 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 12,413 bytes | 13,033 bytes |
-| `dist/single/elements.iife.js` (single file build) | 86,649 bytes | 90,981 bytes |
+| `dist/index.js` (main entry, imports external) | 16,915 bytes | 17,760 bytes |
+| `dist/single/elements.iife.js` (single file build) | 86,306 bytes | 90,621 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

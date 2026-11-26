@@ -1745,6 +1745,12 @@ interface ChatPaneOptions {
 Options for `mountChatPane`: the reply's name and the empty state's words.
 
 ```ts
+function chipWords(s: PickSnapshot): string
+```
+
+The chip's words: the short name, then the download size, or the state once it moves.
+
+```ts
 interface ComposerOptions {
   label?: string;
   placeholder?: string;
@@ -2013,6 +2019,12 @@ function pickSheet(pick: ModelPick): Mounted & { open(): void }
 The sheet of one pick, in a drawer on the body.
 
 ```ts
+function shortName(name: string): string
+```
+
+A model name cut for the bar chip: filler words (instruct, chat, quant tags) go, and a name of more than three words keeps its first two and its last, which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+
+```ts
 interface StudioState {
   busy: string;
   canRedo: boolean;
@@ -2094,6 +2106,18 @@ const ALL_RECORDS: readonly ModelRecord[]
 ```
 
 Every record the views know, the running package's copy of a duplicate first.
+
+```ts
+function asImage(img: unknown): unknown
+```
+
+Pixels ({ width, height, data }) as a canvas, which every runtime reads; anything else passes through.
+
+```ts
+type AskFn = (image: unknown, question?: string) => Promise<string>
+```
+
+A vision language model as a page calls it: a question about an image (a caption without one), answered in words.
 
 ```ts
 function backendOf(r: ModelRecord, env?: Env): ModelBackend
@@ -2202,10 +2226,22 @@ function defaultPick(records: readonly ModelRecord[], env?: Env, estimate?: Stor
 The row a picker starts on: the first "start here" record that fits this machine, else the first that fits and is fast or steady, else the first that fits, else the first.
 
 ```ts
+type DepthFn = (image: unknown) => Promise<{ data: Float32Array; height: number; width: number }>
+```
+
+A depth model as a page calls it: 0 to 1 per pixel, larger is nearer (relative inverse depth).
+
+```ts
 function detailOf(r: ModelRecord): { label: string; value: string }[]
 ```
 
 The chevron detail: licence, source, context, quant, runtime, and where the size came from.
+
+```ts
+type DetectFn = (image: unknown) => Promise<FrameBox[]>
+```
+
+A detector as a page calls it: boxes in image pixels, best first.
 
 ```ts
 type ExportKind = "txt" | "srt" | "vtt" | "json"
@@ -2272,6 +2308,12 @@ function groupOf(r: ModelRecord, state?: ModelPickState): ModelRowGroup
 The group a row sits in.
 
 ```ts
+type ImageJob = ImageGenerator & { tokenize: ClipTokenize; make(o: FormOptions): Promise<Generated> }
+```
+
+An image model with its CLIP tokenizer: `make` generates with the form's defaults filled in.
+
+```ts
 function inspectorHtml(rec: RecallLike | null): string
 ```
 
@@ -2330,6 +2372,25 @@ interface JobLine {
 One line of a jobs rack: the job, its label, whether it is required, and the chosen row.
 
 ```ts
+function jobLoader<J extends Job>(job: J, o?: JobLoaderOptions): Loader
+```
+
+A real Loader for a job.
+
+```ts
+interface JobLoaderOptions {
+  allowGplPhonemizer?: boolean;
+  env?: Env;
+  fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  modules?: RuntimeModules;
+  rng?: () => number;
+  store?: WeightStore | Promise<WeightStore>;
+}
+```
+
+Options for jobLoader.
+
+```ts
 function jobRecords(job: Job, records?: readonly ModelRecord[]): ModelRecord[]
 ```
 
@@ -2356,6 +2417,24 @@ interface JobsPick {
 ```
 
 Several pickers as one rack: a line per job, presets with their totals, and load all.
+
+```ts
+interface JobValues {
+  chat: ChatEngine;
+  depth: DepthFn;
+  detect: DetectFn;
+  embed: Embedder;
+  faceswap: unknown;
+  image: ImageJob;
+  landmarks: unknown;
+  masks: MaskModels;
+  transcribe: Transcriber;
+  vision: AskFn;
+  voice: Engine;
+}
+```
+
+What a jobLoader load resolves to, per job: chat a ChatEngine; transcribe a Transcriber; detect a DetectFn; masks MaskModels; depth a DepthFn; vision an AskFn; image an ImageJob; voice a loaded @hackbuild/speak Engine; embed an Embedder.
 
 ```ts
 function labelColour(label: string | undefined, palette: readonly string[]): string
@@ -2524,6 +2603,27 @@ interface RunResult {
 ```
 
 What a transcriber returns: segments, dropped lines, duration, language and model.
+
+```ts
+const RUNTIME_URLS: { readonly bellows: readonly ["https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/engine/+esm"]; readonly kokoro: readonly ["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]; readonly webllm: readonly ["https://esm.run/@mlc-ai/web-llm@0.2.84", "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/+esm"] }
+```
+
+Pinned CDN modules jobLoader imports at load time.
+
+```ts
+interface RuntimeModules {
+  bellows?: () => Promise<unknown>;
+  dsp?: () => Promise<Dsp>;
+  kokoro?: () => Promise<unknown>;
+  ort?: () => Promise<OrtModule>;
+  tasksVision?: () => Promise<unknown>;
+  transformers?: () => Promise<TjsModule>;
+  webllm?: () => Promise<unknown>;
+  wllama?: () => Promise<unknown>;
+}
+```
+
+The runtime modules, each a function that imports it.
 
 ```ts
 function sizeWords(r: ModelRecord): string | undefined

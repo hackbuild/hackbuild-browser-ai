@@ -382,6 +382,23 @@ One line of a jobs rack: the job, its label, whether it is required, and the cho
 
 ***
 
+### JobLoaderOptions
+
+Options for [jobLoader](#jobloader). Share one object between loaders to share one hub.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-allowgplphonemizer"></a> `allowGplPhonemizer?` | `boolean` | Kokoro's phonemizer is GPL-3.0-or-later; it is fetched only when this is true. |
+| <a id="property-env"></a> `env?` | `Env` | This machine; default `probe()` from @hackbuild/ai-env. |
+| <a id="property-fetch"></a> `fetch?` | (`input`, `init?`) => `Promise`\<`Response`\> | fetch for files a runtime does not fetch itself (static embedders). |
+| <a id="property-modules"></a> `modules?` | [`RuntimeModules`](#runtimemodules) | Runtime modules in place of the pinned CDN imports (tests). |
+| <a id="property-rng"></a> `rng?` | () => `number` | Random numbers for the bellows voice; default a fixed seed. |
+| <a id="property-store"></a> `store?` | `WeightStore` \| `Promise`\<`WeightStore`\> | Where weights are kept; default `openWeightStore()`. |
+
+***
+
 ### JobsPick
 
 Several pickers as one rack: a line per job, presets with their totals, and load all.
@@ -511,6 +528,31 @@ New machine facts, records or loader for every job.
 ###### Returns
 
 `void`
+
+***
+
+### JobValues
+
+What a jobLoader load resolves to, per job: chat a ChatEngine; transcribe a
+Transcriber; detect a DetectFn; masks MaskModels; depth a DepthFn; vision an
+AskFn; image an ImageJob; voice a loaded @hackbuild/speak Engine; embed an
+Embedder. faceswap and landmarks resolve to the hub's loaded value as is.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-chat"></a> `chat` | `ChatEngine` |
+| <a id="property-depth"></a> `depth` | [`DepthFn`](#depthfn) |
+| <a id="property-detect"></a> `detect` | [`DetectFn`](#detectfn) |
+| <a id="property-embed"></a> `embed` | `Embedder` |
+| <a id="property-faceswap"></a> `faceswap` | `unknown` |
+| <a id="property-image"></a> `image` | [`ImageJob`](#imagejob) |
+| <a id="property-landmarks-1"></a> `landmarks` | `unknown` |
+| <a id="property-masks"></a> `masks` | [`MaskModels`](elements.md#maskmodels) |
+| <a id="property-transcribe"></a> `transcribe` | [`Transcriber`](#transcriber) |
+| <a id="property-vision"></a> `vision` | [`AskFn`](#askfn) |
+| <a id="property-voice"></a> `voice` | `Engine` |
 
 ***
 
@@ -794,7 +836,7 @@ chosen id and extra row options.
 | Property | Type | Description |
 | ------ | ------ | ------ |
 | <a id="property-chosen"></a> `chosen?` | `string` | - |
-| <a id="property-env"></a> `env?` | `Env` | - |
+| <a id="property-env-1"></a> `env?` | `Env` | - |
 | <a id="property-estimate"></a> `estimate?` | `StorageEstimate` \| `null` | - |
 | <a id="property-extra"></a> `extra?` | (`rec`) => readonly `ModelOption`[] | Options a job adds to every row, like a language select for speech. |
 | <a id="property-loader"></a> `loader?` | [`Loader`](#loader) | Loads a model; required to load. weightsLoader(store) fetches files; a page with a runtime passes its own. |
@@ -861,7 +903,7 @@ values, job options, and whether the person added it.
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-env-1"></a> `env?` | `Env` | - |
+| <a id="property-env-2"></a> `env?` | `Env` | - |
 | <a id="property-estimate-1"></a> `estimate?` | `StorageEstimate` \| `null` | - |
 | <a id="property-extra-1"></a> `extra?` | readonly `ModelOption`[] | Options a job adds, like a language for speech. |
 | <a id="property-options-1"></a> `options?` | `Record`\<`string`, `string`\> | - |
@@ -897,6 +939,25 @@ What a transcriber returns: segments, dropped lines, duration, language and mode
 | <a id="property-language-1"></a> `language?` | `string` | - |
 | <a id="property-model-1"></a> `model?` | `string` | - |
 | <a id="property-segments-1"></a> `segments` | `Seg`[] | - |
+
+***
+
+### RuntimeModules
+
+The runtime modules, each a function that imports it. Tests pass fakes; a page leaves them out.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-bellows"></a> `bellows?` | () => `Promise`\<`unknown`\> | - |
+| <a id="property-dsp"></a> `dsp?` | () => `Promise`\<`Dsp`\> | The audio dsp core transcription runs on; default the wasm inlined in @hackbuild/audio-dsp. |
+| <a id="property-kokoro"></a> `kokoro?` | () => `Promise`\<`unknown`\> | - |
+| <a id="property-ort"></a> `ort?` | () => `Promise`\<`OrtModule`\> | - |
+| <a id="property-tasksvision"></a> `tasksVision?` | () => `Promise`\<`unknown`\> | - |
+| <a id="property-transformers"></a> `transformers?` | () => `Promise`\<`TjsModule`\> | - |
+| <a id="property-webllm"></a> `webllm?` | () => `Promise`\<`unknown`\> | - |
+| <a id="property-wllama"></a> `wllama?` | () => `Promise`\<`unknown`\> | - |
 
 ***
 
@@ -1180,6 +1241,75 @@ One chat turn: role, text, reasoning, time, whether it is done, memory used, sta
 
 ## Type Aliases
 
+### AskFn
+
+```ts
+type AskFn = (image, question?) => Promise<string>;
+```
+
+A vision language model as a page calls it: a question about an image (a caption without one), answered in words.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `image` | `unknown` |
+| `question?` | `string` |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+***
+
+### DepthFn
+
+```ts
+type DepthFn = (image) => Promise<{
+  data: Float32Array;
+  height: number;
+  width: number;
+}>;
+```
+
+A depth model as a page calls it: 0 to 1 per pixel, larger is nearer (relative inverse depth).
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `image` | `unknown` |
+
+#### Returns
+
+`Promise`\<\{
+  `data`: `Float32Array`;
+  `height`: `number`;
+  `width`: `number`;
+\}\>
+
+***
+
+### DetectFn
+
+```ts
+type DetectFn = (image) => Promise<FrameBox[]>;
+```
+
+A detector as a page calls it: boxes in image pixels, best first.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `image` | `unknown` |
+
+#### Returns
+
+`Promise`\<[`FrameBox`](#framebox)[]\>
+
+***
+
 ### ExportKind
 
 ```ts
@@ -1187,6 +1317,23 @@ type ExportKind = "txt" | "srt" | "vtt" | "json";
 ```
 
 A transcript export format: txt, srt, vtt or json.
+
+***
+
+### ImageJob
+
+```ts
+type ImageJob = ImageGenerator & object;
+```
+
+An image model with its CLIP tokenizer: `make` generates with the form's defaults filled in.
+
+#### Type Declaration
+
+| Name | Type |
+| ------ | ------ |
+| `tokenize` | `ClipTokenize` |
+| `make()` | (`o`) => `Promise`\<`Generated`\> |
 
 ***
 
@@ -1311,7 +1458,45 @@ const NO_ENGINE: "this needs a model. pick one in the bar and load it." = "this 
 
 What a reply says when no chat engine is set.
 
+***
+
+### RUNTIME\_URLS
+
+```ts
+const RUNTIME_URLS: object;
+```
+
+Pinned CDN modules jobLoader imports at load time.
+
+#### Type Declaration
+
+| Name | Type |
+| ------ | ------ |
+| <a id="property-bellows-1"></a> `bellows` | readonly \[`"https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/engine/+esm"`\] |
+| <a id="property-kokoro-1"></a> `kokoro` | readonly \[`"https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"`\] |
+| <a id="property-webllm-1"></a> `webllm` | readonly \[`"https://esm.run/@mlc-ai/web-llm@0.2.84"`, `"https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.84/+esm"`\] |
+
 ## Functions
+
+### asImage()
+
+```ts
+function asImage(img): unknown;
+```
+
+Pixels (\{ width, height, data \}) as a canvas, which every runtime reads; anything else passes through.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `img` | `unknown` |
+
+#### Returns
+
+`unknown`
+
+***
 
 ### backendOf()
 
@@ -1618,6 +1803,35 @@ Whether a record's censorship is "uncensored" or "abliterated".
 #### Returns
 
 `boolean`
+
+***
+
+### jobLoader()
+
+```ts
+function jobLoader<J>(job, o?): Loader;
+```
+
+A real Loader for a job. The runtime and weights load only when a pick
+calls it; progress goes to `ctx.onProgress`, `ctx.signal` stops it, and a
+failure throws in plain words. Resolves to [JobValues](#jobvalues)[job].
+
+#### Type Parameters
+
+| Type Parameter |
+| ------ |
+| <a id="type-parameter-j"></a> `J` *extends* [`Job`](#job) |
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `job` | `J` |
+| `o?` | [`JobLoaderOptions`](#jobloaderoptions) |
+
+#### Returns
+
+[`Loader`](#loader)
 
 ***
 
