@@ -13,6 +13,7 @@
 
 export type JobState = "queued" | "running" | "done" | "failed";
 
+/** The parts of a File the queue reads: name, size and type. */
 export interface FileLike {
   name: string;
   size: number;
@@ -30,6 +31,7 @@ export interface FileMeta {
   rmsDb: number;
 }
 
+/** One file in the queue: its state, phase, progress, measured levels, result and error line. */
 export interface Job<F extends FileLike = FileLike, R = unknown> {
   id: number;
   file: F;
@@ -46,11 +48,13 @@ export interface Job<F extends FileLike = FileLike, R = unknown> {
   error: string | null;
 }
 
+/** Decoded audio: the sample rate and one Float32Array per channel. */
 export interface Decoded {
   sampleRate: number;
   channels: Float32Array[];
 }
 
+/** The queue's decoder, run, change callback and failure copy. */
 export interface QueueOptions<F extends FileLike, R> {
   decode: (file: F, signal: AbortSignal) => Promise<Decoded>;
   run: (audio: Decoded & { meta: FileMeta }, ctx: { job: Readonly<Job<F, R>>; signal: AbortSignal; progress: (p: number) => void }) => Promise<R>;
@@ -94,6 +98,7 @@ const message = (e: unknown) => (e instanceof Error ? e.message : String(e)).rep
 
 const aborted = (e: unknown) => !!e && typeof e === "object" && (e as { name?: unknown }).name === "AbortError";
 
+/** A file queue: add, list, start, stop, cancel and retry jobs. */
 export interface FileQueue<F extends FileLike, R> {
   /** Adds what it accepts. Skipped files and large file warnings come back as ui lines. */
   add(files: Iterable<F>): { added: Job<F, R>[]; skipped: string[]; warnings: string[] };
@@ -112,6 +117,7 @@ export interface FileQueue<F extends FileLike, R> {
   readonly running: boolean;
 }
 
+/** A file queue that decodes, measures and runs each file in turn. */
 export function createQueue<F extends FileLike, R = unknown>(o: QueueOptions<F, R>): FileQueue<F, R> {
   const list: Job<F, R>[] = [];
   let seq = 0;

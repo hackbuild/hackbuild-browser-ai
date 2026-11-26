@@ -18,6 +18,7 @@ export interface Word {
   confidence?: number;
 }
 
+/** One transcript line: start and end in seconds, its text, and optional speaker, confidence, words and edited mark. */
 export interface Seg {
   start: number;
   end: number;
@@ -31,14 +32,19 @@ export interface Seg {
   edited?: boolean;
 }
 
+/** Why the phantom filter dropped a line. */
 export type DropReason = "empty" | "watermark" | "outro" | "phantom" | "loop" | "repeat";
 
+/** A line the phantom filter dropped, with the reason. */
 export interface Dropped extends Seg {
   why: DropReason;
 }
 
+/** Watermark phrases the phantom filter always drops. */
 export const HARD = ["amara.org", "subtitles by", "subtitled by", "subtitles are", "transcription by", "transcribed by", "captions by"];
+/** Stock outro phrases the phantom filter drops when the audio under them was mostly silence. */
 export const SOFT = ["thanks for watching", "thank you for watching", "please subscribe", "subscribe to my channel", "like and subscribe", "see you next time"];
+/** Weak one word lines the phantom filter drops when the audio under them was mostly silence. */
 export const WEAK = new Set(["you", "bye", "thank you", "thanks", "okay", "ok", "oh", "yeah", "hmm", "uh", "um", "music", "the end", "so", "and", "bye bye", "applause"]);
 
 const low = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -49,6 +55,7 @@ const norm = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** The phantom text filter: splits lines into kept and dropped, using the gate's speech regions to tell a real outro from one written over silence. */
 export function cleanup<T extends Seg>(segs: readonly T[], vad: readonly Region[], on = true, sampleRate = 16000): { kept: T[]; dropped: Dropped[] } {
   const kept: T[] = [];
   const dropped: Dropped[] = [];

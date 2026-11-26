@@ -10,6 +10,7 @@ export interface MicOptions {
   deviceId?: string;
 }
 
+/** Asks for the microphone with echo cancellation, noise suppression and gain control on. */
 export async function openMic(o: MicOptions = {}): Promise<MediaStream> {
   const gum = o.getUserMedia ?? ((c: MediaStreamConstraints) => navigator.mediaDevices.getUserMedia(c));
   const audio: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 };

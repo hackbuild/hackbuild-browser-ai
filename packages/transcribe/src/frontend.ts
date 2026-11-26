@@ -9,10 +9,14 @@
 
 import { gate, gateThreshold, type Dsp, type Region } from "@hackbuild/audio-dsp";
 
+/** The front end sample rate, 16000 Hz. */
 export const SR = 16000;
+/** The frame hop in samples, 160 (10 ms at 16 kHz). */
 export const HOP = 160;
+/** The frame length in samples, 400 (25 ms at 16 kHz). */
 export const FRAME = 400;
 
+/** Front end settings: high pass corner, gate margin, silence skip, target level, gain cap, denoise strength and per reel levelling. */
 export interface FrontEndOptions {
   /** High pass corner in Hz; 0 turns it off. Default 80. */
   hp?: number;
@@ -30,6 +34,7 @@ export interface FrontEndOptions {
   perReelAgc?: boolean;
 }
 
+/** What `analyze` finds: the cleaned signal, frame levels, speech regions, the noise print, levels and the gain. */
 export interface Analysis {
   sig: Float32Array;
   vdb: Float32Array;
@@ -42,10 +47,12 @@ export interface Analysis {
 
 const DEF: Required<FrontEndOptions> = { hp: 80, vadMargin: 6, skipSilence: true, targetDb: -20, maxGainDb: 60, denoise: 2, perReelAgc: true };
 
+/** The front end settings with every default filled in. */
 export function options(o: FrontEndOptions = {}): Required<FrontEndOptions> {
   return { ...DEF, ...o };
 }
 
+/** Run the front end on 16 kHz audio: clean it, gate it, take a noise print and pick a gain. */
 export function analyze(dsp: Dsp, raw: Float32Array, opts: FrontEndOptions = {}): Analysis {
   const o = options(opts);
   const n = raw.length;

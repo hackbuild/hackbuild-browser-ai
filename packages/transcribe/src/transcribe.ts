@@ -17,8 +17,10 @@ export interface AsrOutput {
   text?: string;
   chunks?: { timestamp?: [number | null, number | null]; text?: string }[];
 }
+/** An ASR function: 16 kHz audio and call options in, text and timed chunks out. */
 export type Asr = (audio: Float32Array, opts: Record<string, unknown>) => Promise<AsrOutput>;
 
+/** Transcribe settings: the front end ones plus model, language, phantom filter, signal, progress and scheduling. */
 export interface TranscribeOptions extends FrontEndOptions {
   /** Language code, or "auto". Ignored by english only models. */
   language?: string;
@@ -34,6 +36,7 @@ export interface TranscribeOptions extends FrontEndOptions {
   now?: () => number;
 }
 
+/** A transcript: kept and dropped lines, stats, the level rail, model and language. */
 export interface Transcript {
   segments: Seg[];
   dropped: Dropped[];
@@ -46,6 +49,7 @@ export interface Transcript {
   language: string;
 }
 
+/** Transcribe 16 kHz mono audio through the models hub, one ASR call per reel, with times in file seconds. */
 export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: TranscribeOptions = {}): Promise<Transcript> {
   const now = o.now ?? (() => (globalThis.performance ? performance.now() : Date.now()));
   const t0 = now();

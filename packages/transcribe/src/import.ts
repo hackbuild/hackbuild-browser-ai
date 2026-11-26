@@ -11,8 +11,10 @@
 import type { DropReason, Dropped, Seg, Word } from "./cleanup.js";
 import type { TranscriptDoc } from "./export.js";
 
+/** The transcript formats `importTranscript` reads. */
 export type TranscriptFormat = "json" | "srt" | "vtt";
 
+/** Settings for reading a transcript back. */
 export interface ImportOptions {
   /**
    * srt only: read a leading "name: " as the speaker, as asSrt writes it.
@@ -53,6 +55,7 @@ const blocks = (text: string) =>
 
 const SPEAKER = /^([^:\n]{1,32}):\s(.*)$/s;
 
+/** Segments from SubRip text; `{ speakers: true }` reads a leading "name: " as the speaker. */
 export function parseSrt(text: string, o: ImportOptions = {}): Seg[] {
   const out: Seg[] = [];
   for (const b of blocks(text)) {
@@ -75,6 +78,7 @@ export function parseSrt(text: string, o: ImportOptions = {}): Seg[] {
 const ENTITY: Record<string, string> = { amp: "&", lt: "<", gt: ">", nbsp: " ", lrm: "‎", rlm: "‏", quot: '"', apos: "'" };
 const unescape = (t: string) => t.replace(/&(amp|lt|gt|nbsp|lrm|rlm|quot|apos);/g, (_, k: string) => ENTITY[k]!);
 
+/** Segments from WebVTT text, with voice tags read as speakers. */
 export function parseVtt(text: string): Seg[] {
   const all = blocks(text);
   if (!all.length || !/^WEBVTT(?:[ \t]|$)/.test(all[0]![0]!.trim())) throw new TranscriptImportError("this is not a vtt file. it must start with WEBVTT.");

@@ -13,9 +13,13 @@ import { OverlapAdd, planSegments } from "@hackbuild/audio-dsp";
 import { LADDERS, type OrtModel } from "@hackbuild/devices";
 import { pinnedBase, type Hub, type ModelRecord, type RunOptions } from "@hackbuild/models";
 
+/** Sample rate the separator takes and returns, 44100 Hz. */
 export const SAMPLE_RATE = 44100;
+/** Samples per model segment, 343980 (7.8 s at 44.1 kHz). */
 export const SEGMENT = 343980;
+/** The four stems in model output order: drums, bass, other, vocals. */
 export const TRACKS = ["drums", "bass", "other", "vocals"] as const;
+/** One stem name from TRACKS. */
 export type Track = (typeof TRACKS)[number];
 
 const base = pinnedBase("StemSplitio/htdemucs-onnx");
@@ -38,6 +42,7 @@ const rec = (id: string, file: string, mb: number, overlap: number, label: strin
   notes: [`overlap ${overlap}`, "export by StemSplitio of the htdemucs weights (MIT); the export's own terms not checked"],
 });
 
+/** The models hub records for htdemucs (weights MIT): fp16 weights at 10 percent overlap, fp32 at 40 percent. */
 export const STEMS_RECORDS: ModelRecord[] = [
   rec("htdemucs-fast", "htdemucs_fp16weights.onnx", 166, 0.1, "htdemucs fp16 weights, fast"),
   rec("htdemucs-slow", "htdemucs.onnx", 316, 0.4, "htdemucs fp32, slow"),
@@ -49,6 +54,7 @@ export function overlapOf(r: ModelRecord): number {
   return n ? Number(n.slice(8)) : 0.25;
 }
 
+/** Add the htdemucs records to a models hub's registry. */
 export function attachStems(hub: Hub): void {
   hub.registry.add(...STEMS_RECORDS);
 }
@@ -92,10 +98,12 @@ export function stubSeparator(): Separator {
   };
 }
 
+/** Stub builders for the models hub: the `stems` capability returns `stubSeparator()`. */
 export function stemsStubs(): Record<string, (r: ModelRecord) => unknown> {
   return { stems: () => stubSeparator() };
 }
 
+/** Options for `separate`: record id, overlap, segment length, abort signal, run schedule, progress callback and clock. */
 export interface SeparateOptions {
   model?: string;
   /** Override the record's overlap, 0 to 0.6. */
@@ -108,6 +116,7 @@ export interface SeparateOptions {
   now?: () => number;
 }
 
+/** What `separate` returns: left and right channels per stem, the realtime factor and the record id used. */
 export interface Stems {
   stems: Record<Track, { left: Float32Array; right: Float32Array }>;
   /** Audio seconds per wall second (computed). */

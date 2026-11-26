@@ -10,6 +10,7 @@ import type { Note } from "./pitch.js";
 
 type Band = { name: "kick" | "snare" | "hat" | "tom"; filters: [FilterKind, number, number][]; gap: number; sens: number; gate: number };
 
+/** The kick, snare, hat and tom bands: filters, minimum gap in seconds, onset sensitivity and gate. */
 export const DRUM_BANDS: Band[] = [
   { name: "kick", filters: [["lowpass", 110, 0.9], ["lowpass", 130, 0.9]], gap: 0.09, sens: 1.0, gate: 0.1 },
   { name: "snare", filters: [["highpass", 250, 0.8], ["lowpass", 1800, 0.8]], gap: 0.08, sens: 1.1, gate: 0.16 },
@@ -17,9 +18,15 @@ export const DRUM_BANDS: Band[] = [
   { name: "tom", filters: [["highpass", 120, 0.8], ["lowpass", 350, 0.8]], gap: 0.09, sens: 1.1, gate: 0.14 },
 ];
 
+/** General MIDI notes for each drum: kick 36, snare 38, hat 42, tom 45. */
 export const GM_DRUMS = { kick: 36, snare: 38, hat: 42, tom: 45 } as const;
 const DUR = { kick: 0.18, snare: 0.14, hat: 0.06, tom: 0.2 } as const;
 
+/**
+ * Drum hits from a mono signal at any rate: resamples to 22050 Hz, finds
+ * onsets per band, groups them on one 25 ms grid with cross band rules,
+ * and returns General MIDI notes. Toms only when `toms` is set.
+ */
 export function drumNotes(dsp: Dsp, mono: Float32Array, sampleRate: number, o: { toms?: boolean } = {}): Note[] {
   const sr = 22050;
   // windowed sinc, so content above 11 kHz does not alias into the 7 kHz hat band

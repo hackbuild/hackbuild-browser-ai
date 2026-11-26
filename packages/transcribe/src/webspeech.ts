@@ -15,6 +15,7 @@ export interface SpeechRecognitionLike {
   onend: (() => void) | null;
 }
 
+/** Web Speech settings: language, interim results, callbacks and the recognizer constructor. */
 export interface WebSpeechOptions {
   lang?: string;
   interim?: boolean;
@@ -25,10 +26,12 @@ export interface WebSpeechOptions {
   onError?: (error: string) => void;
 }
 
+/** True when the browser has a SpeechRecognition constructor. */
 export function webSpeechAvailable(g: Record<string, unknown> = globalThis as unknown as Record<string, unknown>): boolean {
   return typeof (g.SpeechRecognition ?? g.webkitSpeechRecognition) === "function";
 }
 
+/** Wrap the browser's speech recognizer; final results become segments timed by the clock. */
 export function webSpeech(o: WebSpeechOptions): { start(): void; stop(): void } {
   const g = globalThis as unknown as Record<string, unknown>;
   const R = o.Recognition ?? ((g.SpeechRecognition ?? g.webkitSpeechRecognition) as (new () => SpeechRecognitionLike) | undefined);

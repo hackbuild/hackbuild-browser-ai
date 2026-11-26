@@ -8,6 +8,7 @@
 
 import type { Region } from "@hackbuild/audio-dsp";
 
+/** One speech run in a reel: source sample range and the silence before it. */
 export interface Run {
   s0: number;
   s1: number;
@@ -15,11 +16,13 @@ export interface Run {
   pad: number;
 }
 
+/** Speech runs packed into one model call, and the total samples. */
 export interface Reel {
   runs: Run[];
   total: number;
 }
 
+/** A run's place in the reel audio and in the source, in samples. */
 export interface MappedRun {
   o0: number;
   o1: number;
@@ -27,6 +30,7 @@ export interface MappedRun {
   s1: number;
 }
 
+/** A reel's audio, its source map and its length in seconds. */
 export interface Materialized {
   audio: Float32Array;
   runs: MappedRun[];
@@ -34,6 +38,7 @@ export interface Materialized {
   dur: number;
 }
 
+/** Pack speech regions into reels of at most `maxLen` samples, cutting long regions on a quiet frame. */
 export function packReels(regions: readonly Region[], db: ArrayLike<number>, maxLen: number, gapPad: number, sr = 16000, hop = 160): Reel[] {
   const reels: Reel[] = [];
   let cur: Reel | null = null;
@@ -76,6 +81,7 @@ export function packReels(regions: readonly Region[], db: ArrayLike<number>, max
   return reels;
 }
 
+/** Build a reel's audio from the source with silence between runs, and the map back to source time. */
 export function materialize(reel: Reel, src: Float32Array, lead: number, sr = 16000): Materialized {
   let total = lead * 2;
   for (const r of reel.runs) total += r.s1 - r.s0 + r.pad;

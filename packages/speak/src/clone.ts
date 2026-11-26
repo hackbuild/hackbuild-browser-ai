@@ -19,6 +19,7 @@ export function toMono(channels: readonly Float32Array[]): Float32Array {
   return out;
 }
 
+/** Resamples a mono voice reference to 24 kHz, cuts it to 15 s and normalizes its peak to 0.9, by default. */
 export function prepareClone(samples: Float32Array, rate: number, o: CloneOptions = {}): Float32Array {
   const dst = o.rate ?? 24000;
   const maxN = Math.round((o.seconds ?? 15) * dst);

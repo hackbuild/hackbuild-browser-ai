@@ -2,6 +2,7 @@
 
 import type { ModelRecord } from "@hackbuild/models";
 
+/** Model records for the VAD this package runs, for pickers and the models registry. */
 export const VAD_RECORDS: ModelRecord[] = [
   {
     id: "silero-vad-v5",

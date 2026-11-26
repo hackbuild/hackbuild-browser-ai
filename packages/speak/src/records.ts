@@ -5,6 +5,7 @@
 
 import type { ModelRecord } from "@hackbuild/models";
 
+/** Model records for the voices this package drives, for pickers and the models registry. */
 export const SPEAK_RECORDS: ModelRecord[] = [
   {
     id: "kokoro-82m",

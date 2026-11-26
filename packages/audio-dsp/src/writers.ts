@@ -41,15 +41,18 @@ function cueText(t: string): string {
   return t.replace(/-->/g, "->").replace(/\n\s*\n/g, "\n");
 }
 
+/** SubRip text: numbered cues with comma millisecond stamps. */
 export function toSrt(segs: readonly Segment[]): string {
   return segs.map((s, i) => `${i + 1}\n${timestamp(s.start, true)} --> ${timestamp(s.end, true)}\n${cueText(s.text)}\n`).join("\n");
 }
 
+/** WebVTT text: a WEBVTT header, dot millisecond stamps, and `&` and `<` escaped in cue text. */
 export function toVtt(segs: readonly Segment[]): string {
   // WebVTT cue text is markup: & and < are escaped
   return "WEBVTT\n\n" + segs.map((s) => `${timestamp(s.start, false)} --> ${timestamp(s.end, false)}\n${cueText(s.text).replace(/&/g, "&amp;").replace(/</g, "&lt;")}\n`).join("\n");
 }
 
+/** The fields `toJson` writes: source, duration, model, language, stats, segments and dropped lines. */
 export interface TranscriptJson {
   source: string;
   duration: number;
@@ -84,6 +87,7 @@ export function lrcStamp(sec: number): string {
   return `${String(m).padStart(2, "0")}:${(sec % 60).toFixed(2).padStart(5, "0")}`;
 }
 
+/** Lrc lyrics: an optional `[ti:]` title line, then one `[mm:ss.xx]` line per segment start. */
 export function toLrc(lines: readonly Segment[], title?: string): string {
   let out = title ? `[ti:${title}]\n` : "";
   for (const l of lines) out += `[${lrcStamp(l.start)}]${l.text}\n`;
@@ -206,6 +210,7 @@ export function decodeWav(bytes: Uint8Array): { sampleRate: number; channels: Fl
   throw new Error("wav: no data chunk");
 }
 
+/** One note for `writeMidi`: start and duration in seconds, note number and velocity. */
 export interface MidiNote {
   /** Start, seconds. */
   t: number;
@@ -217,6 +222,7 @@ export interface MidiNote {
   v: number;
 }
 
+/** One track for `writeMidi`: a name, its notes, a General MIDI program, or drums on channel 10. */
 export interface MidiTrack {
   name: string;
   notes: readonly MidiNote[];
@@ -295,6 +301,7 @@ const CRC = (() => {
   return t;
 })();
 
+/** The CRC-32 of the bytes, as zip uses it. */
 export function crc32(b: Uint8Array): number {
   let c = 0xffffffff;
   for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]!) & 0xff]! ^ (c >>> 8);

@@ -24,6 +24,7 @@ export interface RenderedTimed {
   estimated: boolean;
 }
 
+/** A whole text rendered to mono samples, with the engine name and word and phoneme times. */
 export interface RenderedSpeech {
   /** Mono samples at `sampleRate`. */
   samples: Float32Array;
@@ -36,6 +37,7 @@ export interface RenderedSpeech {
   phonemes: RenderedTimed[];
 }
 
+/** Voice settings, text options, segment gap, abort signal and a skip callback for renderSpeech. */
 export interface RenderOptions {
   voice?: VoiceConfig;
   /** Per voice settings by engine id, merged over `voice`. */

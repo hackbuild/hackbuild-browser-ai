@@ -52,6 +52,7 @@ export function pocketRewrites(base: string, chunkGapSec = 0.1): Rewrite[] {
   ];
 }
 
+/** Build base, hashes, patch strictness, chunk gap, load timeout, voice and worker spawn options for pocketEngine. */
 export interface PocketOptions {
   base?: string;
   /** Fail the load when a rewrite matched nothing. Default true. */
@@ -73,6 +74,7 @@ export interface PocketOptions {
   clearTimeout?: (h: unknown) => void;
 }
 
+/** A PCM engine for Pocket TTS that can also clone a voice from a reference you supply. */
 export interface PocketEngine extends PcmEngine {
   /** Encode a caller supplied reference (any rate, mono) as voice "custom". Nothing is stored or bundled here. */
   cloneVoice(samples: Float32Array, rate: number): Promise<void>;
@@ -81,6 +83,7 @@ export interface PocketEngine extends PcmEngine {
 
 type Msg = { type?: string; data?: unknown; error?: string; voices?: unknown[]; defaultVoice?: string; sampleRate?: number; status?: string; text?: string };
 
+/** Pocket TTS (weights CC-BY-4.0) in a patched worker from the pinned community browser build. */
 export function pocketEngine(o: PocketOptions = {}): PocketEngine {
   const base = o.base ?? POCKET_SPACE_BASE;
   const st = o.setTimeout ?? ((fn, ms) => setTimeout(fn, ms));

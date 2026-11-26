@@ -7,23 +7,28 @@
 export interface AudioParamLike {
   value: number;
 }
+/** The part of an AudioNode the player connects. */
 export interface AudioNodeLike {
   connect(n: AudioNodeLike): unknown;
   disconnect?(): void;
 }
+/** The part of an AnalyserNode a level or lip sync driver reads. */
 export interface AnalyserLike extends AudioNodeLike {
   fftSize: number;
   getFloatTimeDomainData(a: Float32Array): void;
 }
+/** The part of an AudioBuffer the player fills. */
 export interface BufferLike {
   getChannelData(c: number): Float32Array;
 }
+/** The part of an AudioBufferSourceNode the player schedules. */
 export interface SourceLike extends AudioNodeLike {
   buffer: BufferLike | null;
   start(when: number): void;
   stop(when?: number): void;
   onended: ((ev: any) => unknown) | null; // any: the dom passes an Event, fakes pass nothing
 }
+/** The part of an AudioContext the player uses; tests pass a fake. */
 export interface AudioContextLike {
   readonly currentTime: number;
   readonly sampleRate: number;
@@ -36,6 +41,7 @@ export interface AudioContextLike {
   createGain(): AudioNodeLike & { gain: AudioParamLike };
 }
 
+/** Scheduling lead and fade length for the gapless player. */
 export interface PlayerOptions {
   /** Seconds ahead of now for a chunk that starts after a gap. Default 0.04. */
   lead?: number;
@@ -43,6 +49,7 @@ export interface PlayerOptions {
   fade?: number;
 }
 
+/** Plays PCM chunks back to back on one AudioContext through one gain and one analyser. */
 export class GaplessPlayer {
   readonly analyser: AnalyserLike;
   readonly gain: AudioNodeLike & { gain: AudioParamLike };

@@ -33,6 +33,7 @@ export interface SelfGate {
   readonly open: boolean;
 }
 
+/** Makes a SelfGate that closes while the character speaks and for `tailMs` after (default 400 ms). */
 export function selfGate(o: { tailMs?: number; now?: () => number } = {}): SelfGate {
   const tail = o.tailMs ?? 400;
   const now = o.now ?? (() => Date.now());
@@ -49,8 +50,10 @@ export function selfGate(o: { tailMs?: number; now?: () => number } = {}): SelfG
   };
 }
 
+/** The system recognizer's state: off, listening, unsupported or denied. */
 export type SpeechEngineState = "off" | "listening" | "unsupported" | "denied";
 
+/** Language, recognizer constructor, self gate, restart delay and callbacks for speechEngine. */
 export interface SpeechEngineOptions {
   lang?: string;
   /** Constructor; default globalThis.SpeechRecognition or webkitSpeechRecognition. */
@@ -66,6 +69,7 @@ export interface SpeechEngineOptions {
   onError?(error: string): void;
 }
 
+/** The system recognizer with start, stop and its state. */
 export interface SpeechEngine {
   start(): void;
   stop(): void;
@@ -149,6 +153,7 @@ export interface DictateTarget {
   dispatchEvent?(e: Event): boolean;
 }
 
+/** Writes interim words into a text field and commits or cancels them. */
 export interface Dictation {
   /** Show interim words after what the person had typed. */
   interim(i: Interim): void;

@@ -28,16 +28,19 @@ export interface TranscriptDoc {
 const said = (s: Seg) => (s.speaker ? `${s.speaker}: ${s.text}` : s.text);
 const r3 = (x: number) => +x.toFixed(3);
 
+/** Plain text with speaker labels leading their lines; a gap over 2 s starts a paragraph. */
 export function asTxt(segs: readonly Seg[]): string {
   return toTxt(segs.map((s) => ({ start: s.start, end: s.end, text: said(s) })));
 }
 
+/** SubRip text with speaker labels leading their lines. */
 export function asSrt(segs: readonly Seg[]): string {
   return toSrt(segs.map((s) => ({ start: s.start, end: s.end, text: said(s) })));
 }
 
 const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+/** WebVTT text with speakers as voice tags and cue text escaped. */
 export function asVtt(segs: readonly Seg[]): string {
   const cue = (s: Seg) => {
     const body = esc(s.text.replace(/-->/g, "->").replace(/\n\s*\n/g, "\n"));
@@ -79,6 +82,7 @@ export function baseName(name: string): string {
   return b || "transcript";
 }
 
+/** One source's row in `manifest.json`: its model, language and levels. */
 export interface ManifestFile {
   source: string;
   model: string;
@@ -90,6 +94,7 @@ export interface ManifestFile {
   outputs: string[];
 }
 
+/** The `manifest.json` that `bundle` writes into the zip. */
 export interface Manifest {
   tool: string;
   generated: string;

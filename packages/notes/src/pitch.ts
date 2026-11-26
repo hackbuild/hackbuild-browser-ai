@@ -9,15 +9,25 @@
 
 import type { Factory, ModelRecord } from "@hackbuild/models";
 
+/** Sample rate Basic Pitch takes, 22050 Hz. */
 export const BP_RATE = 22050;
+/** Samples between frames inside a window, 256. */
 export const BP_FFT_HOP = 256;
+/** Frames per second inside a window, 86 (the 22050 Hz rate over the 256 sample hop, floored). */
 export const BP_FPS = Math.floor(BP_RATE / BP_FFT_HOP);
+/** Samples in one model window, 43844. */
 export const BP_WINDOW = BP_RATE * 2 - BP_FFT_HOP;
+/** Samples two windows share, 7680 (30 frames). */
 export const BP_OVERLAP = 30 * BP_FFT_HOP;
+/** Half the overlap, 3840 samples, the zero lead pad before the first window. */
 export const BP_OVERLAP_HALF = Math.floor(BP_OVERLAP / 2);
+/** Samples between window starts, 36164. */
 export const BP_HOP = BP_WINDOW - BP_OVERLAP;
+/** Frames dropped off each end of a window, 15. */
 export const BP_TRIM = 15;
+/** Frames the model returns per window, 172. */
 export const BP_ROWS = 172;
+/** Pitch bins per frame, 88, from MIDI 21 (A0). */
 export const BP_BINS = 88;
 /** Frames kept per window after the trim. */
 export const BP_KEPT = BP_ROWS - 2 * BP_TRIM;
@@ -45,6 +55,7 @@ export interface PitchModel {
   dispose?(): unknown;
 }
 
+/** The models hub record for Spotify's Basic Pitch graph (weights Apache-2.0) on tfjs, webgl in batches of 4, else cpu in batches of 1. */
 export const BASIC_PITCH: ModelRecord = {
   id: "basic-pitch",
   label: "basic pitch (spotify)",
@@ -82,6 +93,12 @@ export function isShaderFailure(e: unknown): boolean {
   return ["shader", "gett1", "overloaded", "webgl", "compile"].some((k) => m.includes(k));
 }
 
+/**
+ * A models hub factory for the tfjs provider that loads the Basic Pitch
+ * graph and returns a PitchModel. You pass tfjs in through `runtime`. On
+ * webgl it sets WEBGL_SIZE_UPLOAD_UNIFORM to 0 and reads only the frames
+ * and onsets outputs.
+ */
 export function tfjsPitchProvider(opts: { runtime: () => Promise<Tfjs> }): Factory<PitchModel> {
   return async ({ record, rung }) => {
     const tf = await opts.runtime();
@@ -144,6 +161,7 @@ export async function runPitch(
   return { frames, onsets };
 }
 
+/** A note or drum hit: start and length in seconds, MIDI note, velocity, and the drum name for hits. */
 export interface Note {
   /** Seconds. */
   t: number;

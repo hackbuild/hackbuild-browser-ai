@@ -18,6 +18,7 @@ interface Edit {
   repl: string;
 }
 
+/** A lexicon of whole word replacements and the word read in place of a bare URL. */
 export interface SpeakableOptions {
   /** Whole word replacements, e.g. { "hack.build": "hack dot build", AuDHD: "A U D H D" }. */
   lexicon?: Record<string, string>;
@@ -92,6 +93,7 @@ export function speakable(input: string, o: SpeakableOptions = {}): Speakable {
   return { text, map: Int32Array.from(map) };
 }
 
+/** One cut of the reply: its index, its text and its offsets in the input. */
 export interface Segment {
   index: number;
   /** The input text of this segment. */
@@ -101,6 +103,7 @@ export interface Segment {
   end: number;
 }
 
+/** Where SegmentCutter may end the first segment and how long later ones may grow. */
 export interface CutterOptions {
   /** The first segment may end at a clause boundary once this long. Default 24. */
   firstClause?: number;

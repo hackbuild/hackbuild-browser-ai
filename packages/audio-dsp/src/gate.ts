@@ -23,10 +23,12 @@ export interface GateOptions {
   minDur?: number;
 }
 
+/** A speech region in samples, end exclusive. */
 export type Region = [start: number, end: number];
 
 const round = Math.round;
 
+/** Speech regions from frame levels in dB: open after `on` frames above `threshold`, close after `off` below, then pad, merge and drop short ones. */
 export function gate(db: ArrayLike<number>, threshold: number, nSamples: number, o: GateOptions = {}): Region[] {
   const hop = o.hop ?? 160;
   const frame = o.frame ?? 400;

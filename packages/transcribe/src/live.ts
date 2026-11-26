@@ -165,6 +165,7 @@ export function blockDb(x: Float32Array): number {
   return 10 * Math.log10(s / Math.max(1, x.length) + 1e-12);
 }
 
+/** Cuts live audio blocks into 16 kHz speech segments, by the gate closing or by a fixed window, and hands each to `onSegment`. */
 export class LiveSegmenter {
   private buf: Float32Array;
   private len = 0;

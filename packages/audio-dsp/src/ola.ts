@@ -11,6 +11,7 @@ export interface Segment {
   len: number;
 }
 
+/** Segment starts and lengths over `total` samples for a model that takes `size` samples, with the stride and fade that `overlap` (0 to 0.6) gives. */
 export function planSegments(total: number, size: number, overlap: number): { segments: Segment[]; stride: number; fade: number } {
   const ov = Math.max(0, Math.min(0.6, overlap));
   const stride = Math.max(1, Math.floor(size * (1 - ov)));

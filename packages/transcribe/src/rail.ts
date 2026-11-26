@@ -10,6 +10,7 @@
 import { gate, gateThreshold, type Region } from "@hackbuild/audio-dsp";
 import { FRAME, HOP, SR, type Analysis } from "./frontend.js";
 
+/** Frame levels of a file with the floor, the gate threshold and which frames the gate kept, for drawing and regating. */
 export interface LevelRail {
   sampleRate: number;
   /** Samples per frame step. */
@@ -78,6 +79,7 @@ export function regate(rail: LevelRail, o: { vadMargin?: number; skipSilence?: b
   return { ...rail, thr: new Float32Array(rail.db.length).fill(thrDb), thrDb, marginDb: margin, regions, open: openFrames(regions, rail.db.length, rail.hop), forced };
 }
 
+/** A rail folded to bins: the loudest level and the kept share per bin. */
 export interface RailBins {
   /** Loudest frame per bin, dBFS. */
   db: Float32Array;

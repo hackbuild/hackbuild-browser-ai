@@ -18,6 +18,7 @@ const asr = (r: Omit<ModelRecord, "provides" | "provider" | "sizeSource" | "comm
   ...r,
 });
 
+/** The Whisper and Moonshine model records for the models hub. */
 export const TRANSCRIBE_RECORDS: ModelRecord[] = [
   asr({
     id: "whisper-large-v3-turbo",

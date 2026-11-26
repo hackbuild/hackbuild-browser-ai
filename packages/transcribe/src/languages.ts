@@ -8,6 +8,7 @@
 
 import type { ModelRecord } from "@hackbuild/models";
 
+/** A language for the select: a Whisper code or "auto", and a lowercase name. */
 export interface Language {
   /** Whisper language code, or "auto". */
   code: string;
@@ -48,6 +49,7 @@ export function englishOnly(model: Pick<ModelRecord, "notes" | "source"> | strin
   return typeof model !== "string" && (model.notes?.some((n) => /english only/i.test(n)) ?? false);
 }
 
+/** What a language select offers for a model, whether it is locked, its value and the reason. */
 export interface LanguageChoice {
   options: readonly Language[];
   /** The select is disabled and forced to english. */

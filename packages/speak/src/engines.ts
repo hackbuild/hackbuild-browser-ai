@@ -56,6 +56,7 @@ export interface KokoroModule {
   };
 }
 
+/** The kokoro-js loader, model id, device, voice and the GPL phonemizer opt in for kokoroEngine. */
 export interface KokoroOptions {
   /** Loads kokoro-js, e.g. runtimeLoader(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]) from @hackbuild/devices. */
   runtime: () => Promise<KokoroModule>;
@@ -119,6 +120,7 @@ export interface SynthLike {
   cancel(): void;
   getVoices(): { name: string; lang: string }[];
 }
+/** The part of SpeechSynthesisUtterance the system voice engine sets. */
 export interface UtteranceLike {
   text: string;
   rate: number;

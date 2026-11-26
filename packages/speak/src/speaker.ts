@@ -12,6 +12,7 @@ import { estimateWordTimes, SegmentCutter, speakable, type CutterOptions, type S
 import { renderSpeech, type RenderedSpeech } from "./render.js";
 import type { Engine, EngineStatus, PcmChunk, PcmEngine, Timed, VoiceConfig } from "./types.js";
 
+/** How far the voice has got, as an offset in the utterance's input text. */
 export interface Progress {
   utterance: number;
   /** Offset in the utterance's input text. */
@@ -34,11 +35,13 @@ export interface TimedEvent {
   estimated: boolean;
 }
 
+/** The timer functions the speaker uses; tests pass fakes. */
 export interface Timers {
   setTimeout(fn: () => void, ms: number): unknown;
   clearTimeout(h: unknown): void;
 }
 
+/** The audio context, engine chain, voice settings and callbacks for a speaker. */
 export interface SpeakerOptions {
   ctx: AudioContextLike;
   /** Tried in order; a failed engine is skipped until resetEngines(). */
@@ -73,6 +76,7 @@ const defaultTimers: Timers = { setTimeout: (fn, ms) => setTimeout(fn, ms), clea
 
 class Watchdog extends Error {}
 
+/** Speaks a streaming reply through an engine chain and reports progress as offsets in your text. */
 export class Speaker {
   readonly player: GaplessPlayer;
   private readonly o: SpeakerOptions;
@@ -454,6 +458,7 @@ export class Speaker {
   }
 }
 
+/** Makes a Speaker from its options. */
 export function createSpeaker(o: SpeakerOptions): Speaker {
   return new Speaker(o);
 }

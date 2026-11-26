@@ -26,6 +26,7 @@ export interface BellowsSpan {
   end: number;
 }
 
+/** Voice, seed, sample rate, rate, pitch, accent and tail for one bellows-voice render. */
 export interface BellowsRenderOptions {
   voice?: string;
   seed: string;
@@ -36,6 +37,7 @@ export interface BellowsRenderOptions {
   tail?: number;
 }
 
+/** Samples, sample rate and phoneme spans from one bellows-voice render. */
 export interface BellowsRender {
   samples: Float32Array;
   sampleRate: number;
@@ -132,6 +134,7 @@ export function renderSpeechFrom(p: BellowsParts): BellowsVoiceModule {
   };
 }
 
+/** The bellows-voice loader, random source, voice, accent, sample rate and an optional render override. */
 export interface BellowsOptions {
   /** Loads bellows-voice/engine (it imports bellowsjs 0.5.x itself), e.g. through runtimeLoader. */
   runtime: () => Promise<BellowsVoiceModule>;
@@ -165,6 +168,7 @@ export function spansToPhonemes(spans: readonly BellowsSpan[], textLength: numbe
   return out;
 }
 
+/** The bellows-voice articulatory voice as a PCM engine, with no weights and exact phoneme times. */
 export function bellowsEngine(o: BellowsOptions): PcmEngine {
   let mod: BellowsVoiceModule | null = null;
   const seed = seedFrom(o.rng);

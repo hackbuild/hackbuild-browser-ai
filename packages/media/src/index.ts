@@ -6,6 +6,7 @@
  * and workers can pass their own.
  */
 
+/** Audio decoded and resampled by {@link decodeAudio}: one Float32Array per channel at sampleRate. */
 export interface DecodedAudio {
   sampleRate: number;
   channels: Float32Array[];
@@ -20,6 +21,7 @@ interface AudioBufferLike {
   getChannelData(c: number): Float32Array;
 }
 
+/** The part of OfflineAudioContext that {@link decodeAudio} calls; tests and workers pass their own. */
 export interface OfflineCtxLike {
   decodeAudioData(b: ArrayBuffer): Promise<AudioBufferLike>;
   createBufferSource(): { buffer: AudioBufferLike | null; connect(d: unknown): void; start(): void };
@@ -27,6 +29,7 @@ export interface OfflineCtxLike {
   startRendering(): Promise<AudioBufferLike>;
 }
 
+/** A constructor of an {@link OfflineCtxLike}, with the OfflineAudioContext arguments. */
 export type OfflineCtor = new (channels: number, length: number, sampleRate: number) => OfflineCtxLike;
 
 /** Decode and resample with the browser's decoder (as earlier builds did). Names the failure when the browser refuses the container. */
@@ -112,6 +115,7 @@ export function sampleTimes(duration: number, step = 1): number[] {
   return out;
 }
 
+/** MIME types {@link pickMime} tries in order: vp9, vp8, plain webm, then mp4. */
 export const RECORDER_TYPES = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4;codecs=avc1,mp4a", "video/mp4"];
 
 /** The first type the recorder supports, or "" for the browser default. */

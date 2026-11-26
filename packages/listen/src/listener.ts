@@ -14,8 +14,10 @@ import { stablePrefix, type Interim } from "./interim.js";
 /** Turns 16 kHz mono speech into text. */
 export type Transcriber = (pcm16k: Float32Array, signal?: AbortSignal) => Promise<string>;
 
+/** Where the listener is: idle, listening, hearing speech, transcribing or stopped. */
 export type ListenState = "idle" | "listening" | "hearing" | "transcribing" | "stopped";
 
+/** One utterance: its text, its 16 kHz audio, its length, whether it was a barge in and any dropped text. */
 export interface Utterance {
   text: string;
   pcm: Float32Array;
@@ -26,6 +28,7 @@ export interface Utterance {
   dropped?: string;
 }
 
+/** The VAD source, transcriber, input rate, machine settings, interim settings and callbacks for a listener. */
 export interface ListenerOptions {
   vad: VadSource;
   transcribe?: Transcriber;
@@ -56,6 +59,7 @@ export interface ListenerOptions {
   onError?(e: unknown): void;
 }
 
+/** Turns microphone blocks into utterances through a VAD state machine, a transcriber and the phantom text filter. */
 export class Listener {
   readonly machine: VadMachine;
   private readonly o: ListenerOptions;
@@ -230,6 +234,7 @@ export class Listener {
   }
 }
 
+/** Makes a Listener from its options. */
 export function createListener(o: ListenerOptions): Listener {
   return new Listener(o);
 }

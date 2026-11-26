@@ -17,6 +17,7 @@ export interface Timed {
   phoneme?: string;
 }
 
+/** A run of samples from a PCM engine, with any word or phoneme times inside it. */
 export interface PcmChunk {
   samples: Float32Array;
   sampleRate: number;
@@ -25,6 +26,7 @@ export interface PcmChunk {
   phonemes?: Timed[];
 }
 
+/** A status line from an engine: loading, ready, failed, a missed patch, a watchdog trip or its licence. */
 export interface EngineStatus {
   engine: string;
   kind: "loading" | "ready" | "failed" | "patch-missed" | "watchdog" | "licence";
@@ -32,11 +34,13 @@ export interface EngineStatus {
   progress?: number;
 }
 
+/** The abort signal and status callback passed to an engine's load. */
 export interface LoadContext {
   signal?: AbortSignal;
   onStatus?: (s: EngineStatus) => void;
 }
 
+/** An engine that yields samples for the shared player. */
 export interface PcmEngine {
   readonly kind: "pcm";
   readonly id: string;
@@ -50,6 +54,7 @@ export interface PcmEngine {
   dispose?(): void;
 }
 
+/** An engine that plays through the platform itself and reports word boundaries. */
 export interface NativeEngine {
   readonly kind: "native";
   readonly id: string;
@@ -66,4 +71,5 @@ export interface NativeEngine {
   voices?(): string[];
 }
 
+/** Any engine the speaker can chain: PCM or native. */
 export type Engine = PcmEngine | NativeEngine;

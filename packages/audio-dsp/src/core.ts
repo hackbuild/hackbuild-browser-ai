@@ -2,6 +2,7 @@
 // Every method copies its input into wasm memory, runs one kernel and
 // copies the result out, so callers keep plain Float32Arrays.
 
+/** Where `loadDsp` gets the wasm core: a URL to fetch, the bytes, or the inlined base64. */
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
 type Ptr = number;
@@ -42,6 +43,7 @@ interface Exports {
   ad_vowel(n: number, sr: number, f0: number, f1: number, f2: number, f3: number, out: Ptr): void;
 }
 
+/** The biquad shapes `Dsp.biquad` builds. */
 export type FilterKind = "highpass" | "lowpass" | "bandpass";
 const KIND: Record<FilterKind, number> = { highpass: 0, lowpass: 1, bandpass: 2 };
 
@@ -51,6 +53,7 @@ export interface Formant {
   bw: number;
 }
 
+/** One onset from `Dsp.pickOnsets`: the attack foot frame, the novelty peak frame and its strength. */
 export interface Onset {
   /** Frame of the attack foot. */
   frame: number;

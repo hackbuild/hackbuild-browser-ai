@@ -3,8 +3,10 @@ import { BASIC_PITCH, BP_BINS, BP_ROWS, type PitchModel } from "./pitch.js";
 
 export * from "./pitch.js";
 export { drumNotes, estimateTempo, fitGridToNotes, DRUM_BANDS, GM_DRUMS } from "./drums.js";
+/** `writeMidi` and `MidiTrack` from @hackbuild/audio-dsp, re-exported for MIDI out. */
 export { writeMidi, type MidiTrack } from "@hackbuild/audio-dsp";
 
+/** Add the Basic Pitch record to a models hub's registry. */
 export function attachNotes(hub: Hub): void {
   hub.registry.add(BASIC_PITCH);
 }
@@ -26,6 +28,7 @@ export function stubPitch(): PitchModel {
   };
 }
 
+/** Stub builders for the models hub: the `notes` capability returns `stubPitch()`. */
 export function notesStubs(): Record<string, (r: ModelRecord) => unknown> {
   return { notes: () => stubPitch() };
 }

@@ -16,6 +16,7 @@ export interface Thresholds {
   minSpeechMs: number;
 }
 
+/** Frame size, idle and talking thresholds, end of speech quiet, pre speech pad and longest utterance for VadMachine. */
 export interface VadOptions {
   /** Samples per frame at 16 kHz. Default 512 (32 ms), Silero v5's frame. */
   frame?: number;
@@ -30,6 +31,7 @@ export interface VadOptions {
   maxSec?: number;
 }
 
+/** What VadMachine reports: a start, a confirmed utterance (a barge in while talking), an end with its audio, or a misfire. */
 export type VadEvent =
   | { type: "start" }
   /** Enough speech heard; while talking this is the barge in. */
@@ -37,11 +39,14 @@ export type VadEvent =
   | { type: "end"; audio: Float32Array; speech: [number, number][]; sec: number }
   | { type: "misfire" };
 
+/** Thresholds while the character is quiet: positive 0.5, negative 0.35, 250 ms of speech. */
 export const IDLE: Thresholds = { positive: 0.5, negative: 0.35, minSpeechMs: 250 };
+/** Stricter thresholds while the character talks: positive 0.85, negative 0.6, 450 ms of speech. */
 export const TALKING: Thresholds = { positive: 0.85, negative: 0.6, minSpeechMs: 450 };
 /** Machine options for a spoken conversation: a longer pause ends a turn, so a breath mid sentence does not (900 ms, vendor). */
 export const CONVERSATION: VadOptions = { redemptionMs: 900 };
 
+/** Finds utterances in per frame speech probabilities and swaps to stricter thresholds while the character talks. */
 export class VadMachine {
   readonly frame: number;
   private readonly o: Required<Omit<VadOptions, "frame">>;
@@ -198,6 +203,7 @@ export interface OrtLike {
   Tensor: new (type: string, data: Float32Array | BigInt64Array, dims: number[]) => unknown;
   InferenceSession: { create(model: ArrayBuffer | Uint8Array, o?: Record<string, unknown>): Promise<OrtSessionLike> };
 }
+/** The part of an onnxruntime-web InferenceSession the Silero source runs. */
 export interface OrtSessionLike {
   run(feeds: Record<string, unknown>): Promise<Record<string, { data: ArrayLike<number> }>>;
 }
