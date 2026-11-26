@@ -15,7 +15,7 @@
     "build": "npm run build --workspaces --if-present && node tools/bundle.mjs",
     "test": "vitest run && node --test tools/test/*.test.mjs",
     "typecheck": "tsc -b && tsc -p examples && tsc -p tsconfig.how.json",
-    "lint:voice": "git ls-files | grep -Ev '\\.(png|jpe?g|glb|bin|wasm|wav)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock' | xargs node tools/lint-voice.mjs",
+    "lint:voice": "git ls-files | grep -Ev '\\.(png|jpe?g|glb|bin|wasm|wav)$|^(LICENSES/|RULES.md|CLAUDE.md|tools/)|package-lock.json|Cargo.lock|^docs/llms-full.txt$' | xargs node tools/lint-voice.mjs",
     "bundle": "node tools/bundle.mjs",
     "examples": "node tools/build-pages.mjs && node tools/build-views.mjs",
     "examples:check": "node tools/check-examples.mjs",
@@ -23,7 +23,10 @@
     "lint:packages": "node tools/lint-packages.mjs",
     "release:dry": "node tools/lint-packages.mjs && node tools/release-plan.mjs",
     "ui:check": "node tools/vendor/pin-ui.mjs --check",
-    "check:origin": "node tools/check-origin.mjs"
+    "check:origin": "node tools/check-origin.mjs",
+    "docs": "node tools/api-docs.mjs && node tools/llms.mjs",
+    "docs:check": "node tools/check-readme.mjs && node tools/api-docs.mjs --check && node tools/llms.mjs --check",
+    "docs:site": "node tools/build-pages.mjs && node tools/build-docs.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
