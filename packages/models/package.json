@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/models",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Model registry records with device and dtype ladders, quirks and weight licences, and a hub that routes, loads under a memory budget and serializes GPU work.",
   "type": "module",
   "license": "MIT",
@@ -33,6 +33,6 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/ai-env": "0.1.1"
+    "@hackbuild/ai-env": "0.1.2"
   }
 }

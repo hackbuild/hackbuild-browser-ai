@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/character",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Character Card V2 and V3 read and write as JSON, PNG text chunks and CHARX archives in a Rust wasm core, with a versioned profile extension for avatar, voice and action vocabulary, macros and lorebook matching.",
   "type": "module",
   "license": "MIT",

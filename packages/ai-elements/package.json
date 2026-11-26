@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/ai-elements",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Deprecated: use @hackbuild/ai-views. Re-exports its custom elements and notes the deprecation once on define().",
   "type": "module",
   "license": "MIT",
@@ -33,7 +33,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/ai-views": "0.1.0"
+    "@hackbuild/ai-views": "0.1.1"
   },
   "peerDependencies": {
     "@virgilvox/hackbuild-ui": ">=0.10.0 <0.11.0"

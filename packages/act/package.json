@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/act",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Speech timeline action grammar: mood, gesture and posture tags placed in spoken text fire when the voice reaches them, with names constrained per avatar, a strict resolver, a grammar for constrained decoding and a sentence inferrer.",
   "type": "module",
   "license": "MIT",
@@ -33,10 +33,10 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/structured": "0.1.1"
+    "@hackbuild/structured": "0.1.2"
   },
   "peerDependencies": {
-    "@hackbuild/memory": "0.1.2"
+    "@hackbuild/memory": "0.1.3"
   },
   "peerDependenciesMeta": {
     "@hackbuild/memory": {

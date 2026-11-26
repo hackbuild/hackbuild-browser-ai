@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/chat",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "One streaming chat interface over WebLLM, wllama, transformers.js, the Chrome Prompt API and remote OpenAI compatible and Anthropic endpoints, with role normalization, think stripping and schema fallback.",
   "type": "module",
   "license": "MIT",
@@ -53,7 +53,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/converse": "0.1.1"
+    "@hackbuild/converse": "0.1.2"
   },
   "peerDependencies": {
     "@mlc-ai/web-llm": "0.2.84",

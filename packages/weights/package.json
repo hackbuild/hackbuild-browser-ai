@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/weights",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "One weight store over OPFS, Cache Storage and IndexedDB parts with resumable Range downloads and SHA-256 checks.",
   "type": "module",
   "license": "MIT",

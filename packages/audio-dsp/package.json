@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/audio-dsp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Speech and music DSP in a Rust wasm core (simd128): biquads, dc block, frame levels, noise floor, VAD gate, spectral subtraction, limiter, resampling, STFT, onsets, tempo and grid fit; with WAV, MIDI, srt, vtt, lrc and zip writers and an overlap add planner in TS.",
   "type": "module",
   "license": "MIT",

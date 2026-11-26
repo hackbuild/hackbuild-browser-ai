@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/agent",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An agent turn for small in-tab models: perceive, recall, decide, act, reflect; a tool loop with forced JSON, guards and a reflex fallback brain, persistent goals with dry planners, budgeted context and a plan cache.",
   "type": "module",
   "license": "MIT",
@@ -33,8 +33,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/chat": "0.1.1",
-    "@hackbuild/structured": "0.1.1",
-    "@hackbuild/memory": "0.1.2"
+    "@hackbuild/chat": "0.1.2",
+    "@hackbuild/structured": "0.1.2",
+    "@hackbuild/memory": "0.1.3"
   }
 }

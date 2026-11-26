@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/depth-mesh",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Depth to geometry in a Rust wasm core (simd128): point clouds with normals, relief heightfields and closed meshes, surface nets, point to plane ICP against a voxel model, silhouette space carving; STL, OBJ and PLY export in TS.",
   "type": "module",
   "license": "MIT",

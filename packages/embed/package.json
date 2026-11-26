@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/embed",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Sentence embedders for in-tab memory and action matching: a model2vec static embedder in plain TypeScript and a transformers.js MiniLM adapter, both with a stable fingerprint id.",
   "type": "module",
   "license": "MIT",
@@ -33,8 +33,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@hackbuild/memory": "0.1.2",
-    "@hackbuild/models": "0.2.0",
-    "@hackbuild/devices": "0.1.2"
+    "@hackbuild/memory": "0.1.3",
+    "@hackbuild/models": "0.2.1",
+    "@hackbuild/devices": "0.1.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@hackbuild/media",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Media in a tab: decode a file's audio at any rate (16 kHz by default) with every channel kept, keyframe sampling by scene change, and canvas and stream recording with a codec ladder.",
   "type": "module",
   "license": "MIT",
