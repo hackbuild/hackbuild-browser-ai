@@ -8,12 +8,14 @@
 import type { ChatEngine, ChatMessage } from "@hackbuild/chat";
 import { statsText } from "@virgilvox/hackbuild-ui/vanilla";
 
+/** A memory recalled for a reply, with its label and score. */
 export interface MemoryUsed {
   label: string;
   /** 0 to 1, shown beside the label. */
   score?: number;
 }
 
+/** One chat turn: role, text, reasoning, time, whether it is done, memory used, stats and a note. */
 export interface Turn {
   id: number;
   role: "user" | "assistant";
@@ -30,6 +32,7 @@ export interface Turn {
   note?: string;
 }
 
+/** What a thread shows: its turns, whether a reply streams, and whether an engine is set. */
 export interface ThreadSnapshot {
   turns: readonly Turn[];
   busy: boolean;
@@ -37,6 +40,10 @@ export interface ThreadSnapshot {
   ready: boolean;
 }
 
+/**
+ * Options for `chatThread` and `chatList`: engine, system prompt, memory recall, the no engine
+ * reply, clock and reply token cap.
+ */
 export interface ThreadOptions {
   engine?: ChatEngine | null;
   system?: string;
@@ -49,6 +56,7 @@ export interface ThreadOptions {
   maxTokens?: number;
 }
 
+/** A chat thread: send, stop, regenerate, remove and clear turns, set the engine, and export as markdown. */
 export interface ChatThread {
   snapshot(): ThreadSnapshot;
   subscribe(fn: (s: ThreadSnapshot) => void): () => void;
@@ -63,8 +71,10 @@ export interface ChatThread {
   markdown(title?: string): string;
 }
 
+/** What a reply says when no chat engine is set. */
 export const NO_ENGINE = "this needs a model. pick one in the bar and load it.";
 
+/** Creates a chat thread that streams replies from an engine, with optional memory recall per message. */
 export function chatThread(o: ThreadOptions = {}): ChatThread {
   let engine = o.engine ?? null;
   const now = o.now ?? (() => Date.now());
@@ -177,6 +187,7 @@ export function chatThread(o: ThreadOptions = {}): ChatThread {
   };
 }
 
+/** One chat in a chat list: id, title, last update and turn count. */
 export interface ChatListItem {
   id: string;
   title: string;
@@ -184,13 +195,14 @@ export interface ChatListItem {
   count: number;
 }
 
+/** The chats of a list, newest first, and the id of the open one. */
 export interface ChatListSnapshot {
   items: readonly ChatListItem[];
   current: string;
 }
 
 /**
- * Several chats, as clevis keeps them: a list with the newest first, one
+ * Several chats: a list with the newest first, one
  * open. `thread` always speaks for the open chat, so a pane and a composer
  * bound to it follow a switch.
  */
@@ -205,6 +217,10 @@ export interface ChatList {
   setEngine(engine: ChatEngine | null): void;
 }
 
+/**
+ * Creates a list of chat threads, newest first, with one open; its `thread` always speaks for the
+ * open chat.
+ */
 export function chatList(o: ThreadOptions = {}): ChatList {
   const now = o.now ?? (() => Date.now());
   let engine = o.engine ?? null;

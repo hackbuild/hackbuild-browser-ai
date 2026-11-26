@@ -56,6 +56,7 @@ export const ELEMENT_NAMES = [
   "camera-feed",
   "memory-inspector",
 ] as const;
+/** A tag name `define` registers, before any prefix. */
 export type ElementName = (typeof ELEMENT_NAMES)[number];
 
 /** The element a `for` attribute names, once it is upgraded. */
@@ -86,6 +87,10 @@ function shell(B: Base) {
   };
 }
 
+/**
+ * The `<model-select>` element: set `pick`, `env`, `loader` or `records` on it before or after it
+ * connects.
+ */
 export interface ModelSelectElement extends HTMLElement {
   pick: ModelPick;
   env: Env | undefined;
@@ -365,6 +370,7 @@ function classes(B: Base): Record<ElementName, CustomElementConstructor> {
   };
 }
 
+/** The part of a custom element registry `define` uses; `customElements` satisfies it. */
 export interface DefineTarget {
   get(name: string): unknown;
   define(name: string, ctor: CustomElementConstructor): void;

@@ -15,6 +15,7 @@ export interface FrameBox {
   score?: number;
 }
 
+/** Landmark points to draw on a frame, with the index pairs to join and a label. */
 export interface FrameLandmarks {
   points: { x: number; y: number }[];
   /** Index pairs to join with lines. */
@@ -22,6 +23,7 @@ export interface FrameLandmarks {
   label?: string;
 }
 
+/** What to draw on a frame: boxes, landmarks, a caption and a corner tag. */
 export interface FrameResults {
   boxes?: FrameBox[];
   landmarks?: FrameLandmarks[];

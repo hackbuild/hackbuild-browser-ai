@@ -22,10 +22,12 @@ const GROUPS: Record<string, ModelRowGroup> = {
   own: "own",
 };
 
+/** Whether a record has nothing to download: a built in, system or zero size model. */
 export function isNoDownload(r: ModelRecord): boolean {
   return !!r.noDownload || r.sizeMB === 0 || r.provider === "prompt-api" || r.provider === "system";
 }
 
+/** Whether a record's censorship is "uncensored" or "abliterated". */
 export function isUncensored(r: ModelRecord): boolean {
   return r.censorship === "uncensored" || r.censorship === "abliterated";
 }
@@ -101,6 +103,10 @@ export function optionsOf(r: ModelRecord, values: Record<string, string> = {}, e
   return [...out, ...extra];
 }
 
+/**
+ * What a row needs beyond its record: env, storage estimate, load state and progress, option
+ * values, job options, and whether the person added it.
+ */
 export interface RowContext {
   env?: Env | undefined;
   estimate?: StorageEstimate | null | undefined;

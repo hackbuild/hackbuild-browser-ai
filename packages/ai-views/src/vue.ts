@@ -40,6 +40,7 @@ function hosted<P>(setupMount: (host: HTMLElement, props: P, emit: Emit) => Moun
   };
 }
 
+/** Vue component for a model picker of one job; emits `pick`, `choose`, `loaded` and `failed`. */
 export const ModelSelect = defineComponent({
   name: "ModelSelect",
   props: {
@@ -71,6 +72,7 @@ export const ModelSelect = defineComponent({
   ),
 });
 
+/** Vue component for the turns of a chat thread. */
 export const ChatPane = defineComponent({
   name: "ChatPane",
   props: {
@@ -85,12 +87,14 @@ export const ChatPane = defineComponent({
   ),
 });
 
+/** Vue component for the message box of a chat thread. */
 export const Composer = defineComponent({
   name: "Composer",
   props: { thread: { type: Object as PropType<ChatThread>, required: true }, placeholder: { type: String, default: "say something" } },
   setup: hosted<{ thread: ChatThread; placeholder: string }>((host, p) => mountComposer(host, p.thread, { placeholder: p.placeholder }), (p) => [p.thread]),
 });
 
+/** Vue component for the drop zone that becomes the transcript; emits `sample`. */
 export const TranscribeDrop = defineComponent({
   name: "TranscribeDrop",
   props: {
@@ -105,12 +109,17 @@ export const TranscribeDrop = defineComponent({
   ),
 });
 
+/** Vue component for the selected transcript, or its export buttons when `exports` is set. */
 export const TranscriptView = defineComponent({
   name: "TranscriptView",
   props: { queue: { type: Object as PropType<Queue>, required: true }, exports: { type: Boolean, default: false } },
   setup: hosted<{ queue: Queue; exports: boolean }>((host, p) => (p.exports ? mountTranscriptExports(host, p.queue) : mountTranscriptView(host, p.queue)), (p) => [p.queue, p.exports]),
 });
 
+/**
+ * Vue component for a mask studio; emits `studio` with the mounted studio and `sample` when the
+ * sample button is pressed.
+ */
 export const MaskStudio = defineComponent({
   name: "MaskStudio",
   props: { models: { type: Object as PropType<MaskModels>, default: () => ({}) }, sampleLabel: { type: String, default: "" } },
@@ -134,18 +143,21 @@ export const MaskStudio = defineComponent({
   },
 });
 
+/** Vue component for the tool rail of a mask studio. */
 export const MaskTools = defineComponent({
   name: "MaskTools",
   props: { studio: { type: Object as PropType<Studio>, required: true } },
   setup: hosted<{ studio: Studio }>((host, p) => mountMaskTools(host, p.studio), (p) => [p.studio]),
 });
 
+/** Vue component for the undo, redo and zoom row of a mask studio. */
 export const MaskVerbs = defineComponent({
   name: "MaskVerbs",
   props: { studio: { type: Object as PropType<Studio>, required: true } },
   setup: hosted<{ studio: Studio }>((host, p) => mountMaskVerbs(host, p.studio), (p) => [p.studio]),
 });
 
+/** Vue component for one rack part of a mask studio: found, mask, saved or export. */
 export const MaskRack = defineComponent({
   name: "MaskRack",
   props: {
@@ -156,6 +168,7 @@ export const MaskRack = defineComponent({
   setup: hosted<{ studio: Studio; part: "found" | "mask" | "saved" | "export"; name: string }>((host, p) => mountMaskRack(host, p.studio, p.part, { name: p.name }), (p) => [p.studio, p.part]),
 });
 
+/** Vue component for a jobs rack: a line per job, presets and load all. */
 export const ModelJobs = defineComponent({
   name: "ModelJobs",
   props: {
@@ -165,12 +178,14 @@ export const ModelJobs = defineComponent({
   setup: hosted<{ jobs: JobsPick; go: boolean }>((host, p) => mountModelJobs(host, p.jobs, { go: p.go }), (p) => [p.jobs, p.go]),
 });
 
+/** Vue component for the file list of a transcribe queue. */
 export const TranscribeQueue = defineComponent({
   name: "TranscribeQueue",
   props: { queue: { type: Object as PropType<Queue>, required: true } },
   setup: hosted<{ queue: Queue }>((host, p) => mountTranscribeQueue(host, p.queue), (p) => [p.queue]),
 });
 
+/** Vue component that shows a recall trace as a table. */
 export const MemoryInspector = defineComponent({
   name: "MemoryInspector",
   props: { recall: { type: Object as PropType<RecallLike | null>, default: null } },
@@ -187,18 +202,24 @@ export const MemoryInspector = defineComponent({
   },
 });
 
+/** Vue component for the chat list rail of a `chatList`. */
 export const ChatList = defineComponent({
   name: "ChatList",
   props: { list: { type: Object as PropType<ChatListState>, required: true }, label: { type: String, default: "chats" } },
   setup: hosted<{ list: ChatListState; label: string }>((host, p) => mountChatList(host, p.list, { label: p.label }), (p) => [p.list]),
 });
 
+/** Vue component that shows what the next request carries against the context budget. */
 export const ContextMeter = defineComponent({
   name: "ContextMeter",
   props: { thread: { type: Object as PropType<ChatThread>, required: true }, budget: { type: Number, default: 4096 }, system: { type: String, default: "" } },
   setup: hosted<{ thread: ChatThread; budget: number; system: string }>((host, p) => mountContextMeter(host, p.thread, { budget: () => p.budget, system: () => p.system }), (p) => [p.thread]),
 });
 
+/**
+ * Vue component that draws a frame with boxes, landmarks and a caption; emits `view` with the
+ * mounted view.
+ */
 export const FrameView = defineComponent({
   name: "FrameView",
   props: {
@@ -233,6 +254,7 @@ export const FrameView = defineComponent({
   },
 });
 
+/** Vue component that opens the camera; emits `feed` with the feed and `frame` with the video at `fps`. */
 export const CameraFeed = defineComponent({
   name: "CameraFeed",
   props: { fps: { type: Number, default: 4 } },

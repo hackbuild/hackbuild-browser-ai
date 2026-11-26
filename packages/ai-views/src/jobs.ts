@@ -15,8 +15,10 @@ import { PICKER_RECORDS, VISION_RECORDS, faceApiRecord } from "@hackbuild/vision
 /** face-api weights (MIT) as an earlier face swap tool loaded them, from the package CDN. */
 export const FACE_API_BASE = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/";
 
+/** A job a model picker serves, such as chat, transcribe, vision or masks. */
 export type Job = "chat" | "transcribe" | "vision" | "detect" | "masks" | "image" | "voice" | "depth" | "embed" | "faceswap" | "landmarks";
 
+/** A job's words (line label, sheet title, empty line) and which capabilities serve it. */
 export interface JobDef {
   /** The word on a job line: "brain", "ears". */
   label: string;
@@ -29,6 +31,7 @@ export interface JobDef {
 
 const has = (...want: string[]) => (caps: readonly string[]) => caps.some((c) => want.includes(c));
 
+/** The words and capability test of every job. */
 export const JOBS: Readonly<Record<Job, JobDef>> = {
   chat: { label: "brain", title: "pick a chat model", empty: "no model", provides: has("chat") },
   transcribe: { label: "ears", title: "pick a speech model", empty: "no speech model", provides: has("transcribe") },
@@ -43,6 +46,7 @@ export const JOBS: Readonly<Record<Job, JobDef>> = {
   landmarks: { label: "landmarks", title: "pick a landmark model", empty: "no landmarks", provides: has("landmarks.face", "landmarks.hand", "landmarks.pose", "landmarks.gesture") },
 };
 
+/** Every job name, in the order of `JOBS`. */
 export const JOB_NAMES = Object.keys(JOBS) as Job[];
 
 /** Every record the views know, the running package's copy of a duplicate first. */
@@ -63,6 +67,7 @@ export function jobRecords(job: Job, records: readonly ModelRecord[] = ALL_RECOR
   return records.filter((r) => def.provides(r.provides));
 }
 
+/** Whether a string is a job name. */
 export function isJob(s: string | null | undefined): s is Job {
   return !!s && s in JOBS;
 }

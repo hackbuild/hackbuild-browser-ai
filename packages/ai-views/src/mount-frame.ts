@@ -12,6 +12,7 @@ import { boxWords, fitMap, frameTag, labelColour, toView, type FrameResults } fr
 
 type Source = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement;
 
+/** A mounted frame view: set the source, the results to draw, mirroring, and paint again. */
 export interface FrameView extends Mounted {
   /** An image url, or a live element (a camera video); null shows the empty tile. */
   setSource(src: string | Source | null): Promise<void>;
@@ -21,6 +22,7 @@ export interface FrameView extends Mounted {
   paint(): void;
 }
 
+/** Options for `mountFrameView`: empty words, mirroring and the colours of the drawn boxes. */
 export interface FrameViewOptions {
   empty?: string;
   mirror?: boolean;
@@ -36,6 +38,7 @@ const css = (el: Element, name: string, fb: string) => {
   }
 };
 
+/** Draws a frame in a camera tile on a host, with boxes, landmarks, a corner tag and a caption over it. */
 export function mountFrameView(host: HTMLElement, o: FrameViewOptions = {}): FrameView {
   host.innerHTML = `<div class="hb-frameview"><figure class="hb-camtile" aria-label="frame"><div class="hb-camtile-none" role="status">${esc(o.empty ?? "no frame yet")}</div><canvas aria-hidden="true"></canvas><span class="hb-camtile-tag is-tl" hidden></span></figure><p class="hb-frameview-cap" data-caption aria-live="polite" hidden></p></div>`;
   const fig = host.querySelector("figure")!;
@@ -176,6 +179,10 @@ export function mountFrameView(host: HTMLElement, o: FrameViewOptions = {}): Fra
   return view;
 }
 
+/**
+ * A mounted camera feed: start, stop, the video element, whether it is live, and a subscription to
+ * live and error changes.
+ */
 export interface CameraFeed extends Mounted {
   start(): Promise<void>;
   stop(): void;
@@ -184,6 +191,10 @@ export interface CameraFeed extends Mounted {
   subscribe(fn: (s: { live: boolean; error: string }) => void): () => void;
 }
 
+/**
+ * Options for `mountCameraFeed`: frames per second, the frame callback, which camera, and whether
+ * to draw a tile of its own.
+ */
 export interface CameraFeedOptions {
   /** Called with the video this many times a second while live. Default 4. */
   fps?: number;
@@ -193,6 +204,7 @@ export interface CameraFeedOptions {
   tile?: boolean;
 }
 
+/** Opens the camera into a host and hands the video to `onFrame` at the set rate while it is live. */
 export function mountCameraFeed(host: HTMLElement, o: CameraFeedOptions = {}): CameraFeed {
   const video = document.createElement("video");
   video.autoplay = true;

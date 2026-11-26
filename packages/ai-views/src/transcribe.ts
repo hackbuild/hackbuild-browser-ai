@@ -9,6 +9,7 @@
 import { asJson, asSrt, asTxt, asVtt, baseName, type Dropped, type Seg } from "@hackbuild/transcribe";
 import { stripMeta, type StripFigure, type StripStatus } from "@virgilvox/hackbuild-ui/vanilla";
 
+/** What a transcriber returns: segments, dropped lines, duration, language and model. */
 export interface RunResult {
   segments: Seg[];
   dropped?: Dropped[];
@@ -18,6 +19,7 @@ export interface RunResult {
   model?: string;
 }
 
+/** What a transcriber gets: an abort signal and a progress callback. */
 export interface RunContext {
   signal: AbortSignal;
   /** 0 to 1. */
@@ -27,6 +29,10 @@ export interface RunContext {
 /** Turns one file into a transcript. A page wires @hackbuild/transcribe here; a stub needs none. */
 export type Transcriber = (file: Blob & { name: string }, ctx: RunContext) => Promise<RunResult>;
 
+/**
+ * One file in a transcribe queue: name, size, status, progress, segments, dropped lines and the
+ * error if it failed.
+ */
 export interface Channel {
   id: number;
   name: string;
@@ -43,8 +49,10 @@ export interface Channel {
   meta: StripFigure[];
 }
 
+/** A transcript export format: txt, srt, vtt or json. */
 export type ExportKind = "txt" | "srt" | "vtt" | "json";
 
+/** What a transcribe queue shows: channels, the selected one, whether it runs, and undo state. */
 export interface QueueSnapshot {
   channels: readonly Channel[];
   selected: number | null;
@@ -53,6 +61,10 @@ export interface QueueSnapshot {
   canRedo: boolean;
 }
 
+/**
+ * A transcribe queue: add files, start and stop, select, edit lines with undo, and export a channel
+ * as txt, srt, vtt or json.
+ */
 export interface TranscribeQueue {
   snapshot(): QueueSnapshot;
   subscribe(fn: (s: QueueSnapshot) => void): () => void;
@@ -74,6 +86,7 @@ export interface TranscribeQueue {
 
 const TYPES: Record<ExportKind, string> = { txt: "text/plain", srt: "application/x-subrip", vtt: "text/vtt", json: "application/json" };
 
+/** Creates a transcribe queue that runs each file through `run`, one at a time. */
 export function transcribeQueue(o: { run: Transcriber; autostart?: boolean }): TranscribeQueue {
   let run = o.run;
   let channels: Channel[] = [];

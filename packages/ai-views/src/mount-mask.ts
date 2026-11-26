@@ -19,6 +19,7 @@ export interface FoundMask {
   score: number;
 }
 
+/** The segment models a mask studio calls: a click segment for one point and a segment everything. */
 export interface MaskModels {
   /** Click segment: the mask under one point, in image pixels. */
   segment?: (image: MaskPixels, point: { x: number; y: number }) => Promise<Uint8Array | null>;
@@ -26,8 +27,13 @@ export interface MaskModels {
   everything?: (image: MaskPixels) => Promise<FoundMask[]>;
 }
 
+/** A mask studio tool: the click segment point or one of the hackbuild-ui mask tools. */
 export type StudioTool = "point" | MaskTool;
 
+/**
+ * What a mask studio shows: tool, mode, sizes, undo state, coverage, zoom, found and saved masks,
+ * image size and the last error.
+ */
 export interface StudioState {
   ready: boolean;
   tool: StudioTool;
@@ -48,6 +54,10 @@ export interface StudioState {
   error: string;
 }
 
+/**
+ * A mounted mask studio: image, tools, undo, grow and shrink, saved masks, found objects, export,
+ * and a subscription to its state.
+ */
 export interface MaskStudio extends Mounted {
   setImage(src: string | HTMLImageElement | HTMLCanvasElement | ImageBitmap | MaskPixels): Promise<void>;
   setTool(t: StudioTool): void;
@@ -87,6 +97,10 @@ export interface MaskStudio extends Mounted {
 
 const ZOOMS = [0.5, 0.75, 1, 1.5, 2, 3, 4];
 
+/**
+ * Options for `mountMaskStudio`: the segment models, empty state words, a sample button and the
+ * export file name.
+ */
 export interface MaskStudioOptions {
   models?: MaskModels;
   title?: string;
@@ -121,6 +135,10 @@ function thumbOf(img: ImageData): string {
   return t.toDataURL("image/png");
 }
 
+/**
+ * Mounts a mask studio on a host: drop or open an image, then cut masks with the point, wand, brush
+ * and lasso tools or a segment model.
+ */
 export function mountMaskStudio(host: HTMLElement, o: MaskStudioOptions = {}): MaskStudio {
   let models = o.models ?? {};
   const l = listeners();

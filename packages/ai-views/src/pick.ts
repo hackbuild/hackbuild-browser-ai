@@ -13,6 +13,7 @@ import { bytesText, canLoad, loadAll, type ModelOption, type ModelPickState, typ
 import { ALL_RECORDS, JOBS, jobRecords, type Job } from "./jobs.js";
 import { rowOf } from "./rows.js";
 
+/** What a loader gets: an abort signal, a progress callback and the row's options. */
 export interface LoadContext {
   signal: AbortSignal;
   /** 0 to 1, or null while the total is unknown. */
@@ -38,6 +39,10 @@ export function weightKeys(rec: ModelRecord): string[] {
   return base ? files.map((f) => base + f) : [];
 }
 
+/**
+ * A loader that fetches a record's weight files through a weight store; records that load through
+ * their runtime throw.
+ */
 export function weightsLoader(store: WeightStore): Loader {
   return async (rec, { signal, onProgress }) => {
     if (rec.noDownload || rec.sizeMB === 0) {
@@ -63,6 +68,10 @@ export function weightsRemover(store: WeightStore): (rec: ModelRecord) => Promis
   };
 }
 
+/**
+ * Options for `useModelPick`: records, env, storage estimate, loader, remover, stored ids, the
+ * chosen id and extra row options.
+ */
 export interface PickOptions {
   /** Records to pick from; default every record the views know. */
   records?: readonly ModelRecord[];
@@ -79,6 +88,7 @@ export interface PickOptions {
   extra?: (rec: ModelRecord) => readonly ModelOption[];
 }
 
+/** What a picker shows: its job, title, rows, the chosen id and row, and what the loader returned for it. */
 export interface PickSnapshot {
   job: Job;
   title: string;
@@ -90,6 +100,10 @@ export interface PickSnapshot {
   loaded: unknown;
 }
 
+/**
+ * A model picker for one job: choose, load, cancel, remove, set row options, add your own model,
+ * and subscribe to its snapshot.
+ */
 export interface ModelPick {
   readonly job: Job;
   snapshot(): PickSnapshot;
@@ -143,6 +157,7 @@ export function defaultPick(records: readonly ModelRecord[], env?: Env, estimate
   return (fits.find((r) => r.group === "start here") ?? fits.find((r) => r.speed === "fast" || r.speed === "steady") ?? fits[0] ?? records[0])?.id ?? "";
 }
 
+/** Creates a model picker for a job, with rows that say whether each model fits this machine. */
 export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
   const def = JOBS[job];
   let records = jobRecords(job, o.records ?? ALL_RECORDS);
@@ -273,6 +288,7 @@ export interface PickPreset {
   picks: Partial<Record<Job, string>>;
 }
 
+/** One line of a jobs rack: the job, its label, whether it is required, and the chosen row. */
 export interface JobLine {
   job: Job;
   label: string;
@@ -295,6 +311,7 @@ export interface JobsPick {
   setPresets(p: readonly PickPreset[]): void;
 }
 
+/** Creates one picker per job and joins them as a rack with presets and load all. */
 export function useJobsPick(jobs: readonly { job: Job; required?: boolean; options?: PickOptions }[], initialPresets: readonly PickPreset[] = [], shared: PickOptions = {}): JobsPick {
   let presets = initialPresets;
   const extra = new Set<() => void>();

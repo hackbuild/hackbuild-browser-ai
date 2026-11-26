@@ -10,6 +10,7 @@ import { composerKey, coarsePointer, autosize, pinned, contextUse, listMeta } fr
 import { contextSegments, type ChatList, type ChatListSnapshot, type ChatThread, type ThreadSnapshot, type Turn } from "./chat.js";
 import { ICON, esc, listeners, scroller, type Mounted } from "./dom.js";
 
+/** Options for `mountChatPane`: the reply's name and the empty state's words. */
 export interface ChatPaneOptions {
   /** The reply's name in its head. */
   name?: string;
@@ -26,6 +27,7 @@ const paras = (t: string) =>
     .map((p) => `<div class="hb-msg-text">${esc(p).replace(/\n/g, "<br>")}</div>`)
     .join("");
 
+/** The HTML of one chat turn, with its reasoning fold, memory used and stats. */
 export function turnHtml(t: Turn, o: { name: string; last: boolean; busy: boolean }): string {
   if (t.role === "user") {
     return `<div class="hb-msg is-user" data-turn="${t.id}"><span class="hb-msg-who"><span class="hb-msg-name">you</span></span><div class="hb-msg-parts">${paras(t.text)}</div></div>`;
@@ -82,6 +84,7 @@ export function mountChatPane(host: HTMLElement, thread: ChatThread, o: ChatPane
   return { dispose: () => l.off() };
 }
 
+/** Options for `mountComposer`: placeholder and accessible label. */
 export interface ComposerOptions {
   placeholder?: string;
   label?: string;

@@ -1,22 +1,22 @@
 # @hackbuild/ai-elements
 
-Deprecated: use [@hackbuild/ai-views](../ai-views/README.md). The views
-there bind the same packages to hackbuild-ui and ship each one as a Vue
-component and a custom element. Code MIT; this README CC-BY-4.0.
+Deprecated: use [@hackbuild/ai-views](../ai-views/README.md), which draws the same views with hackbuild-ui as custom elements and Vue components.
 
-    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
-    npm install @hackbuild/ai-views
+[![npm](https://img.shields.io/npm/v/@hackbuild/ai-elements)](https://www.npmjs.com/package/@hackbuild/ai-elements) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 0.6 kB measured](https://img.shields.io/badge/gzip-0.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
-## What is left here
+## What it does
 
-`define(prefix = "hb")` registers the ai-views custom elements under the
-prefix and writes one deprecation note to the console. `ELEMENT_NAMES`,
-`mountMemoryInspector`, `traceRows` and `inspectorHtml` are re-exported.
-The model picker, download bar, status pills and chat panel of 0.1 are
-gone; use `<model-select>`, `<chat-pane>` and `<chat-composer>` from
-ai-views, which draw with the page's hackbuild-ui stylesheet in light DOM.
-The example pages that used them (chat, devices, embed, imagegen, speak,
-transcribe, vision) now use ai-views or a hackbuild-ui progress line.
+- `define(prefix = "hb")` registers the ai-views custom elements under the prefix and writes one deprecation note to the console.
+- `ELEMENT_NAMES`, `mountMemoryInspector`, `traceRows` and `inspectorHtml` are re-exported from ai-views.
+- The model picker, download bar, status pills and chat panel of 0.1 are gone; use `<model-select>`, `<chat-pane>` and `<chat-composer>` from ai-views.
+
+## Install
+
+```sh
+npm install @hackbuild/ai-views
+```
+
+Existing code that imports the old name keeps working with `npm install @hackbuild/ai-elements`.
 
 ## What is verified, and what is not
 
@@ -25,13 +25,18 @@ transcribe, vision) now use ai-views or a hackbuild-ui progress line.
 - Not verified: anything in a browser here; the views are checked under
   ai-views.
 
+
 ## Size budget
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
 | `dist/index.js` (main entry, imports external) | 582 bytes | 611 bytes |
-| `dist/single/index.iife.js` (single file build) | 87,305 bytes | 91,670 bytes |
+| `dist/single/index.iife.js` (single file build) | 88,239 bytes | 92,650 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
+
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0. This package uses no model and no weights.

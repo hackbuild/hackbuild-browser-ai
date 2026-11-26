@@ -45,6 +45,7 @@ export function pickSheet(pick: ModelPick): Mounted & { open(): void } {
   };
 }
 
+/** Options for `mountModelSelect`: the one line or the chip variant, and whether to draw the load button. */
 export interface ModelSelectOptions {
   /** "line" (default): the one line and the pink load. "chip": the one model chip of the bar. */
   variant?: "line" | "chip";

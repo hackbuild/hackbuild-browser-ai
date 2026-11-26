@@ -7,6 +7,10 @@
 import type { Recall } from "@hackbuild/memory";
 import { esc, type Mounted } from "./dom.js";
 
+/**
+ * One row of a recall trace as text: rank, id, kind, text, BM25, cosine, RRF, score, and whether it
+ * went to the model.
+ */
 export interface TraceRow {
   rank: number;
   id: number;
@@ -24,6 +28,7 @@ const n3 = (x: number) => (Number.isFinite(x) ? x.toFixed(3) : "none");
 // the core ranks from 0 (best) and uses -1 for absent; shown 1 based
 const rank = (r: number) => (r >= 0 ? `#${r + 1}` : "none");
 
+/** The rows of a recall trace as text, marking the hits handed to the model. */
 export function traceRows(r: Pick<Recall, "trace" | "hits">, maxText = 80): TraceRow[] {
   const used = new Set(r.hits.map((h) => h.item.id));
   return r.trace.map((t, i) => ({
@@ -39,8 +44,10 @@ export function traceRows(r: Pick<Recall, "trace" | "hits">, maxText = 80): Trac
   }));
 }
 
+/** The parts of a memory recall the inspector shows: trace, hits, query and mode. */
 export type RecallLike = Pick<Recall, "trace" | "hits" | "query" | "mode">;
 
+/** The HTML of a recall trace table, or an empty note before any recall. */
 export function inspectorHtml(rec: RecallLike | null): string {
   if (!rec) return `<p class="hb-lay-empty-note">no recall yet. ask something to see what memory finds.</p>`;
   const rows = traceRows(rec);
@@ -52,10 +59,12 @@ export function inspectorHtml(rec: RecallLike | null): string {
   );
 }
 
+/** A mounted memory inspector whose `set` shows a new recall. */
 export interface MemoryInspector extends Mounted {
   set(rec: RecallLike | null): void;
 }
 
+/** Shows a recall trace as a table on a host. */
 export function mountMemoryInspector(host: HTMLElement, rec: RecallLike | null = null): MemoryInspector {
   host.innerHTML = inspectorHtml(rec);
   return { set: (r) => void (host.innerHTML = inspectorHtml(r)), dispose() {} };

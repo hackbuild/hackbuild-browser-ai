@@ -9,6 +9,10 @@ import { clockTime, droppedLine, stripStatus } from "@virgilvox/hackbuild-ui/van
 import { ICON, download, esc, listeners, type Mounted, show } from "./dom.js";
 import type { Channel, ExportKind, QueueSnapshot, TranscribeQueue } from "./transcribe.js";
 
+/**
+ * Options for a transcript: speaker fields, a seek callback for the times, and whether dropped
+ * lines show in place.
+ */
 export interface TranscriptViewOptions {
   /** Speaker fields beside each line. Off by default: they are inputs, and a subject keeps few controls. */
   speakers?: boolean;
@@ -18,6 +22,7 @@ export interface TranscriptViewOptions {
   showDropped?: boolean;
 }
 
+/** The HTML of one channel's transcript, or an empty note when there is none. */
 export function transcriptHtml(c: Channel | undefined, o: TranscriptViewOptions = {}): string {
   if (!c) return `<p class="hb-lay-empty-note">nothing yet. drop a file.</p>`;
   const st = stripStatus(c.status);
@@ -75,6 +80,10 @@ export function mountTranscriptView(host: HTMLElement, queue: TranscribeQueue, o
   return { dispose: () => l.off() };
 }
 
+/**
+ * Options for `mountTranscribeDrop`: accepted types, empty state words and a sample button, plus
+ * the transcript view options.
+ */
 export interface TranscribeDropOptions extends TranscriptViewOptions {
   accept?: string;
   title?: string;
@@ -85,6 +94,7 @@ export interface TranscribeDropOptions extends TranscriptViewOptions {
   onSample?: () => void;
 }
 
+/** A mounted drop zone whose `pick` opens the file picker. */
 export interface TranscribeDropHandle extends Mounted {
   /** Open the file picker: the add files verb. */
   pick(): void;
