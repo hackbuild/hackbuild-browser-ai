@@ -15,8 +15,10 @@ export interface FeatureTensor {
   data: ArrayLike<number>;
   dims: number[];
 }
+/** A transformers.js feature extraction pipeline called with pooling and normalization. */
 export type FeaturePipeline = (texts: string[], opts: { pooling: "mean" | "cls" | "none"; normalize: boolean }) => Promise<FeatureTensor>;
 
+/** Settings for `tjsEmbedder`; each one that changes the vectors goes into the id. */
 export interface TjsEmbedderOptions {
   modelId: string;
   dtype?: string;
@@ -30,6 +32,7 @@ export interface TjsEmbedderOptions {
   dim?: number;
 }
 
+/** Wrap a feature extraction pipeline as an Embedder that runs texts in batches. */
 export async function tjsEmbedder(pipe: FeaturePipeline, o: TjsEmbedderOptions): Promise<Embedder> {
   const pooling = o.pooling ?? "mean";
   const normalize = o.normalize ?? true;

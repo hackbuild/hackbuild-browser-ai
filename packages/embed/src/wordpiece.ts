@@ -28,6 +28,7 @@ interface NormalizerJson {
   normalizers?: NormalizerJson[];
 }
 
+/** A loaded tokenizer that turns text into token ids with no special tokens. */
 export interface Tokenizer {
   readonly vocabSize: number;
   readonly unkId: number | null;

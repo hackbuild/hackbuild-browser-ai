@@ -4,12 +4,14 @@
  * Floats come out as Float32Array; F16 and BF16 are widened.
  */
 
+/** One tensor read from a safetensors file: dtype, shape and its values. */
 export interface Tensor {
   dtype: string;
   shape: number[];
   data: Float32Array | Int32Array;
 }
 
+/** A parsed safetensors file: tensor names, header metadata and a getter by name. */
 export interface SafeTensors {
   names: string[];
   metadata: Record<string, string>;
@@ -26,6 +28,7 @@ export function halfToFloat(h: number): number {
   return s * (1 + m / 1024) * 2 ** (e - 15);
 }
 
+/** Parse safetensors bytes; floats come out as Float32Array, integers as Int32Array. */
 export function readSafetensors(buf: ArrayBuffer | Uint8Array): SafeTensors {
   const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);

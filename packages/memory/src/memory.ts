@@ -9,6 +9,7 @@ import { howScored, scoreParts, termWeights, tokenize, type RecallParams, type R
 
 const HOUR = 3_600_000;
 
+/** Options for `open`: the loaded core, the embedder, the sink, the scopes and the injected clock. */
 export interface OpenOptions {
   /** The loaded wasm core (loadCore). */
   core: Core;
@@ -25,6 +26,7 @@ export interface OpenOptions {
   batch?: number;
 }
 
+/** How a memory is running: hybrid or keyword recall, IndexedDB or a Map, SIMD on or off, and why. */
 export interface Status {
   mode: "hybrid" | "keyword";
   sink: "indexeddb" | "memory";
@@ -33,6 +35,7 @@ export interface Status {
   notes: string[];
 }
 
+/** Options for `Memory.add`: kind, scope, importance, emotion, novelty and the other fields stored on the item. */
 export interface AddOptions {
   kind?: Kind;
   scope?: string;
@@ -52,6 +55,7 @@ export interface AddOptions {
   dupWindowMs?: number;
 }
 
+/** Options for `Memory.recall`: how many hits, the candidate pool, the scorer, scope and kind filters and the turns to skip. */
 export interface RecallOptions {
   k?: number;
   cand?: number;
@@ -73,12 +77,14 @@ export interface RecallOptions {
   skipSaid?: string[];
 }
 
+/** One recalled item with its final score and the core's per stage numbers. */
 export interface Hit {
   item: StoredItem;
   score: number;
   terms: CoreHit;
 }
 
+/** The result of `Memory.recall`: the hits, every fused candidate as a trace row, and the mode it ran in. */
 export interface Recall {
   query: string;
   hits: Hit[];
@@ -89,6 +95,7 @@ export interface Recall {
   params: RecallParams;
 }
 
+/** The fields `Memory.edit` changes on one item; new text is embedded again. */
 export interface EditPatch {
   text?: string;
   kind?: Kind;
@@ -99,6 +106,7 @@ export interface EditPatch {
   meta?: Record<string, unknown>;
 }
 
+/** Options for `Memory.compact`: the decay floor, the merge cosine and the episode folding, each of which can be turned off. */
 export interface CompactOptions {
   /** Retention floor for decay; false skips decay. Default 0.05. */
   decay?: number | false;
@@ -108,6 +116,7 @@ export interface CompactOptions {
   consolidate?: Parameters<Memory["consolidate"]>[0] | false;
 }
 
+/** What `Memory.compact` did: item counts before and after, the ids decayed, the pairs merged and the gist made. */
 export interface CompactReport {
   before: number;
   after: number;
@@ -123,6 +132,7 @@ export interface StorageLike {
   persist?: () => Promise<boolean>;
 }
 
+/** What `Memory.usage` reports: item counts by kind, core lines, a computed byte estimate and the browser's storage estimate. */
 export interface Usage {
   items: number;
   byKind: Record<Kind, number>;
@@ -143,6 +153,7 @@ export function exchangeNote(said: string, reply: string, o: { minWords?: number
   return { text: short ? `They said: "${s}" I answered: "${short}"` : `They said: "${s}"`, meta: { said: s } };
 }
 
+/** The JSON `Memory.export` gives and `Memory.import` takes: items without vectors and the core memory lines. */
 export interface ExportData {
   format: "hackbuild-memory";
   version: 1;
@@ -168,6 +179,7 @@ export async function open(id: string, opts: OpenOptions): Promise<Memory> {
   return m;
 }
 
+/** One agent's memory: add, recall, assemble, edit, compact and export, over the wasm core and a sink. Made by `open`. */
 export class Memory {
   readonly core: CoreMemory;
   private readonly index: CoreIndex;

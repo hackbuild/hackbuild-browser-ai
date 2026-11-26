@@ -67,6 +67,7 @@ export interface TermWeight {
   idf: number;
 }
 
+/** One candidate in a recall trace: its ranks, score parts, weight, matched terms and whether the caller got it. */
 export interface TraceRow {
   id: number;
   text: string;
@@ -95,6 +96,7 @@ export interface TraceRow {
   terms: { term: string; tf: number; weight: number }[];
 }
 
+/** The recall inspector's view of one query: the parameters, per term weights and every candidate row with its score parts. */
 export interface RecallTrace {
   query: string;
   mode: "hybrid" | "keyword";

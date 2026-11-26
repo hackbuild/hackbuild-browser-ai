@@ -4,9 +4,12 @@
 
 /** Item kinds, in the order of the Rust constants. */
 export const KINDS = ["episode", "gist", "lesson", "fact", "rule", "lore", "doc", "note"] as const;
+/** An item kind: episode, gist, lesson, fact, rule, lore, doc or note. */
 export type Kind = (typeof KINDS)[number];
+/** The core's number for a kind, its index in `KINDS`. */
 export const kindCode = (k: Kind): number => KINDS.indexOf(k);
 
+/** Where `loadCore` gets the wasm: a URL, the bytes, or inlined base64. */
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
 interface Exports {
@@ -85,6 +88,7 @@ export interface CoreHit {
   score: number;
 }
 
+/** The number of float64 values per hit row the core writes, one per field of `CoreHit`. */
 export const HIT_STRIDE = 11;
 
 /** The parameter block layout read by params_from in crates/memory/src/lib.rs. */

@@ -3,14 +3,17 @@
 
 /** Characters per token for the default estimate (inferred from earlier builds, not measured on a tokenizer). */
 export const CHARS_PER_TOKEN = 3.6;
+/** Estimates the tokens in a string as its length over `CHARS_PER_TOKEN`, rounded up. */
 export const estimateTokens = (s: string): number => Math.ceil(s.length / CHARS_PER_TOKEN);
 
+/** One named block of context with the priority `budget` keeps it by. */
 export interface Section {
   name: string;
   priority: number;
   text: string;
 }
 
+/** A context fitted to a token budget: the text, the section names kept and dropped, and the tokens used. */
 export interface Assembled {
   text: string;
   kept: string[];
@@ -78,6 +81,7 @@ export function assembleSections(o: {
 
 const wordSet = (s: string): Set<string> => new Set(s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
 
+/** The Jaccard similarity of the word sets of two strings, 0 to 1; two empty strings give 1. */
 export function jaccard(a: string, b: string): number {
   const x = wordSet(a);
   const y = wordSet(b);
@@ -128,11 +132,13 @@ export function expandQuery(query: string, previous?: string, minChars = 45): st
   return previous && query.trim().length < minChars ? `${previous} ${query}` : query;
 }
 
+/** A chat message with a role and text content, as `injectRecall` and `RecallConversation` read and write it. */
 export interface Message {
   role: "system" | "user" | "assistant" | "tool";
   content: string;
 }
 
+/** The fixed note `injectRecall` adds to the system message, telling the model what `[memory]` lines are. */
 export const RECALL_NOTE =
   "Lines that start with [memory] under a user message are notes you kept from earlier talks. Use them when they fit; never quote them as the person's words.";
 

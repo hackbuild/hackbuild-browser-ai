@@ -1,5 +1,6 @@
 /** Brute force cosine search: enough for hundreds to a few thousand items (inferred, not measured). */
 
+/** The cosine similarity of two vectors, 0 when either is all zeros. */
 export function cosine(a: Float32Array, b: Float32Array): number {
   let d = 0;
   let na = 0;
@@ -12,6 +13,7 @@ export function cosine(a: Float32Array, b: Float32Array): number {
   return na > 0 && nb > 0 ? d / Math.sqrt(na * nb) : 0;
 }
 
+/** An in memory list of items and their vectors, searched by cosine for the top k. */
 export class VectorIndex<T> {
   private items: { item: T; vec: Float32Array }[] = [];
   get size(): number {

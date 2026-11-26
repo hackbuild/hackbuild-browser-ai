@@ -30,6 +30,7 @@ export interface SealLock {
   hash: string;
 }
 
+/** The error sealing throws, with a `code`: wrong-password, bad-lock, bad-envelope or rejected. */
 export class SealError extends Error {
   constructor(
     message: string,
@@ -60,6 +61,7 @@ export function toBase64(b: Uint8Array): string {
   return btoa(s);
 }
 
+/** Decodes base64 into bytes; the inverse of `toBase64`. */
 export function fromBase64(s: string): Bytes {
   const bin = atob(s);
   const out = new Uint8Array(bin.length);

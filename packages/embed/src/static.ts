@@ -11,6 +11,7 @@ import type { Embedder } from "@hackbuild/memory";
 import { readSafetensors } from "./safetensors.js";
 import { loadTokenizer, type Tokenizer, type TokenizerJson } from "./wordpiece.js";
 
+/** The files a static embedder is built from: tokenizer, weights and an optional config. */
 export interface StaticFiles {
   /** tokenizer.json text or parsed object, or a vocab.txt. */
   tokenizer: string | TokenizerJson;
@@ -24,6 +25,7 @@ export interface StaticFiles {
   maxTokens?: number;
 }
 
+/** An Embedder that also embeds one text synchronously and exposes its tokenizer. */
 export interface StaticEmbedder extends Embedder {
   readonly tokenizer: Tokenizer;
   /** One text, synchronously. */

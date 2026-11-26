@@ -9,6 +9,7 @@ import type { Embedder } from "@hackbuild/memory";
 import { loadStaticEmbedder } from "./static.js";
 import { tjsEmbedder, type FeaturePipeline } from "./tjs.js";
 
+/** Hub records for potion-base-8M, all-MiniLM-L6-v2 and bge-small-en-v1.5. */
 export const EMBED_RECORDS: ModelRecord[] = [
   {
     id: "potion-base-8m",

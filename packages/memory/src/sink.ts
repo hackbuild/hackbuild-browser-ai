@@ -26,6 +26,7 @@ export interface StoredItem {
   edited?: number;
 }
 
+/** Where a memory keeps its items, vectors per embedder and key values. `indexedDbSink`, `memorySink` and `sealedSink` implement it. */
 export interface MemorySink {
   readonly kind: "indexeddb" | "memory";
   loadItems(): Promise<StoredItem[]>;
