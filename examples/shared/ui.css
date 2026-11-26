@@ -4,7 +4,7 @@
    loaded before this file); this file only places the shell's own boxes
    and adds no colour, face or token. A page script adds no style: its
    parts are class layer parts and ai-elements. */
-.hb-header h1 a { color: inherit; text-decoration: none; display: inline-block; min-height: 44px; line-height: 44px; }
+.hb-header h1 a { color: inherit; text-decoration: none; display: inline-block; min-height: 44px; min-width: 44px; line-height: 44px; }
 .hb-header h1 { overflow-wrap: anywhere; }
 body.hb { display: flex; flex-direction: column; min-height: 100vh; }
 .pg-top { padding-top: var(--hb-s3); padding-bottom: var(--hb-s4); width: 100%; }
