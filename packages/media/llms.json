@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You call `decodeAudio` in a worker and get `no OfflineAudioContext here. decode on the page, not in a worker.` Decode on the page and post the channels to the worker, or pass an OfflineAudioContext constructor as the third argument in tests.",
+    "You decode at the file's own rate and resample later. Pass the rate the model wants as the second argument: `decodeAudio(file, 16000)` for speech models, 44100 for @hackbuild/stems, 22050 for @hackbuild/notes.",
+    "You mix the channels yourself and lose one. `decodeAudio` keeps every channel in `channels`; pick or mix them where you use them, for example with `toMono` from @hackbuild/transcribe.",
+    "You expect mkv or avi to decode everywhere. This package adds no demuxer, so a file decodes only when the browser plays it in a video tag; catch `this browser will not decode the audio track (...)` and ask for mp4, webm, mp3 or wav.",
+    "You pass `pickKeyframes` raw pixels. Give it `{ t, hist }` per frame, where `hist` is `lumaHistogram(rgba)`; it returns indices into your frames, and `sampleTimes(duration, step)` gives the times to seek to.",
+    "You start `record` without a MediaRecorder check. It throws `no MediaRecorder in this browser. recording is off.`; hide the record control and say why, and read `mimeType` for the type it chose."
+  ]
+}

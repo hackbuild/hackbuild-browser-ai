@@ -2,7 +2,7 @@
  * A MediaPipe tasks-vision provider for the models hub. One wasm fileset
  * per page; one task per record, created with the GPU delegate on a
  * "webgl" rung and the CPU delegate on a "wasm" rung, so a failed GPU
- * delegate falls to the CPU one (FaceSwap and an earlier scene app had no fallback).
+ * delegate falls to the CPU one.
  * Results are turned into the package's Detector, Segmenter and
  * Landmarker shapes.
  */

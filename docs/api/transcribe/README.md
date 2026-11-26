@@ -647,7 +647,7 @@ Frame levels of a file with the floor, the gate threshold and which frames the g
 
 ### LiveOptions
 
-Live segmentation (as earlier builds did): audio arrives in blocks, is decimated to
+Live segmentation: audio arrives in blocks, is decimated to
 16 kHz, and is cut into segments either when a gate closes for 500 ms
 (squelch mode), at a fixed window (8 s with the squelch off, 2 to 12 s
 in spirit box mode), or at 24 s, since Whisper pads to 30 s. Segments
@@ -1007,9 +1007,8 @@ Why the phantom filter dropped a line.
 type JobState = "queued" | "running" | "done" | "failed";
 ```
 
-The file queue (as the earlier transcription tool ran it): files are
-accepted by type or extension, a file over 1.5 GB (vendor, the earlier
-tool's limit) gets a warning, and each job goes queued, running
+The file queue: files are
+accepted by type or extension, a file over 1.5 GB gets a warning, and each job goes queued, running
 (decoding, then working), done or failed. Decoding measures the file:
 duration, sample rate, channels, peak and rms level. Stop puts the
 running job back to queued; a failure keeps its line of copy. The
@@ -1106,7 +1105,7 @@ Weak one word lines the phantom filter drops when the audio under them was mostl
 const WHISPER_LANGUAGES: readonly Language[];
 ```
 
-The earlier transcription tool's list, in its order, after auto detect.
+The 19 languages, in order, after auto detect.
 
 ## Functions
 
@@ -1116,7 +1115,7 @@ The earlier transcription tool's list, in its order, after auto detect.
 function acceptsFile(f): boolean;
 ```
 
-Audio or video by MIME type, or by one of the earlier tool's extensions.
+Audio or video by MIME type, or by one of its known extensions.
 
 #### Parameters
 
@@ -1399,7 +1398,7 @@ A file queue that decodes, measures and runs each file in turn.
 function defaultTranscribeId(webgpu): string;
 ```
 
-The record earlier builds picked: turbo with a webgpu adapter, base.en without.
+The default record: turbo with a webgpu adapter, base.en without.
 
 #### Parameters
 
@@ -1850,7 +1849,7 @@ A stub ASR: one chunk per reel reading "stub transcript, N s", with no weights.
 function toMono(channels, mode?): Float32Array;
 ```
 
-Mono from a decoded buffer, as earlier builds chose it: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest.
+Mono from a decoded buffer: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest.
 
 #### Parameters
 

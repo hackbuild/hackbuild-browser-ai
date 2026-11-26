@@ -119,13 +119,13 @@ The loaded wasm core: depth to cloud, relief heights and solids, surface nets, s
 function fitToPrint(m: Mesh, sizeMM: number): Mesh
 ```
 
-Centre the mesh and scale it so its longest side is `sizeMM` (as earlier builds did).
+Centre the mesh and scale it so its longest side is `sizeMM`.
 
 ```ts
 const HEIGHT_SOURCES: readonly HeightSource[]
 ```
 
-The height from select, in the bench's order and words.
+The height sources, in the order and words a height source select shows.
 
 ```ts
 interface HeightSource {
@@ -154,7 +154,7 @@ The pose with no rotation and no translation.
 function inflateHeight(img: RgbaImage, cols: number, rows: number, o?: { blur?: number; invert?: boolean; threshold?: number }): { cover: Uint8Array; values: Float32Array }
 ```
 
-Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over t, the distance to the outline over the largest distance (as the bench did).
+Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over t, the distance to the outline over the largest distance.
 
 ```ts
 function loadDepthMesh(src: CoreSource): Promise<DepthMesh>
@@ -191,7 +191,7 @@ Edges used by other than exactly two triangles; 0 for a closed manifold surface.
 function photoRelief(dm: DepthMesh, image: RgbaImage, o: PhotoReliefOptions): Promise<PhotoRelief>
 ```
 
-Photo to relief in one call: a height source, the bench's parameters, the relief mask and the erase and restore brushes, then the closed solid.
+Photo to relief in one call: a height source, the relief parameters, the relief mask and the erase and restore brushes, then the closed solid.
 
 ```ts
 interface PhotoRelief {
@@ -306,7 +306,7 @@ A binary STL of the mesh, with a face normal per triangle, in the mesh's own uni
 function trackGood(r: { error: number; inliers: number; pose: Pose }, prev: Pose, sampled: number, maxDist?: number): boolean
 ```
 
-The earlier scan bench gate for a tracked frame: enough inliers, low error, and no jump.
+The accept test for a tracked frame: enough inliers, low error, and no jump.
 
 ```ts
 interface Turntable {
@@ -349,20 +349,21 @@ import { DEPTH_MESH_WASM_BASE64 } from "@hackbuild/depth-mesh/inline";
 
 // the wasm core, inlined so nothing is fetched
 const dm = await loadDepthMesh({ base64: DEPTH_MESH_WASM_BASE64 });
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
 
-// a photo drawn on a canvas; brightness needs no model
-const canvas = document.querySelector("canvas")!;
-const image = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
-
-// a 30 mm wide relief, 0.24 to 2.4 mm high, as a closed solid
-const r = await photoRelief(dm, image, { source: "brightness", width: 30, base: 0.24, height: 2.4 });
-for (const [level, text] of r.notes) console.log(level, text);
-console.log("open edges", openEdges(r.mesh.indices)); // 0 for a closed solid
-
-// a binary STL in mm, ready for a slicer
-const stl = toStl(r.mesh);
-const url = URL.createObjectURL(new Blob([stl as BlobPart], { type: "model/stl" }));
-console.log("relief.stl", stl.length, "bytes at", url);
+input.onchange = async () => {
+  // the chosen photo's pixels; brightness needs no model
+  const bitmap = await createImageBitmap(input.files![0]!);
+  const ctx = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  // a 30 mm wide relief, 0.24 to 2.4 mm high, as a closed solid
+  const r = await photoRelief(dm, ctx.getImageData(0, 0, bitmap.width, bitmap.height), { source: "brightness", width: 30, base: 0.24, height: 2.4 });
+  console.log("open edges", openEdges(r.mesh.indices), r.notes); // 0 for a closed solid
+  // a binary STL in mm, ready for a slicer
+  const stl = toStl(r.mesh);
+  const url = URL.createObjectURL(new Blob([stl as BlobPart], { type: "model/stl" }));
+  console.log("relief.stl", stl.length, "bytes at", url);
+};
 ```
 
 ### from the concepts
@@ -391,10 +392,11 @@ const relief = dm.heightfieldMesh(h, map.width, map.height, 0.25);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch `depth-mesh.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: DEPTH_MESH_WASM_BASE64 }` from `@hackbuild/depth-mesh/inline` to `loadDepthMesh`, which fetches nothing; use `{ url }` or `{ bytes }` only where you serve the file.
+- You expect this package to run Depth Anything. It loads no model; for `source: "depth"` pass `depth` to `photoRelief` as a stored map or a call that makes one, for example through `depth` from @hackbuild/vision, whose weights are Apache-2.0.
+- You treat a `photoRelief` result as depth based without reading `notes`. When the depth map is missing or its call throws, it falls back to brightness and says so in a "warn" note; check `r.notes` before you tell the user what they got.
+- You keep the voxel model from `model(voxel)` forever. Call `dispose` on it when the scan ends, since its memory lives in the wasm heap.
+- You pass grids whose length does not match the size you give. Every call checks and throws a `RangeError` such as "values for a ... grid, which needs ..."; pass `cols * rows` values, and masks the same length as the heights.
 
 ## Errors this package throws
 

@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You `fetch` weight URLs yourself or bundle the files. Open one store with `openWeightStore()` and call `store.get({ url, key, licence })`; it resumes a broken download with a Range request and keeps the bytes for the next visit.",
+    "You write the licence as a string in your code. Take it from the model record, `licence: rec.licence` from @hackbuild/models, and pass `sha256: pinnedSha(url)` when the file is pinned; a mismatch removes the parts and throws `WeightError` code `sha256`.",
+    "You call `store.get` once per session attempt when a runtime tries several sessions on one file. Use `store.once(ref)` so every attempt reads one download, and `release(key)` when you are done.",
+    "You hand transformers.js its own cache and lose resume and the licence line. Set `env.customCache` to `transformersCache(store, { licenceFor, sha256For: pinnedSha })`, where `licenceFor(url)` returns the `licence` of the model record whose repo the URL names, or null for files the store should not fetch itself.",
+    "You expect OPFS or Cache Storage on a file:// page. `auto` leaves both out there and the store lands on IndexedDB parts, then memory.",
+    "You treat `WeightError` code `quota` as a failed download. It is thrown before the body is read when free space is under 1.2 times the file; evict other keys or call `store.persist()`, and catch code `http` to call `get` again, which resumes."
+  ]
+}

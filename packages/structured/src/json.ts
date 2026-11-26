@@ -1,8 +1,8 @@
 /**
  * Getting JSON back from small models: strip think blocks and fences,
- * repair trailing commas and unclosed strings or brackets (an earlier chat build
- * repairJSON), and when that fails take the largest object that parses,
- * scanning closing braces from the end (as earlier builds did).
+ * repair trailing commas and unclosed strings or brackets, and when that
+ * fails take the largest object that parses, scanning closing braces from
+ * the end.
  */
 
 import { stripThink } from "@hackbuild/chat";

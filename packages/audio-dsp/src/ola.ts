@@ -1,6 +1,5 @@
 /**
- * Overlap add for models that take fixed length segments (htdemucs in
- * an earlier August build): segments of S samples on a stride of
+ * Overlap add for models that take fixed length segments (htdemucs): segments of S samples on a stride of
  * S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each
  * end, weights floored at 1e-4, and a division by the summed weights.
  */

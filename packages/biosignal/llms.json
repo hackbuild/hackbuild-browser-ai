@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You fetch `biosignal.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: BIOSIGNAL_WASM_BASE64 }` from `@hackbuild/biosignal/inline` to `loadBiosignal`, which fetches nothing.",
+    "You cut windows yourself and give every window its own trial. Build epochs with `epochsFromEvents`, which marks each event's windows with one `trial`, so `crossValidate` keeps whole trials on one side of a fold; `byTrial: false` gives the leaky number.",
+    "You call `train` or `crossValidate` without `classes`, or with labels outside it. `classes` is required and every label must be 0 to `classes - 1`, or it throws a `RangeError` such as \"label 2 is outside 0 to 1\".",
+    "You reload a saved model with `JSON.parse` alone. Pass the parsed object to `bs.load`, which checks its kind, version and header and throws \"not a hackbuild biosignal model, or a newer version\" otherwise.",
+    "You call `predict` after `dispose`. The classifier lives in the wasm core and throws \"model was dropped\" once freed; dispose it only when you are done with it."
+  ]
+}

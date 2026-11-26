@@ -1,0 +1,8 @@
+{
+  "mistakes": [
+    "You start new code on @hackbuild/ai-elements. It is deprecated; install @hackbuild/ai-views and import `define` from `@hackbuild/ai-views/elements`.",
+    "You look for the 0.1 model picker, download bar, status pills or chat panel. They are gone; use `<model-select>`, `<chat-pane>` and `<chat-composer>` from @hackbuild/ai-views.",
+    "You expect bare tag names from this package's `define()`. Its prefix defaults to `hb`, so you get `<hb-model-select>`; the ai-views `define()` registers bare names by default.",
+    "You leave out the stylesheet. The elements draw with the page's hackbuild-ui stylesheet, so install @virgilvox/hackbuild-ui as the peer and load its CSS."
+  ]
+}

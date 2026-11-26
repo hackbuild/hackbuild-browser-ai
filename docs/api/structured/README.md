@@ -68,7 +68,7 @@ The result of one `call`: the mode used, thought, tool and arguments, text for t
 
 ### GuardOptions
 
-Turn guards for small models (as earlier builds did): stop after 3 parse
+Turn guards for small models: stop after 3 parse
 failures, when the same call repeats 3 times in the last 6, or after 2
 garbage replies in a row; cap pushbacks at 3.
 
@@ -172,7 +172,7 @@ reset(): void;
 
 ### LinesOptions
 
-Line tagged formats: the earlier agent build's THOUGHT / ACTION ReAct with multi line bodies
+Line tagged formats: THOUGHT / ACTION ReAct with multi line bodies
 (PATH, CONTENT, CODE), the vision sandbox's short Thought / Action, and
 the three line SAW / THOUGHT / GOAL cortex. A tag line is `NAME:` at the
 start of a line, any case; its value runs until the next tag line. Raw
@@ -218,7 +218,7 @@ One tag found in model text: its key, resolved value, the text as written, and i
 ### TagGrammar
 
 Streaming inline tag parser. Small models drift between tag styles, so
-the parser accepts all the forms earlier character chat builds saw:
+the parser accepts all these forms:
 
   [key:value]  [key=value]  [KEY: value]          keyed tags (BonziBuddy [ACTION: x] is one)
   *phrase*  (phrase)  [phrase]  \{phrase\}  CJK brackets   plain tags, resolved against the vocabularies
@@ -521,7 +521,7 @@ Stable fingerprint of a call: name plus arguments with sorted keys.
 function grabCode(value): object;
 ```
 
-The body of a fenced block when there is one, else the text trimmed (as earlier builds did).
+The body of a fenced block when there is one, else the text trimmed.
 
 #### Parameters
 

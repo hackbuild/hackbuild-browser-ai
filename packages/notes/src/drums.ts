@@ -1,5 +1,5 @@
 /**
- * Drums, tempo and grid (as earlier builds did) on the audio-dsp wasm core: kick,
+ * Drums, tempo and grid on the audio-dsp wasm core: kick,
  * snare and hat bands (tom optional), onsets per band, one shared 25 ms
  * event grid with cross band rules on absolute envelopes, General MIDI
  * drum notes; tempo by onset autocorrelation at 11025 Hz.
@@ -82,14 +82,14 @@ export function drumNotes(dsp: Dsp, mono: Float32Array, sampleRate: number, o: {
   return notes.sort((a, b) => a.t - b.t);
 }
 
-/** bpm (2 decimals) and grid offset in seconds (3 decimals), the earlier transcription tool estimateTempo. */
+/** bpm (2 decimals) and grid offset in seconds (3 decimals). */
 export function estimateTempo(dsp: Dsp, mono: Float32Array, sampleRate: number): { bpm: number; offset: number } {
   const x = dsp.resample(mono, sampleRate, 11025, "linear");
   const r = dsp.estimateTempo(dsp.envelopeRms(x, 128), 11025 / 128);
   return { bpm: Math.round(r.bpm * 100) / 100, offset: Math.round(r.offset * 1000) / 1000 };
 }
 
-/** Grid from transcribed notes by vector strength; null when R is under 0.25 (as earlier builds did). */
+/** Grid from transcribed notes by vector strength; null when R is under 0.25. */
 export function fitGridToNotes(dsp: Dsp, notes: readonly Note[]): { bpm: number; offset: number; r: number } | null {
   const g = dsp.fitGrid(
     notes.map((n) => n.t),

@@ -389,7 +389,7 @@ A frequency band in Hz; each band gets its own band pass and covariance.
 
 ### EegNetRunner
 
-Where a neural model (EEGNet on tfjs in an earlier biosignal build) plugs in. Not built here.
+Where a neural model (such as EEGNet on tfjs) plugs in. Not built here.
 
 #### Methods
 

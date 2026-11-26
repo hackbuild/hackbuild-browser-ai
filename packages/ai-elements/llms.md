@@ -102,7 +102,7 @@ The rows of a recall trace as text, marking the hits handed to the model.
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You start new code on @hackbuild/ai-elements. It is deprecated; install @hackbuild/ai-views and import `define` from `@hackbuild/ai-views/elements`.
+- You look for the 0.1 model picker, download bar, status pills or chat panel. They are gone; use `<model-select>`, `<chat-pane>` and `<chat-composer>` from @hackbuild/ai-views.
+- You expect bare tag names from this package's `define()`. Its prefix defaults to `hb`, so you get `<hb-model-select>`; the ai-views `define()` registers bare names by default.
+- You leave out the stylesheet. The elements draw with the page's hackbuild-ui stylesheet, so install @virgilvox/hackbuild-ui as the peer and load its CSS.

@@ -4,11 +4,13 @@ Plug onnxruntime-web and transformers.js into the models hub, with device ladder
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/devices)](https://www.npmjs.com/package/@hackbuild/devices) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 7.2 kB measured](https://img.shields.io/badge/gzip-7.2%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet. The runtime imports of transformers.js and onnxruntime-web passed one automated pass in Chrome 150 on an Apple M1 that nobody has looked at; the ort ladder on a real graph and Safari have not run.
+
 ## What it does
 
 - Gives the two providers every model package plugs into the `@hackbuild/models` hub, one per runtime.
 - Imports transformers.js and onnxruntime-web at run time from pinned CDN URLs with fallbacks, once per page.
-- Builds the ladders of device and dtype a load walks, in the orders the earlier builds settled on.
+- Builds the ladders of device and dtype a load walks, in a fixed order per model family.
 - Merges per file download progress into one fraction and one status line.
 - Turns a load, run, storage, mic or camera failure into one lowercase line that names it and the working alternative.
 
@@ -32,7 +34,7 @@ Each runtime is optional: load only the one your models use.
 ```ts
 import { probe } from "@hackbuild/ai-env";
 import { humanError, LADDERS, loadOrt, loadTransformers, ortProvider, ortWasmPaths, tjsProvider } from "@hackbuild/devices";
-import { createHub } from "@hackbuild/models";
+import { CATALOG, createHub } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 
 // one hub per page; one provider per runtime, each runtime imported at run time from a pinned url
@@ -40,9 +42,10 @@ const hub = createHub({ env: await probe() });
 hub.provide("tjs", tjsProvider({ runtime: loadTransformers() }).factory);
 hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore(), wasmPaths: ortWasmPaths() }).factory);
 
-// a record walks its ladder: webgpu fp16, webgpu fp32, wasm q8, wasm fp32
-const source = { modelId: "onnx-community/depth-anything-v2-small" }; // weights Apache-2.0
-hub.registry.add({ id: "depth", provides: ["depth"], provider: "tjs", source, sizeMB: 100, sizeSource: "inferred", ladder: LADDERS.depth(), licence: "Apache-2.0", commercial: true });
+// a catalog record on the depth ladder: webgpu fp16, webgpu fp32, wasm q8, wasm fp32
+const rec = { ...CATALOG.find((r) => r.id === "depth-anything-v2-small")!, ladder: LADDERS.depth() };
+hub.registry.add(rec);
+console.log("weight licence", rec.licence); // from the record
 
 // load it; a failure becomes one lowercase line naming it and what still works
 const line = await hub.use("depth").then((l) => `loaded on ${l.rung.device}`, (e) => humanError(e));
@@ -72,22 +75,22 @@ hub.provide("ort", ort.factory);
 
 ### pinned runtimes
 
-`loadTransformers()` and `loadOrt()` return memoized loaders, so every package shares one runtime instance per page; a failed import is retried on the next call. They go through the file:// safe `importEsm` of @hackbuild/ai-env, trying jsDelivr first and esm.sh after. `RUNTIME_SHA256` holds the SHA-256 of the pinned jsDelivr files (measured 2026-11-23, two fetches each, byte identical). It is opt in: pass `{ integrity: RUNTIME_SHA256 }`, and the text is fetched, checked and imported from a Blob URL, which moves `import.meta.url`; set ort's `wasmPaths` (`ortWasmPaths`) when you do. The esm.sh fallbacks carry no hash, so with integrity on they run only if their text matches, which it will not.
+`loadTransformers()` and `loadOrt()` return memoized loaders, so every package shares one runtime instance per page; a failed import is retried on the next call. They go through the file:// safe `importEsm` of @hackbuild/ai-env, trying jsDelivr first and esm.sh after. `RUNTIME_SHA256` holds the SHA-256 of the pinned jsDelivr files; two fetches of each gave identical bytes. It is opt in: pass `{ integrity: RUNTIME_SHA256 }`, and the text is fetched, checked and imported from a Blob URL, which moves `import.meta.url`; set ort's `wasmPaths` (`ortWasmPaths`) when you do. The esm.sh fallbacks carry no hash, so with integrity on they run only if their text matches, which it will not.
 
 ### ladders
 
 A ladder is the list of rungs (device and dtype) a load tries in order. The walk and error names (`walkLadder`, `classifyError`) are the models package's and are re-exported here.
 
 ```ts
-LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32 (as earlier builds did)
-LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu (as earlier builds did)
-LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm (as earlier builds did)
-LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap (an earlier vision build)
-LADDERS.ort()            // webgpu at basic, all, disabled, then wasm (as earlier builds did)
+LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32
+LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu
+LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm
+LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap
+LADDERS.ort()            // webgpu at basic, all, disabled, then wasm
 tjsLadder({ webgpu: ["q4f16"], wasm: ["q8"] })
 ```
 
-`LADDERS.smolvlm()` tries the fp32 embed and vision encoder first: with fp16, Chrome 150 on an Apple M1 gave captions unrelated to the image (measured 2026-11-23). A `freshHeap` rung only retries; transformers.js offers no fresh heap.
+`LADDERS.smolvlm()` tries the fp32 embed and vision encoder first: with fp16, Chrome 150 on an Apple M1 gave captions unrelated to the image in a run on 2026-11-23. A `freshHeap` rung only retries; transformers.js offers no fresh heap.
 
 ### failure copy
 
@@ -156,23 +159,19 @@ This package loads no model of its own and names none by default. It loads the r
 - [@hackbuild/ai-env](../ai-env/README.md) probes WebGPU and threads, and gives `importEsm`.
 - [@hackbuild/vision](../vision/README.md) and [@hackbuild/imagegen](../imagegen/README.md) load their models through these providers.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. transformers.js and onnxruntime-web are Apache-2.0, loaded at run time and never bundled. The quick start's Depth Anything V2 small weights are Apache-2.0.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/devices` passes 10 tests under
-  Node 22.18.0 with fake runtimes: ladder orders, per sub graph dtypes,
-  progress merging with and without totals, the transformers.js provider
-  walking fp16 to fp32 through the hub with the f16 failure named,
-  runtime configuration (threads, proxy, caches, file://), loader
-  routing, the ort provider fetching a graph once while the ladder moves
-  from basic to all after a `transformer_memcpy` failure, external data,
-  graph file naming, and the memoized runtime loader retrying after a
-  failed import.
-
-- 2026-11-24: each mic and camera error name, each runtime kind, the
-  storage codes, an unknown message, and transformers.js progress
-  reaching `hub.onLoad` (`test/human.test.ts`).
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/devices` under Node 22.18.0 with fake runtimes: ladder orders, per sub graph dtypes, progress merging with and without totals, the transformers.js provider walking fp16 to fp32 through the hub with the f16 failure named, runtime configuration (threads, proxy, caches, file://), loader routing, the ort provider fetching a graph once while the ladder moves from basic to all after a `transformer_memcpy` failure, external data, graph file naming, and the memoized runtime loader retrying after a failed import | passes 10 tests |
+| 2026-11-23 | `RUNTIME_SHA256` against the pinned jsDelivr files, two fetches each | byte identical (measured) |
+| 2026-11-24 | `test/human.test.ts`: each mic and camera error name, each runtime kind, the storage codes, an unknown message, and transformers.js progress reaching `hub.onLoad` | passes |
 
 ### Not verified by anything
 
@@ -180,7 +179,8 @@ This package loads no model of its own and names none by default. It loads the r
   and camera.
 
 - The pinned CDN URLs against the real transformers.js 4.3.2 and
-  onnxruntime-web 1.27.0 packages, in any browser.
+  onnxruntime-web 1.27.0 packages in any browser but Chrome 150, where
+  one automated pass imported both.
 - `externalData` and `wasmPaths` against a real onnxruntime-web session.
 - `freshHeap` rungs: transformers.js offers no fresh heap, so the rung
   only retries; a true fresh heap needs a new worker (not built).
@@ -195,7 +195,3 @@ This package loads no model of its own and names none by default. It loads the r
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. transformers.js and onnxruntime-web are Apache-2.0, loaded at run time and never bundled. The quick start's Depth Anything V2 small weights are Apache-2.0.

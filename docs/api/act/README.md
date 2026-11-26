@@ -619,7 +619,7 @@ const CLIP_RULES: readonly ClipRule[];
 ```
 
 The eight rules, first match wins, narrow rules first. Data: an app adds
-rules in front for its own library. From earlier builds (vendor).
+rules in front for its own library (vendor).
 
 ***
 
@@ -763,7 +763,7 @@ const WEAK_WORDS: readonly string[];
 
 Single words too common to carry a feeling or a gesture on their own
 ("right", "sure", "love", "show"): skipped by the keyword step. 27
-words (computed) from earlier builds, plus "please", which the light
+words (computed), plus "please", which the light
 stemmer here folds onto "pleased".
 
 ## Functions

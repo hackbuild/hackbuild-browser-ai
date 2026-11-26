@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import a model runtime into the agent. The agent loads no runtime and no weights; pass a `ChatEngine` from `@hackbuild/chat` as `brain`, or `brain: null` to run the reflex brain and goal planners alone.",
+    "You throw a plain `Error` from a tool for an expected failure. Throw `ToolError` with a first person sentence such as `i do not see a mug here.`; that text is what the model reads next.",
+    "You leave `rng` unset and every free tick picks the first `idle` plan. Pass a seeded `rng` to `createAgent` when you give it `idle` plans.",
+    "You set `mode: \"reflex\"` without a `reflex`. Give it a `Reflex` with `add(pattern, steps)` rules; with no brain, requests the rules cannot map end the turn as `no-brain`.",
+    "You read only the spoken text after `handle`. Check `turn.ended` too: `failures`, `repeat`, `steps` and `guard` mean the turn stopped early, and `turn.results` holds each step's text."
+  ]
+}

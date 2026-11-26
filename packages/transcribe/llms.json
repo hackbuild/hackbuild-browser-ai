@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import @huggingface/transformers at the top of the file. Pass `loadTransformers()` from @hackbuild/devices as the `runtime` of `tjsProvider` and register it with `hub.provide(\"tjs\", ...)` after `attachTranscribe(hub)`; this package bundles no runtime.",
+    "You let transformers.js fetch weights on its own. Pass `cache: transformersCache(store, { licenceFor })` from @hackbuild/weights to `tjsProvider`, with `licenceFor` reading `licence` off the matching record in `TRANSCRIBE_RECORDS`, never a string you type.",
+    "You hand `transcribe` a decoded buffer at 44.1 or 48 kHz. It takes 16 kHz mono: decode with `decodeAudio(file, 16000)` from @hackbuild/media, then `toMono(channels)`, and pass the audio-dsp core from `loadDsp` as the second argument.",
+    "You pass `task` or `language` for an english only model such as `whisper-base.en`. transformers.js rejects them; `transcribe` already leaves them out for those records, and `languagesFor(record, wanted)` tells you the language is locked.",
+    "You hard code a model id. `defaultTranscribeId(webgpu)` gives large-v3-turbo with a webgpu adapter and base.en without; a stop through `signal` rejects with an AbortError whose message is `transcription stopped`; treat it as a cancel and show no error."
+  ]
+}

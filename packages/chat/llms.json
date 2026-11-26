@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You never import `@mlc-ai/web-llm`, `@wllama/wllama` or `@huggingface/transformers` statically. Pass the imported module as `module` to `loadWebLLM`, `loadWllama` or `loadTransformers`; for wllama use `await importEsm(wllamaUrls().esm)` from `@hackbuild/ai-env`, which also works from file://.",
+    "`loadWllama` takes GGUF files as `blobs`, never a URL. Get each Blob with `store.get({ url, licence })` from `@hackbuild/weights`, take the licence from the model record (`rec.licence`), and pass split GGUF files in order.",
+    "Text events never hold think blocks or control markers. Read reasoning from `think` events, or pass `think: \"drop\"`; do not strip tags from `text` yourself.",
+    "A schema refusal does not throw. The engine tries `fallbackSchemas`, then turns schemas off for that engine and puts the schema in the prompt; check `result.schemaFallback` and parse the text yourself when it is true.",
+    "`anthropicMessages` needs `model` and sends no temperature, top_p or top_k. `openaiCompatible` takes the base URL up to `/v1`, and sends `repeat_penalty` only with `llamaParams: true`.",
+    "\"webllm runtime and model library do not match\" means the WebLLM module and the model library disagree. Pin `@mlc-ai/web-llm` to 0.2.84 and call `dispose()` on an engine before you load the next one."
+  ]
+}

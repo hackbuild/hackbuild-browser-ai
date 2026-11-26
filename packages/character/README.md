@@ -29,20 +29,19 @@ import { CHARACTER_WASM_BASE64 } from "@hackbuild/character/inline";
 // load the wasm core from the inlined base64 (or pass { url } or { bytes })
 const core = await loadCharacterCore({ base64: CHARACTER_WASM_BASE64 });
 
-// read a card the user dropped: PNG, CHARX or JSON, detected from the bytes
-const file = new File([], "card.png");
-const read = core.read(new Uint8Array(await file.arrayBuffer()));
-
-// any version to V3, then add or update the profile extension
-const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
-console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
-
-// fill the greeting and pick the lorebook entries the last turns activate
-console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
-console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
-
-// write it back as a PNG with both card chunks
-console.log(core.writePng(card).length, "bytes");
+// read a card the user picks: PNG, CHARX or JSON, detected from the bytes
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const read = core.read(new Uint8Array(await input.files![0]!.arrayBuffer()));
+  // any version to V3, then add or update the profile extension
+  const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
+  console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
+  // fill the greeting and pick the lorebook entries the last turns activate
+  console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
+  console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
+  // write it back as a PNG with both card chunks
+  console.log(core.writePng(card).length, "bytes");
+};
 ```
 
 ## Live example
@@ -164,28 +163,23 @@ Every core failure throws `CharacterError` with the core's message.
 - [@hackbuild/speak](../speak/README.md) can take `voice.engine`, `voice.voiceId`, `rate` and `pitch` from the profile.
 - [@hackbuild/agent](../agent/README.md) and [@hackbuild/chat](../chat/README.md) can take the persona text and `activeLore` entries as context.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)), the Rust core included; this README is CC-BY-4.0 with its code samples also MIT. Card fixtures are written for this repository (CC0). This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `cargo test -p hackbuild-character` passes, 27 tests (23
-  unit, 2 parity, 2 CLI end to end) with rustc 1.95 native; `cargo fmt
-  --check` and `cargo clippy --workspace --all-targets -D warnings` pass,
-  and clippy passes for wasm32 with rustc 1.92.
-- 2026-11-22: `npx vitest run packages/character` passes, 46 tests, in
-  Node 22.18.0.
-- 2026-11-22: native and wasm parity: the wasm build gives the same bytes
-  as the native build for all 35 cases in `crates/character/tests/parity.json`
-  (read, upgrade, downgrade, validate, migrate on V1, V2 and V3 fixtures;
-  PNG writes in three modes; CHARX writes with and without refs; a CHARX
-  with a deflated entry; error cases).
-- The inflater against Node's zlib (fixed and dynamic Huffman blocks).
-- Card fixtures are written for this repository (CC0); no third party
-  character content is used.
-
-- 2026-11-24: the optional `lock` record: absent stays absent, present
-  survives `migrate` twice with no notes, a string is dropped with a note
-  (crate test `optional_lock` and `test/character.test.ts`).
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `cargo test -p hackbuild-character` with rustc 1.95 native | passes, 27 tests (23 unit, 2 parity, 2 CLI end to end) |
+| 2026-11-22 | `cargo fmt --check` and `cargo clippy --workspace --all-targets -D warnings` | pass; clippy also passes for wasm32 with rustc 1.92 |
+| 2026-11-22 | `npx vitest run packages/character` in Node 22.18.0 | passes, 46 tests |
+| 2026-11-22 | native and wasm parity over all 35 cases in `crates/character/tests/parity.json` (read, upgrade, downgrade, validate, migrate on V1, V2 and V3 fixtures; PNG writes in three modes; CHARX writes with and without refs; a CHARX with a deflated entry; error cases) | the wasm build gives the same bytes as the native build |
+| not dated | the inflater against Node's zlib (fixed and dynamic Huffman blocks) | passes |
+| not dated | card fixtures | written for this repository (CC0); no third party character content is used |
+| 2026-11-24 | the optional `lock` record (crate test `optional_lock` and `test/character.test.ts`) | absent stays absent, present survives `migrate` twice with no notes, a string is dropped with a note |
 
 ### Not verified by anything
 
@@ -207,7 +201,3 @@ Every core failure throws `CharacterError` with the core's message.
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)), the Rust core included; this README is CC-BY-4.0 with its code samples also MIT. Card fixtures are written for this repository (CC0). This package uses no model and no weights.

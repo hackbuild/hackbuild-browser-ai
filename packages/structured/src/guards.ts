@@ -1,5 +1,5 @@
 /**
- * Turn guards for small models (as earlier builds did): stop after 3 parse
+ * Turn guards for small models: stop after 3 parse
  * failures, when the same call repeats 3 times in the last 6, or after 2
  * garbage replies in a row; cap pushbacks at 3.
  */

@@ -1,6 +1,5 @@
 /**
- * TranscribeDrop, TranscriptView and their rack parts in the DOM, after the
- * earlier transcription tool: the drop zone is the page until a file is in
+ * TranscribeDrop, TranscriptView and their rack parts in the DOM: the drop zone is the page until a file is in
  * it, then the transcript is. Lines carry their time, edit in place (one
  * undo step each), and export as txt, srt, vtt and json once there is text.
  */

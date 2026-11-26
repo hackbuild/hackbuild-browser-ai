@@ -915,7 +915,7 @@ knobs for it.
 | ------ | ------ | ------ |
 | <a id="property-device-1"></a> `device` | [`Device`](#device) | - |
 | <a id="property-dtype"></a> `dtype?` | `string` \| `Record`\<`string`, `string`\> | One dtype, or per sub graph dtypes for transformers.js (`{ embed_tokens: "fp16", decoder_model_merged: "q4" }`). |
-| <a id="property-freshheap"></a> `freshHeap?` | `boolean` | Load into a fresh wasm heap (as earlier builds did). |
+| <a id="property-freshheap"></a> `freshHeap?` | `boolean` | Load into a fresh wasm heap. |
 | <a id="property-needs"></a> `needs?` | [`Need`](#need)[] | Env capabilities the rung needs; rungs whose needs are missing are skipped. |
 | <a id="property-options"></a> `options?` | `Record`\<`string`, `unknown`\> | Runtime specific knobs, e.g. `{ context_window_size: 4096 }` for WebLLM. |
 | <a id="property-ort"></a> `ort?` | [`OrtRung`](#ortrung) | onnxruntime-web session options for this rung. |
@@ -1290,8 +1290,8 @@ Pinned commits and file hashes per Hugging Face repo, written by tools/pin-weigh
 const PRESETS: readonly Preset[];
 ```
 
-Size presets that fill the rack, named by weight class (the earlier slot
-rack's three presets, light to heavy). Picks are CATALOG ids; the total
+Size presets that fill the rack, named by weight class (three presets,
+light to heavy). Picks are CATALOG ids; the total
 is computed from the records, never written by hand.
 
 ***
@@ -1362,7 +1362,7 @@ The memory budget for one model on this machine, from `deviceMemoryGB` and the b
 function classifyError(e): ErrorKind;
 ```
 
-Name the failure so a ladder and a status line can act on it. Patterns come from the builds' logs.
+Name the failure so a ladder and a status line can act on it. Patterns come from runtime error messages seen in logs.
 
 #### Parameters
 
@@ -1519,7 +1519,7 @@ Implicit needs of a rung: a webgpu device needs an adapter, an f16 dtype needs s
 function ortLadder(): Rung[];
 ```
 
-The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm.
+The onnxruntime-web ladder to walk after one fetch: webgpu at basic, all, disabled, then wasm.
 
 #### Returns
 

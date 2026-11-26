@@ -1,8 +1,7 @@
 /**
  * Runtime loading with pinned CDN URLs and fallbacks, through ai-env's
- * file:// safe importEsm. Pins are the versions the earlier builds ran:
- * transformers.js 4.3.2 (as earlier builds did) and onnxruntime-web 1.27.0 (an earlier stem splitter, the earlier transcription tool
- * August). Both are Apache-2.0 (MIT-compatible) libraries, loaded at
+ * file:// safe importEsm. Pins:
+ * transformers.js 4.3.2 and onnxruntime-web 1.27.0. Both are Apache-2.0 (MIT-compatible) libraries, loaded at
  * runtime and never bundled.
  */
 

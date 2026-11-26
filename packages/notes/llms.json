@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import @tensorflow/tfjs at the top of the file. Pass a loader instead: `tfjsPitchProvider({ runtime: () => importEsm(url) })` with tfjs 3.21.0, and share that one tfjs instance across the page.",
+    "You call `hub.use(\"notes\")` before registering the runtime and get `no factory for provider tfjs`. Call `attachNotes(hub)` and `hub.provide(\"tfjs\", tfjsPitchProvider(...))` first.",
+    "You expect the Basic Pitch graph to go through @hackbuild/weights. tfjs `loadGraphModel` fetches it from the record's `source.url`, so it sits in the browser's HTTP cache, and the hub states the licence from the record on first load.",
+    "You hand `runPitch` 44.1 kHz stereo. It takes 22050 Hz mono: decode with `decodeAudio(file, 22050)` from @hackbuild/media and pass one channel, and run it inside `hub.run(m, ...)` with `hub.release(m)` after.",
+    "You decode with the basic-pitch library's settings and wonder why notes differ. `decodeNotes` is its own decoder; pass the same `DETAILS` preset to `decodeNotes` and `refineNotes`, and treat the AbortError `notes stopped` from your `signal` as a cancel."
+  ]
+}

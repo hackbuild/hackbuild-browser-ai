@@ -14,7 +14,7 @@ Options for `loadWebLLM`: the module, model id, wanted context window, custom ca
 
 | Property | Type | Description | Inherited from |
 | ------ | ------ | ------ | ------ |
-| <a id="property-contextwindow"></a> `contextWindow?` | `number` | Wanted context window; the loader walks [want, 8192, 4096, 2048] filtered to at most want (as earlier builds did). | - |
+| <a id="property-contextwindow"></a> `contextWindow?` | `number` | Wanted context window; the loader walks [want, 8192, 4096, 2048] filtered to at most want. | - |
 | <a id="property-custommodels"></a> `customModels?` | `unknown`[] | Custom catalog entries (\{ model, model_id, model_lib \}) added before the prebuilt list. | - |
 | <a id="property-maxtokens"></a> `maxTokens?` | `number` | Default max tokens. 512. | [`EngineOptions`](index.md#engineoptions).[`maxTokens`](index.md#property-maxtokens-1) |
 | <a id="property-modelid"></a> `modelId` | `string` | - | - |
@@ -153,7 +153,7 @@ Options for `webllmDriver`: a built MLCEngine, its model id and whether to send 
 | ------ | ------ | ------ |
 | <a id="property-engine"></a> `engine` | [`MLCEngineLike`](#mlcenginelike) | - |
 | <a id="property-modelid-2"></a> `modelId` | `string` | - |
-| <a id="property-nativetools-1"></a> `nativeTools?` | `boolean` | Native tools: only the Hermes 2 Pro and Hermes 3 builds (as earlier builds did). tool_choice "required" is not sent. |
+| <a id="property-nativetools-1"></a> `nativeTools?` | `boolean` | Native tools: only the Hermes 2 Pro and Hermes 3 builds. tool_choice "required" is not sent. |
 
 ***
 

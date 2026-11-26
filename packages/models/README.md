@@ -4,10 +4,12 @@ Describe each model once, with its runtime, device ladder, size and weight licen
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/models)](https://www.npmjs.com/package/@hackbuild/models) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 42.8 kB measured](https://img.shields.io/badge/gzip-42.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: model runs through this package's hub have been verified in a real browser on the vision and transcribe pages: Depth Anything v2 small on webgpu and wasm, also under the hub's frame budget schedule, LFM2-VL 450M, EfficientDet Lite0, SlimSAM 77, SmolVLM 256M and whisper-base.en. That was one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. The rest has not run, including every `CATALOG` ladder.
+
 ## What it does
 
 - Holds model records: what a model provides, which runtime runs it, the device and dtype ladder to walk, quirks app code needs, its size with a source word, and its weight licence.
-- Ships a catalogue of 45 records (computed) with pinned commits and file hashes for the Hugging Face repos they load.
+- Ships a catalogue of chat and starter records with pinned commits and file hashes for the Hugging Face repos they load.
 - Says whether a record fits this machine (memory budget, WebGPU, shader-f16, storage) and why not, before any download.
 - Runs a hub that routes a capability to a record, walks its ladder through a provider factory, keeps loaded models under a memory budget, and runs GPU work one job at a time.
 - Suggests first visit defaults with one reason per field.
@@ -15,10 +17,10 @@ Describe each model once, with its runtime, device ladder, size and weight licen
 ## Install
 
 ```sh
-npm install @hackbuild/models
+npm install @hackbuild/models @hackbuild/devices @hackbuild/weights
 ```
 
-Depends on @hackbuild/ai-env for the `Env` type. No peers. No weights ship here; runtimes come in through the factories you register.
+Depends on @hackbuild/ai-env for the `Env` type. No peers. The quick start also installs @hackbuild/devices for the transformers.js provider and @hackbuild/weights for the file cache; the records and the hub need neither. No weights ship here; runtimes come in through the factories you register.
 
 ## Quick start
 
@@ -31,18 +33,18 @@ import { openWeightStore, transformersCache } from "@hackbuild/weights";
 // what fits this machine, before any download
 const env = await probe();
 for (const r of CATALOG) console.log(r.id, fitOf(r, env).reason);
-
-// a hub over the catalogue; transformers.js is imported at run time, its files go through the weight store
-const cache = transformersCache(await openWeightStore(), { licenceFor: (u) => (u.includes("/depth-anything-v2-small/") ? "Apache-2.0" : null), sha256For: pinnedSha });
+// transformers.js is imported at run time; its files go through the weight store under each record's licence
+const licenceFor = (url: string) => CATALOG.find((r) => r.source?.repo && url.includes(`/${r.source.repo}/`))?.licence ?? null;
+const cache = transformersCache(await openWeightStore(), { licenceFor, sha256For: pinnedSha });
 const hub = createHub({ registry: createRegistry(CATALOG), env, budgetMB: 4000 });
 hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache }).factory);
-
-// depth-anything-v2-small, weights Apache-2.0: routed by capability, ladder walked, loaded once
-hub.onLoad((e) => console.log(e.id, e.phase, e.fraction));
-const depth = await hub.use<(image: string) => Promise<unknown>>("depth");
-console.log("runs on", depth.rung.device, "after", depth.failures.length, "failed rungs");
-console.log(await hub.run(depth, (pipe) => pipe("https://example.com/room.jpg")));
-hub.release(depth);
+// depth-anything-v2-small, weights Apache-2.0, on a picked photo: routed by capability, ladder walked, loaded once
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const depth = await hub.use<(image: string) => Promise<unknown>>("depth");
+  console.log("runs on", depth.rung.device, await hub.run(depth, (pipe) => pipe(URL.createObjectURL(input.files![0]!))));
+  hub.release(depth);
+};
 ```
 
 ## Live example
@@ -57,7 +59,7 @@ A record names what it `provides`, its `provider` (webllm, wllama, tjs, ort, pro
 
 ### ladders
 
-`ladderFor(record, env)` drops rungs the device cannot run: a webgpu rung without an adapter, an f16 dtype (also inside per sub graph dtypes) without `shader-f16`, a Prompt API rung without `LanguageModel`. `ortLadder()` is the onnxruntime-web walk from the transcription build: webgpu plus wasm at optimization basic, all, disabled, then wasm alone. Pair it with `store.once(ref)` from @hackbuild/weights so every attempt reads one download. `walkLadder` tries rungs in order, names each failure with `classifyError` (runtime mismatch, out of memory, f16, device lost, unsupported op, network, abort) and stops on network and abort.
+`ladderFor(record, env)` drops rungs the device cannot run: a webgpu rung without an adapter, an f16 dtype (also inside per sub graph dtypes) without `shader-f16`, a Prompt API rung without `LanguageModel`. `ortLadder()` is the onnxruntime-web walk: webgpu plus wasm at optimization basic, all, disabled, then wasm alone. Pair it with `store.once(ref)` from @hackbuild/weights so every attempt reads one download. `walkLadder` tries rungs in order, names each failure with `classifyError` (runtime mismatch, out of memory, f16, device lost, unsupported op, network, abort) and stops on network and abort.
 
 ### quirks
 
@@ -65,17 +67,17 @@ A record names what it `provides`, its `provider` (webllm, wllama, tjs, ort, pro
 
 ### pinned commits
 
-`PINS` (written by `tools/pin-weights.mjs`) holds a commit per Hugging Face repo the records load and a SHA-256 per weight and config file at it: the LFS oid (vendor), or a download and hash (measured) for files kept in git and for LFS files up to 30 MB. A registry gives a record of a pinned repo its `source.revision`, so transformers.js and the ort provider fetch `resolve/<commit>/`, not `main`; `pinnedSha(url)` gives the hash for such a URL, which the ort provider, the static embedder and `transformersCache({ sha256For })` check. WebLLM loads its own config at `resolve/main` and is not pinned.
+`PINS` (written by `tools/pin-weights.mjs`) holds a commit per Hugging Face repo the records load and a SHA-256 per weight and config file at it: the LFS oid the hub reports, or the hash of a download for files kept in git and for LFS files up to 30 MB. A registry gives a record of a pinned repo its `source.revision`, so transformers.js and the ort provider fetch `resolve/<commit>/`, not `main`; `pinnedSha(url)` gives the hash for such a URL, which the ort provider, the static embedder and `transformersCache({ sha256For })` check. WebLLM loads its own config at `resolve/main` and is not pinned.
 
 ### the catalogue
 
-`CATALOG` holds 45 records (computed): 40 chat rows, which cover the suite design's chat catalogue and every chat model the earlier tools named, and 5 starter records for embed, depth, transcribe, speak and stems. Chat sizes are measured: the Content-Length of a HEAD request on every file the runtime loads, summed in MiB, at the repo head of 2026-11-24 (WebLLM rows leave out the model library wasm). The other sizes are inferred from the builds or from parameter count. Licences on the starter rows are the model cards' as of 2026-11-22; on the chat rows added 2026-11-24 they are the model card licence field the Hugging Face API returns, or the design harvest's string marked "inferred, unverified", and `commercial` is "unknown". The abliterated and uncensored GGUF builds are kept and carry `censorship`. The 14 chat rows added 2026-11-25 (Qwen3 1.7B, Phi-4 mini, SmolLM2 1.7B and the WebLLM models an earlier tool listed) take their size from the Hugging Face file listing (vendor, no download), in MiB.
+`CATALOG` holds chat rows, which cover the suite's chat catalogue, and starter records for embed, depth, transcribe, speak and stems. Chat sizes are measured: the Content-Length of a HEAD request on every file the runtime loads, summed in MiB, at the repo head of 2026-11-24 (WebLLM rows leave out the model library wasm). The other sizes are inferred from published tables or from parameter count. Licences on the starter rows are the model cards' as of 2026-11-22; on the chat rows added 2026-11-24 they are the model card licence field the Hugging Face API returns, or a recorded string marked "inferred, unverified", and `commercial` is "unknown". The abliterated and uncensored GGUF builds are kept and carry `censorship`. The chat rows added 2026-11-25 (Qwen3 1.7B, Phi-4 mini, SmolLM2 1.7B and more WebLLM models) take their size from the vendor's Hugging Face file listing, with no download, in MiB.
 
 Records carry the facts a picker row shows before any download: `params`, `quant`, `vramMB` with `vramSource`, `censorship` (stock, uncensored, abliterated, unknown; a field on the record, never a substring rule), `tags`, `tier`, `family`, a one line `note`, the catalogue `group`, the owner's label as `badge` ("best", "default", "fast, capable"), a `speed` word and a `verdict` of one to four words, the words a person picks by. Licences are shown as recorded.
 
 ### fit and budget
 
-`budgetFor(env)` gives a model 45 percent of `deviceMemoryGB`, capped at 6 GB on cpu, and 5.5 GB when the browser does not say; the three constants are vendor figures for a native runtime and proposed here until a browser run measures them. `fitOf` combines the ladder against the probe, the budget against VRAM (or the download when no VRAM is recorded) and the storage estimate against the download, and returns one of "fits", "fits on cpu, slow", "needs f16", "needs webgpu", "over memory", "over storage" or "cannot run here" with a lowercase reason. `PRESETS` fill the slot rack by weight class, and `presetTotal` sums their download (computed) with the weakest source word among the parts. `ggufFacts(fileName)` reads params, quant and split part from a GGUF name for a custom row.
+`budgetFor(env)` gives a model 45 percent of `deviceMemoryGB`, capped at 6 GB on cpu, and 5.5 GB when the browser does not say; the three constants are vendor figures for a native runtime and proposed here until a browser run measures them. `fitOf` combines the ladder against the probe, the budget against VRAM (or the download when no VRAM is recorded) and the storage estimate against the download, and returns one of "fits", "fits on cpu, slow", "needs f16", "needs webgpu", "over memory", "over storage" or "cannot run here" with a lowercase reason. `PRESETS` fill the slot rack by weight class, and `presetTotal` computes their summed download with the weakest source word among the parts. `ggufFacts(fileName)` reads params, quant and split part from a GGUF name for a custom row.
 
 ### the hub
 
@@ -83,7 +85,7 @@ Records carry the facts a picker row shows before any download: `params`, `quant
 
 ### scheduling around rendering
 
-A webgpu model shares the GPU with the scene and stutters it, and JS profiling does not show it (earlier builds). `run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs, maxDeferMs, when })` waits for the gap since the model's last start, an idle callback, and frames under budget (fed by `hub.reportFrame(ms)` from the render loop, mean of the last 30); `when: "skip"` rejects with code `skipped` instead of waiting, and also when a run of that model is in flight. `busy(id?)`, `onBusy(fn)` and `status()[i].busy` drive a busy indicator; `use(cap, { size, maxMB })` picks a smaller model.
+A webgpu model shares the GPU with the scene and stutters it, and JS profiling does not show it. `run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs, maxDeferMs, when })` waits for the gap since the model's last start, an idle callback, and frames under budget (fed by `hub.reportFrame(ms)` from the render loop, mean of the last 30); `when: "skip"` rejects with code `skipped` instead of waiting, and also when a run of that model is in flight. `busy(id?)`, `onBusy(fn)` and `status()[i].busy` drive a busy indicator; `use(cap, { size, maxMB })` picks a smaller model.
 
 ### load steps
 
@@ -91,7 +93,7 @@ A webgpu model shares the GPU with the scene and stutters it, and JS profiling d
 
 ### defaults
 
-`suggestDefaults(env, { catalogue, stored, estimate })` returns `{ patch, reasons, download, budget }`: the largest stored model that fits the budget, the device and thread count, and one `{ label, value, why }` row per field. A catalogue row is offered for download only when it is 1.5 times the stored pick (vendor rule, proposed here) or nothing stored fits; with nothing that fits, the smallest stored model is picked and the reason says replies may be slow. When the catalogue has a `START_GROUP` ("start here") group, downloads are offered from it only; the largest row that fits is otherwise a 5 GB abliterated GGUF.
+`suggestDefaults(env, { catalogue, stored, estimate })` returns `{ patch, reasons, download, budget }`: the largest stored model that fits the budget, the device and thread count, and one `{ label, value, why }` row per field. A catalogue row is offered for download only when it is 1.5 times the stored pick, a vendor rule proposed here, or nothing stored fits; with nothing that fits, the smallest stored model is picked and the reason says replies may be slow. When the catalogue has a `START_GROUP` ("start here") group, downloads are offered from it only; the largest row that fits is otherwise a 5 GB abliterated GGUF.
 
 ### stubs
 
@@ -181,7 +183,7 @@ Weights are never bundled. Each record loads from the host in the table through 
 | webgpu rungs | WebGPU adapter; f16 dtypes need shader-f16 | yes (inferred) | unknown | unknown | unknown |
 | Prompt API rung | `LanguageModel` | 148 and later | no | no | unknown |
 
-The package itself needs no WebGPU or wasm; `ladderFor` skips the rungs a device cannot run, so a record without an adapter falls to its wasm rungs. No record has been loaded against its real runtime in a browser yet (see below).
+The package itself needs no WebGPU or wasm; `ladderFor` skips the rungs a device cannot run, so a record without an adapter falls to its wasm rungs. No `CATALOG` ladder has been walked against its real runtime in a browser yet (see below).
 
 ## Errors and troubleshooting
 
@@ -206,46 +208,29 @@ The package itself needs no WebGPU or wasm; `ladderFor` skips the rungs a device
 - [@hackbuild/ai-views](../ai-views/README.md) draws the catalogue as picker rows with fit words.
 - [@hackbuild/chat](../chat/README.md), [@hackbuild/vision](../vision/README.md), [@hackbuild/transcribe](../transcribe/README.md) and the other capability packages add records and factories.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here. Each record carries its own weight licence, listed in the table above: Apache-2.0, MIT, the Gemma Terms of Use, the Llama 3, 3.1 and 3.2 Community Licenses, the Qwen Research License (non-commercial) and Chrome's built in AI terms among them. The kokoro-js runtime phonemizes with eSpeak NG, GPL-3.0-or-later, loaded at run time and opt in. The quick start loads depth-anything-v2-small, weights Apache-2.0.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/models` passes 20 tests under Node
-  22.18.0: catalog licences and ladders, licence refusal, rung filtering
-  for webgpu, shader-f16 and Prompt API, the ORT ladder order, error
-  classification on the strings the builds logged, ladder walk and stop,
-  routing by capability, device, size and budget, load reuse across
-  concurrent `use`, budget eviction oldest idle first, refusal when busy
-  models fill the budget, priority order with one job at a time, abort of
-  a waiter, the serial chain, gpu lock for webgpu models only, stub mode,
-  and run scheduling with a fake clock: minimum interval wait and skip,
-  idle wait, frame budget skip and defer limit, busy counts, listeners
-  and re-entry skip.
-
-- 2026-11-24: `test/fit.test.ts`: catalogue facts valid on every row,
-  budget fallback, share and cpu cap, each fit word, preset picks and
-  computed totals with the weakest source word, GGUF name facts; every
-  design chat row present with a measured size, group and label;
-  censorship matching the repo words; every GGUF file pinned with its
-  SHA-256 (the hub's LFS oid, vendor).
-
-- 2026-11-24: `test/defaults.test.ts`: fallback and cpu budgets in the
-  reasons, largest stored fit, the 1.5 times offer rule, smallest stored
-  with the slow warning, the empty pick with an offer that fits storage,
-  determinism, offers from the start group only, and `onLoad` phases for two listeners, a ladder fallback,
-  a failure and a throwing listener.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/models` under Node 22.18.0 | 20 tests pass: catalog licences and ladders, licence refusal, rung filtering for webgpu, shader-f16 and Prompt API, the ORT ladder order, error classification on logged runtime strings, ladder walk and stop, routing by capability, device, size and budget, load reuse across concurrent `use`, budget eviction oldest idle first, refusal when busy models fill the budget, priority order with one job at a time, abort of a waiter, the serial chain, gpu lock for webgpu models only, stub mode, and run scheduling with a fake clock: minimum interval wait and skip, idle wait, frame budget skip and defer limit, busy counts, listeners and re-entry skip |
+| 2026-11-24 | `test/fit.test.ts` | pass: catalogue facts valid on every row, budget fallback, share and cpu cap, each fit word, preset picks and computed totals with the weakest source word, GGUF name facts; every suite chat row present with a measured size, group and label; censorship matching the repo words; every GGUF file pinned with its SHA-256 (the hub's LFS oid, vendor) |
+| 2026-11-24 | `test/defaults.test.ts` | pass: fallback and cpu budgets in the reasons, largest stored fit, the 1.5 times offer rule, smallest stored with the slow warning, the empty pick with an offer that fits storage, determinism, offers from the start group only, and `onLoad` phases for two listeners, a ladder fallback, a failure and a throwing listener |
 
 ### Not verified by anything
 
 - The budget constants in a browser, and whether a "fits" row loads.
-
-- Any record against its real runtime and weights. Not run: whether each
+- Any `CATALOG` record against its real runtime and weights. Not run: whether each
   catalog ladder loads in Chrome, Safari or Firefox; the sizes of the
-  embed, depth, transcribe, speak and stems rows (inferred); whether the
+  embed, depth, transcribe, speak and stems rows, which are inferred; whether the
   added GGUF and ONNX chat rows load in wllama 3.8.1 and transformers.js
   4.3.2; the error patterns against current
   WebLLM 0.2.89, onnxruntime-web 1.31 and transformers.js 4.3.2 messages.
-
 
 ## Size budget
 
@@ -257,7 +242,3 @@ The package itself needs no WebGPU or wasm; `ladderFor` skips the rungs a device
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here. Each record carries its own weight licence, listed in the table above: Apache-2.0, MIT, the Gemma Terms of Use, the Llama 3, 3.1 and 3.2 Community Licenses, the Qwen Research License (non-commercial) and Chrome's built in AI terms among them. The kokoro-js runtime phonemizes with eSpeak NG, GPL-3.0-or-later, loaded at run time and opt in. The quick start loads depth-anything-v2-small, weights Apache-2.0.

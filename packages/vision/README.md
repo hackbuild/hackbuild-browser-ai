@@ -4,6 +4,8 @@ Get depth, objects, masks, landmarks and captions from an image or a webcam in y
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/vision)](https://www.npmjs.com/package/@hackbuild/vision) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 23.8 kB measured](https://img.shields.io/badge/gzip-23.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: Depth Anything V2 small on webgpu and wasm, the EfficientDet detector on a still frame, SmolVLM 256M and LFM2-VL 450M captions and SlimSAM point masks ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. The webcam landmarkers, the person segmenter, YOLO, and every other browser and device have not run.
+
 ## What it does
 
 - Runs depth, detection, segmentation, face, hand and pose landmarks, captions and questions through the `@hackbuild/models` hub.
@@ -44,6 +46,8 @@ hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
 
 // each call loads its model on first use, runs it under the gpu lock, and releases it
 const video = document.querySelector("video")!;
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true }); // the webcam
+await video.play();
 const map = await depth(hub, video); // Depth Anything V2 small, weights Apache-2.0
 const boxes = await detect(hub, video, { scoreThreshold: 0.4 }); // MediaPipe EfficientDet lite0, Apache-2.0
 const line = await caption(hub, video); // SmolVLM 256M, Apache-2.0
@@ -78,7 +82,7 @@ const face = await landmarks(hub, "face", video);      // falls through the chai
 const line = await caption(hub, frame);                // serialized on the vlm chain
 ```
 
-Each call routes through the hub (`use`, `run`, `release`), so WebGPU models take the gpu lock and idle models fall out under the budget. VLM calls also go through one serial chain, as earlier builds did. Landmarks walk a fallback chain of records: MediaPipe GPU, MediaPipe CPU (both rungs of one record), then any other record for the same capability, such as face-api.js. The MediaPipe provider loads one wasm fileset per page and creates one task per record, with the GPU delegate on a webgl rung and the CPU delegate on a wasm rung.
+Each call routes through the hub (`use`, `run`, `release`), so WebGPU models take the gpu lock and idle models fall out under the budget. VLM calls also go through one serial chain. Landmarks walk a fallback chain of records: MediaPipe GPU, MediaPipe CPU (both rungs of one record), then any other record for the same capability, such as face-api.js. The MediaPipe provider loads one wasm fileset per page and creates one task per record, with the GPU delegate on a webgl rung and the CPU delegate on a wasm rung.
 
 ### sharing the GPU with a scene
 
@@ -89,7 +93,7 @@ hub.onBusy((n) => (pill.textContent = n ? "model busy" : ""));
 await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBudgetMs: 20, when: "skip" } });
 ```
 
-The schedule alone did not hold the scene's frames on an Apple M1: with `frameBudgetMs` 20 and `minIntervalMs` 200 the frame p95 stayed at 49.8 ms with no main thread task over 50 ms (measured, Chrome 150). Running the model in a worker did: `depthWorker({ urls: transformersUrls(), device })` loads transformers.js and Depth Anything V2 small (Apache-2.0) in a dedicated worker and takes RGBA pixels, so pre and post processing, the readback and the normalization leave the page's thread. Only models of the registered depth records load in the worker, at their pinned commit, since Depth Anything base and large carry CC-BY-NC-4.0 weights; pass `record` for another model with its licence named.
+The schedule alone did not hold the scene's frames on an Apple M1 in Chrome 150, even with `frameBudgetMs` 20 and `minIntervalMs` 200; the frame times are in the verified table below. Running the model in a worker did: `depthWorker({ urls: transformersUrls(), device })` loads transformers.js and Depth Anything V2 small (Apache-2.0) in a dedicated worker and takes RGBA pixels, so pre and post processing, the readback and the normalization leave the page's thread. Only models of the registered depth records load in the worker, at their pinned commit, since Depth Anything base and large carry CC-BY-NC-4.0 weights; pass `record` for another model with its licence named.
 
 ```ts
 const w = await depthWorker({ urls: transformersUrls(), device: "webgpu" });
@@ -100,7 +104,7 @@ paint(await w.estimate(ctx2d.getImageData(0, 0, 512, 288)));
 
 ### loop and cache
 
-`perceptionLoop({ step, interval })` runs one step at a time beside the render loop; `detectCadenceMs(latency)` is the earlier scene app's max(0.45 s, 4 times the last latency). `ResultCache` keeps results by key so a depth map is computed once per image, as earlier builds did. `depthToRgba` and `fitSize` help with canvases.
+`perceptionLoop({ step, interval })` runs one step at a time beside the render loop; `detectCadenceMs(latency)` waits max(0.45 s, 4 times the last latency). `ResultCache` keeps results by key so a depth map is computed once per image. `depthToRgba` and `fitSize` help with canvases.
 
 ### prompts and the embedding cache
 
@@ -136,7 +140,7 @@ for (const e of tracker.feed(rawFromLandmarks(f, h), now)) for (const r of react
 const seen = notes.next(tracker.perception, wantsLook(text) ? await caption(hub, still) : null); // null when nothing changed
 ```
 
-Thresholds are vendor figures from earlier builds, none measured here:
+Thresholds are vendor figures, none measured here:
 
 | threshold | value |
 |---|---|
@@ -153,7 +157,7 @@ Thresholds are vendor figures from earlier builds, none measured here:
 
 ### yolo stays external
 
-The YOLO decoder is written from the published output layout ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by default: `yoloRecord({ url })` builds a record for a URL the app supplies, with a 640 letterbox and per class NMS at 0.45 keeping 13 boxes, as earlier builds did.
+The YOLO decoder is written from the published output layout ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by default: `yoloRecord({ url })` builds a record for a URL the app supplies, with a 640 letterbox and per class NMS at 0.45 keeping 13 boxes.
 
 ## API overview
 
@@ -189,18 +193,18 @@ The full reference is in [docs/api/vision](../../docs/api/vision/README.md).
 
 | capability | record | runtime | size | weight licence |
 |---|---|---|---|---|
-| depth | `depth-anything-v2-small` (`onnx-community/depth-anything-v2-small`) | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm (as earlier builds did) | 100 MB (inferred) | Apache-2.0 |
+| depth | `depth-anything-v2-small` (`onnx-community/depth-anything-v2-small`) | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm | 100 MB (inferred) | Apache-2.0 |
 | detect | `efficientdet-lite0` (default) | MediaPipe, GPU then CPU delegate | 7 MB (inferred) | Apache-2.0 |
-| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes (as earlier builds did) | unknown | AGPL-3.0 (Ultralytics), supplied by the app |
+| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes | unknown | AGPL-3.0 (Ultralytics), supplied by the app |
 | segment (points) | `slimsam-77-uniform` (`Xenova/slimsam-77-uniform`) | transformers.js, one embedding per image | 38 MiB (vendor) | Apache-2.0 |
 | segment.person | `selfie-segmenter` | MediaPipe | 1 MB (inferred) | Apache-2.0 |
 | landmarks.face | `face-landmarker`, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | 4 MB, 1 MB (inferred) | Apache-2.0; MIT |
 | landmarks.hand, landmarks.pose | `hand-landmarker`, `pose-landmarker-lite` | MediaPipe | 8 MB, 6 MB (inferred) | Apache-2.0 |
 | landmarks.gesture (optional) | `gesture-recognizer` | MediaPipe, hand points plus 7 canned gestures | 8 MB (inferred) | unknown, model card not checked |
 | vision.caption, vision.ask | `smolvlm-256m-instruct` (`HuggingFaceTB/SmolVLM-256M-Instruct`) | transformers.js, per sub graph dtypes, repetition penalty 1.3 | 260 MB (inferred) | Apache-2.0 |
-| vision.caption, vision.ask | `lfm2-vl-450m` (`onnx-community/LFM2-VL-450M-ONNX`) | transformers.js, q4f16 on webgpu only (as earlier builds did) | 320 MB (inferred) | LFM Open License v1.0, commercial use limited by revenue |
+| vision.caption, vision.ask | `lfm2-vl-450m` (`onnx-community/LFM2-VL-450M-ONNX`) | transformers.js, q4f16 on webgpu only | 320 MB (inferred) | LFM Open License v1.0, commercial use limited by revenue |
 
-MediaPipe models load from `MP_MODELS` (Google's MediaPipe model storage); transformers.js models load from the Hugging Face hub. Weights are never bundled; @hackbuild/weights caches the files read through it. `PICKER_RECORDS` lists models for pickers that no hub registers by default, so routing by capability keeps the small defaults above: SmolVLM 500M and SmolVLM2 256M video, Gemma 4 E2B, depth anything v2 base (CC-BY-NC-4.0) and v1 small, YOLOv10 nano, small and medium and FastSAM-s (AGPL-3.0 upstream), and the face swap set (scrfd 10g, ArcFace r50, inswapper 128; InsightFace, non-commercial). Their sizes are the Hugging Face file listings (vendor, no download). A hub that runs one adds the record.
+MediaPipe models load from `MP_MODELS` (Google's MediaPipe model storage); transformers.js models load from the Hugging Face hub. Weights are never bundled; @hackbuild/weights caches the files read through it. `PICKER_RECORDS` lists models for pickers that no hub registers by default, so routing by capability keeps the small defaults above: SmolVLM 500M and SmolVLM2 256M video, Gemma 4 E2B, depth anything v2 base (CC-BY-NC-4.0) and v1 small, YOLOv10 nano, small and medium and FastSAM-s (AGPL-3.0 upstream), and the face swap set (scrfd 10g, ArcFace r50, inswapper 128; InsightFace, non-commercial). Their sizes are vendor figures from the Hugging Face file listings, taken without a download. A hub that runs one adds the record.
 
 ## Browser support
 
@@ -213,7 +217,7 @@ MediaPipe models load from `MP_MODELS` (Google's MediaPipe model storage); trans
 | depth worker | a module or classic Worker | yes, Chrome 150 (measured) | unknown | unknown | unknown |
 | threads | the probe's safe wasm thread count | from the probe | from the probe | from the probe | from the probe |
 
-Without WebGPU the transformers.js ladders fall to wasm, and MediaPipe falls from the GPU delegate to the CPU one. LFM2-VL has no fallback. Depth in the worker on wasm took 4,664 ms per run on the M1 (measured).
+Without WebGPU the transformers.js ladders fall to wasm, and MediaPipe falls from the GPU delegate to the CPU one. LFM2-VL has no fallback.
 
 ## Errors and troubleshooting
 
@@ -240,58 +244,33 @@ Without WebGPU the transformers.js ladders fall to wasm, and MediaPipe falls fro
 - [@hackbuild/depth-mesh](../depth-mesh/README.md) turns a depth map or a mask into a relief solid you can print.
 - [@hackbuild/media](../media/README.md) picks keyframes from a video for `caption`.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Depth Anything V2 small, MediaPipe models, SlimSAM and SmolVLM, Apache-2.0; face-api.js tiny nets, MIT; LFM2-VL, LFM Open License v1.0; YOLO, AGPL-3.0 (external, supplied by the app); the gesture recognizer, unknown.
+
 ## What is verified, and what is not
 
 - Signals: the tracker's rules (noise, smile hold and cooldown, presence grace, left and arrived, wave and low hand, gesture score floor) and the seen note run in unit tests on synthetic frames. Not tuned against a live camera in this repository.
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/vision` passes 15 tests (19 on 2026-11-23) under Node
-  22.18.0 with fake runtimes: licences on every record and YOLO kept
-  external, every capability in stub mode, depth normalization from
-  predicted_depth and from the 8 bit image, the depth record walking fp16
-  to fp32 through the transformers.js provider, the MediaPipe provider
-  falling from the GPU to the CPU delegate and mapping detections, masks,
-  hands and blendshapes, the face fallback to face-api.js after the
-  MediaPipe record fails, YOLO letterbox, decode and NMS, an external YOLO
-  record through an ort model, VLM questions serialized on one chain,
-  SlimSAM embedding an image once for several prompts, the loop's busy
-  guard and interval, the LRU cache, schedule options reaching the hub
-  (interval wait, skip, frame budget skip) with routing to a smaller
-  model and busy reports, and the readback loop's rate cap and busy
-  skips.
-
-- 2026-11-23, Chrome 150 on an Apple M1, the vision page (#35): the
-  scene alone at 16.7 / 18.3 ms frame p50 / p95; depth on the main thread
-  16.7 / 49.9 unscheduled and 16.7 / 49.8 with the frame budget; depth in
-  the worker on webgpu 16.7 / 18.3 (22 runs in 6 s, 280 ms p50), with a
-  200 ms gap 16.7 / 18.3, on wasm 16.7 / 18.2 (4,664 ms per run); no main
-  thread task over 50 ms in any mode (measured). Unit tests run the worker
-  source on the inline rung with a fake transformers.js module.
-- 2026-11-23: LFM2-VL 450M (LFM Open License v1.0) loads and captions on
-  webgpu after the images first processor fix: load 8,743 ms, caption
-  4,671 ms, the caption names the cube and the scene (measured).
-
-- 2026-11-24: `npx vitest run packages/vision` passes 30 tests: one
-  encode for point, negative point and box prompts on one image, shared
-  encodes in flight, failed encodes dropped, least recently used
-  eviction, SlimSAM fed `input_boxes` and negative labels from one
-  embedding, a box prompt routed through the hub to the stub, union,
-  subtract, invert, a radius 3 dilate giving 29 pixels (computed),
-  erode keeping the border, feather, largest piece at 4 and 8
-  connectivity, PNG grey and alpha read back through zlib, the SVG
-  outline of a square and a ring, and the run length round trip.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/vision` under Node 22.18.0 with fake runtimes: licences on every record and YOLO kept external, every capability in stub mode, depth normalization from predicted_depth and from the 8 bit image, the depth record walking fp16 to fp32 through the transformers.js provider, the MediaPipe provider falling from the GPU to the CPU delegate and mapping detections, masks, hands and blendshapes, the face fallback to face-api.js after the MediaPipe record fails, YOLO letterbox, decode and NMS, an external YOLO record through an ort model, VLM questions serialized on one chain, SlimSAM embedding an image once for several prompts, the loop's busy guard and interval, the LRU cache, schedule options reaching the hub (interval wait, skip, frame budget skip) with routing to a smaller model and busy reports, and the readback loop's rate cap and busy skips | passes 15 tests (19 on 2026-11-23) |
+| 2026-11-23 | Chrome 150 on an Apple M1, the vision page (#35), frame p50 / p95 beside depth; unit tests run the worker source on the inline rung with a fake transformers.js module | scene alone 16.7 / 18.3 ms; depth on the main thread 16.7 / 49.9 unscheduled and 16.7 / 49.8 with the frame budget; depth in the worker on webgpu 16.7 / 18.3 (22 runs in 6 s, 280 ms p50), with a 200 ms gap 16.7 / 18.3, on wasm 16.7 / 18.2 (4,664 ms per run); no main thread task over 50 ms in any mode (measured) |
+| 2026-11-23 | LFM2-VL 450M (LFM Open License v1.0) loads and captions on webgpu after the images first processor fix | load 8,743 ms, caption 4,671 ms, the caption names the cube and the scene (measured) |
+| 2026-11-24 | `npx vitest run packages/vision`: one encode for point, negative point and box prompts on one image, shared encodes in flight, failed encodes dropped, least recently used eviction, SlimSAM fed `input_boxes` and negative labels from one embedding, a box prompt routed through the hub to the stub, union, subtract, invert, a radius 3 dilate, erode keeping the border, feather, largest piece at 4 and 8 connectivity, PNG grey and alpha read back through zlib, the SVG outline of a square and a ring, and the run length round trip | passes 30 tests; the radius 3 dilate gives 29 pixels (computed) |
 
 ### Not verified by anything
 
-- Any model in a browser: tasks-vision 1.2.3 (as earlier builds did) task
+- Any model in a browser beyond the automated pass: tasks-vision 1.2.3 task
   options and result shapes, transformers.js 4.3.2 SmolVLM, LFM2-VL and
   SlimSAM class names and processor calls (box prompts through
   `input_boxes` included), a real YOLOv8n export's output
   name and layout.
 - FastSAM: not built. Its weights are AGPL-3.0 and its mask decoder is
   not written; SlimSAM covers point prompts.
-- Accuracy and speed of every model (no numbers measured).
+- Accuracy and speed of every model: no numbers taken.
 - Whether the frame budget and idle waits remove stutter in a real scene
   (needs a person looking at real frame rate).
 
@@ -305,7 +284,3 @@ Without WebGPU the transformers.js ladders fall to wasm, and MediaPipe falls fro
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Depth Anything V2 small, MediaPipe models, SlimSAM and SmolVLM, Apache-2.0; face-api.js tiny nets, MIT; LFM2-VL, LFM Open License v1.0; YOLO, AGPL-3.0 (external, supplied by the app); the gesture recognizer, unknown.

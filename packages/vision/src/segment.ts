@@ -1,8 +1,8 @@
 /**
  * Prompted segmentation with one image embedding per image. The encoder
  * runs once per image; every later point or box prompt on that image
- * decodes from the cached embedding (as the earlier mask studio did, one
- * embedding per image, then hover and click decode from it).
+ * decodes from the cached embedding, so hover and click prompts stay
+ * cheap.
  */
 
 import type { ImageInput, Mask, SegmentOptions, SegmentPrompt, Segmenter } from "./types.js";

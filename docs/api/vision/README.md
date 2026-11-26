@@ -156,7 +156,7 @@ set(key, v): void;
 
 ### ResultCache
 
-A small LRU of results by key (an earlier relief bench keeps the depth map with the design so it never reruns).
+A small LRU of results by key, so a depth map is computed once per image.
 
 #### Type Parameters
 
@@ -403,7 +403,7 @@ A depth map: width, height, 0 to 1 per pixel with larger nearer, and the raw out
 | ------ | ------ | ------ |
 | <a id="property-data"></a> `data` | `Float32Array` | 0 to 1 per pixel, larger is nearer (Depth Anything is relative inverse depth). |
 | <a id="property-height"></a> `height` | `number` | - |
-| <a id="property-range"></a> `range` | \[`min`: `number`, `max`: `number`\] | The raw model output range before normalizing, for stable scale across frames (as earlier builds did). |
+| <a id="property-range"></a> `range` | \[`min`: `number`, `max`: `number`\] | The raw model output range before normalizing, for stable scale across frames. |
 | <a id="property-width"></a> `width` | `number` | - |
 
 ***
@@ -689,10 +689,10 @@ stop(): void;
 
 ### LoopOptions
 
-A perception loop beside a render loop: one step at a time (the earlier scan bench's
-busy guard), each step started no sooner than `interval(lastLatency)`
-after the previous one began (an earlier scene app detection cadence, the earlier chat build's fixed
-periods), stopped by `stop()` or an abort signal. The scheduler is
+A perception loop beside a render loop: one step at a time (a busy
+guard), each step started no sooner than `interval(lastLatency)`
+after the previous one began (an adaptive cadence or a fixed
+period), stopped by `stop()` or an abort signal. The scheduler is
 injectable so tests run without timers.
 
 #### Type Parameters
@@ -939,7 +939,7 @@ Options for [readbackLoop](#readbackloop): the async read, the frame consumer, a
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-maxhz"></a> `maxHz?` | `number` | Rate cap. Default 10 Hz (as earlier builds did). |
+| <a id="property-maxhz"></a> `maxHz?` | `number` | Rate cap. Default 10 Hz. |
 | <a id="property-now-1"></a> `now?` | () => `number` | - |
 | <a id="property-onerror-1"></a> `onError?` | (`e`) => `void` | - |
 | <a id="property-onframe"></a> `onFrame` | (`frame`) => `void` \| `Promise`\<`void`\> | Consumer of each frame; a slow consumer holds the loop (it runs inside the busy window). |
@@ -1454,7 +1454,7 @@ A depth map of an image from the routed depth model (Depth Anything V2 small by 
 function depthFromOutput(out): DepthMap;
 ```
 
-Normalize a depth pipeline result. predicted_depth keeps the raw range (as earlier builds did); depth is the 8 bit image (as earlier builds did).
+Normalize a depth pipeline result. predicted_depth keeps the raw range; depth is the 8 bit image.
 
 #### Parameters
 
@@ -1496,7 +1496,7 @@ The transformers.js loader for depth records: a depth-estimation pipeline wrappe
 function depthToRgba(d): Uint8ClampedArray;
 ```
 
-A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (an earlier relief bench stores depth as a PNG data URL).
+A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (store it as a PNG data URL to keep it with a design).
 
 #### Parameters
 
@@ -1585,7 +1585,7 @@ Objects in an image from the routed detector (MediaPipe EfficientDet by default,
 function detectCadenceMs(lastLatencyMs): number;
 ```
 
-Detection cadence as earlier builds ran it: wait max(0.45 s, 4 times the last latency) between runs.
+Detection cadence: wait max(0.45 s, 4 times the last latency) between runs.
 
 #### Parameters
 
@@ -1719,7 +1719,7 @@ function fitSize(
 ): object;
 ```
 
-Scale so the longest side is at most maxPx (as earlier builds did).
+Scale so the longest side is at most maxPx.
 
 #### Parameters
 
@@ -2042,7 +2042,7 @@ Shrink by a disc of radius `r` pixels; the image border does not count as outsid
 function maskFeather(m, r): Mask;
 ```
 
-Soft edges: a gaussian of radius `r` with sigma r / 2 (the earlier mask studio's smooth, before its rethreshold), edges clamped.
+Soft edges: a gaussian of radius `r` with sigma r / 2 (a smooth without a rethreshold), edges clamped.
 
 #### Parameters
 
@@ -2167,7 +2167,7 @@ corners, collinear runs merged.
 function maskSubtract(a, b): Mask;
 ```
 
-`a` with `b` taken out (shift with a selection tool in the earlier mask studio).
+`a` with `b` taken out (shift with a selection tool in a mask editor).
 
 #### Parameters
 

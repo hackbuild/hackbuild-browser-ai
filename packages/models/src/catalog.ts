@@ -1,13 +1,13 @@
 /**
- * Starter records. Sizes marked "inferred" come from the builds' tables or
+ * Starter records. Sizes marked "inferred" come from published tables or
  * from parameter count times bits and are not measured downloads. Chat rows
  * marked "measured" sum the Content-Length of a HEAD request on every file
  * the runtime loads, at the repo head of 2026-11-24, in MiB; no weight was
  * downloaded. WebLLM rows count the Hugging Face repo and leave out the
  * model library wasm, which comes from another host. Licences on the older rows are the ones on each model card as
  * of 2026-11-22; on the chat rows added 2026-11-24 they are the model card
- * licence field the Hugging Face API returns, or the design harvest's
- * string, and were not checked (owner decision). Recheck before shipping a
+ * licence field the Hugging Face API returns, or a recorded string, and
+ * were not checked (owner decision). Recheck before shipping a
  * product on them. Add your own records with registry.add().
  *
  * vramMB marked "computed" on the 14 WebLLM rows added 2026-11-25 is the
@@ -16,11 +16,10 @@
  * Rows with sizeSource "vendor" added 2026-11-25 sum the file sizes of the
  * Hugging Face listing of the repo (no download), converted to MiB.
  * Every row carries a speed word and a verdict of one to four words: what
- * a person picks by, in the owner's voice, as the earlier tools wrote them.
+ * a person picks by, in the owner's voice.
  *
  * Catalogue facts (params, quant, VRAM, censorship, tags, note) are copied
- * from the owners' tool labels and the WebLLM catalogue as recorded in the
- * design harvest; VRAM figures are the catalogue's own (vendor). Licence
+ * from the owner's model labels and the WebLLM catalogue; VRAM figures are the catalogue's own (vendor). Licence
  * strings are shown as recorded and were not verified for these facts.
  */
 
@@ -486,7 +485,7 @@ export const CATALOG: readonly ModelRecord[] = [
     tier: "large",
     family: "gemma",
     tags: [],
-    note: "an uncensored gemma 4 brain. the earlier clone chat's default; it warns with no webgpu.",
+    note: "an uncensored gemma 4 brain. it warns with no webgpu.",
     group: "uncensored",
     badge: "best",
     speed: "slow",
@@ -514,7 +513,7 @@ export const CATALOG: readonly ModelRecord[] = [
     tier: "medium",
     family: "gemma",
     tags: [],
-    note: "lighter gemma 4. the earlier room's default with webgpu.",
+    note: "lighter gemma 4. a chat default with webgpu.",
     group: "uncensored",
     badge: "lighter",
     speed: "steady",
@@ -654,7 +653,7 @@ export const CATALOG: readonly ModelRecord[] = [
     tier: "small",
     family: "qwen3.5",
     tags: ["no gpu"],
-    note: "the earlier room's default with no webgpu. thin for long chats.",
+    note: "a chat default with no webgpu. thin for long chats.",
     group: "uncensored",
     badge: "faster",
     speed: "fast",
@@ -768,7 +767,7 @@ export const CATALOG: readonly ModelRecord[] = [
     tier: "small",
     family: "qwen3",
     tags: ["think"],
-    note: "a small qwen3 with a think trace. an earlier room's deliberator.",
+    note: "a small qwen3 with a think trace. fits a deliberator role.",
     group: "reasoning",
     badge: "think, easier on memory",
     speed: "fast",

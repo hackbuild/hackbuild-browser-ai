@@ -1,12 +1,11 @@
 /**
- * Height sources and the photo to relief path (as the earlier relief
- * bench did): a photo becomes a closed relief solid from one of three
+ * Height sources and the photo to relief path: a photo becomes a closed relief solid from one of three
  * named sources, Depth Anything depth, brightness, or an inflated
- * silhouette, with the bench's width, base, height, gamma, background
+ * silhouette, with width, base, height, gamma, background
  * cut, smoothing and invert, a relief mask, and the erase and restore
  * brush masks. Depth comes from the caller (`@hackbuild/vision` `depth`
  * or a stored map); with no depth map the path falls back to brightness
- * and says so in `notes`, as the bench did.
+ * and says so in `notes`.
  */
 
 import type { DepthMesh, Mesh } from "./core.js";
@@ -38,7 +37,7 @@ export type HeightSourceName = "depth" | "brightness" | "inflate";
 /** One entry of {@link HEIGHT_SOURCES}: the name, the label to show, whether it needs a depth model, and the options it reads. */
 export interface HeightSource {
   name: HeightSourceName;
-  /** The bench's label in the height from select. */
+  /** The label for a height source select. */
   label: string;
   /** Needs a depth model or a stored depth map. */
   needsModel: boolean;
@@ -46,7 +45,7 @@ export interface HeightSource {
   params: readonly (keyof ReliefParams)[];
 }
 
-/** The height from select, in the bench's order and words. */
+/** The height sources, in the order and words a height source select shows. */
 export const HEIGHT_SOURCES: readonly HeightSource[] = [
   { name: "depth", label: "Depth Anything", needsModel: true, params: ["width", "base", "height", "gamma", "bgcut", "smooth", "invert"] },
   { name: "brightness", label: "brightness", needsModel: false, params: ["width", "base", "height", "gamma", "bgcut", "smooth", "invert"] },
@@ -55,7 +54,7 @@ export const HEIGHT_SOURCES: readonly HeightSource[] = [
 
 /** The relief settings in mm and 0 to 1 units; {@link RELIEF_DEFAULTS} holds the defaults. */
 export interface ReliefParams {
-  /** Relief width on the print, mm. Default 30 (the bench's default layer). */
+  /** Relief width on the print, mm. Default 30. */
   width: number;
   /** Lowest relief height, mm. Default 0.24. */
   base: number;
@@ -254,8 +253,7 @@ export function brightnessHeight(img: RgbaImage, cols: number, rows: number): { 
 
 /**
  * Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over
- * t, the distance to the outline over the largest distance (as the bench
- * did). Art with transparency carries its shape in alpha; opaque art is
+ * t, the distance to the outline over the largest distance. Art with transparency carries its shape in alpha; opaque art is
  * inside where darker than `threshold` (lighter with `invert`).
  */
 export function inflateHeight(img: RgbaImage, cols: number, rows: number, o: { threshold?: number; invert?: boolean; blur?: number } = {}): { values: Float32Array; cover: Uint8Array } {
@@ -305,7 +303,7 @@ export function depthHeight(d: DepthGrid, cols: number, rows: number): Float32Ar
 }
 
 /**
- * Photo to relief in one call: a height source, the bench's parameters,
+ * Photo to relief in one call: a height source, the relief parameters,
  * the relief mask and the erase and restore brushes, then the closed
  * solid. Export it with `toStl`.
  */

@@ -63,17 +63,21 @@ Items carry id, scope, kind, created and last use (hours), importance, arousal, 
 
 ### the core
 
-BM25 runs with k1 1.4 and b 0.75 (the defaults of earlier builds), with statistics over the admitted scope and kinds only. The tokenizer lowercases, splits on anything not a letter or digit, drops stop words and strips ing, ed, es and s.
+BM25 runs with k1 1.4 and b 0.75, with statistics over the admitted scope and kinds only. The tokenizer lowercases, splits on anything not a letter or digit, drops stop words and strips ing, ed, es and s.
 
 Cosine runs over float32 vectors. The wasm build runs the dot product on f32x4 lanes; the native build keeps four scalar lanes in the same order, and neither fuses a multiply and add, so the two give the same bits. exp and ln are written out in the crate for the same reason: the platform libm differs between targets.
 
 Reciprocal rank fusion uses k 60 over the BM25 top `cand` and the cosine top `cand` above a floor of 0.12.
 
-The wasm surface is plain `extern "C"` over linear memory with no bindgen and no threads, so it loads from file:// as bytes or inlined base64. `wasm/memory.wasm` is 95 908 bytes (measured, opt-level s, stripped). Rebuild it with `npm run build:wasm -w @hackbuild/memory`; the crate is `crates/memory`.
+The wasm surface is plain `extern "C"` over linear memory with no bindgen and no threads, so it loads from file:// as bytes or inlined base64. Rebuild it with `npm run build:wasm -w @hackbuild/memory`; the crate is `crates/memory`.
+
+| file | size | build |
+|---|---|---|
+| `wasm/memory.wasm` | 95 908 bytes (measured) | opt-level s, stripped |
 
 ### scorers
 
-Linear: rel is the min max normalized fused rank, rec is exp(-age / 72 h), and final = 0.55 rel + 0.20 rec + 0.25 importance. The 72 h is a time constant; the half-life is 0.693 of it (computed).
+Linear: rel is the min max normalized fused rank, rec is exp(-age / 72 h), and final = 0.55 rel + 0.20 rec + 0.25 importance. The 72 h is a time constant; the half-life is ln 2 times it.
 
 Organic: 0.6 sim + 0.18 retention + 0.06 emotion + 0.05 novelty + place + mood + recent use, with retention exp(-age / (4 + 30 imp + 20 emo + 8 min(5, uses)) h) and place 0.08 exp(-d / 2.5).
 
@@ -95,7 +99,7 @@ The contract is `{ id, dim, embed(texts) }`. Vectors are cached under the embedd
 
 ### assembling context
 
-A query under 45 characters gets the previous user turn in front (`previous`). `assemble` puts core facts at priority 10, caller sections, a summary at 6, recalled lines at 5 and recent turns at 3 into a token budget, with tokens estimated as characters / 3.6 (inferred from earlier builds, not measured on a tokenizer). `select` caps recalled lines at k 3, 1800 characters, 2 per section, and drops a line within Jaccard 0.55 of one already picked.
+A query under 45 characters gets the previous user turn in front (`previous`). `assemble` puts core facts at priority 10, caller sections, a summary at 6, recalled lines at 5 and recent turns at 3 into a token budget, with tokens estimated as characters over `CHARS_PER_TOKEN`, a ratio never measured on a tokenizer. `select` caps recalled lines at k 3, 1800 characters, 2 per section, and drops a line within Jaccard 0.55 of one already picked.
 
 ### prefix stable injection
 
@@ -135,7 +139,7 @@ There is no recovery. A lost password means the sealed data is gone.
 
 The lock record is `{ algo: "pbkdf2-sha256", iterations, salt, hash }`, base64. PBKDF2 SHA-256 at 210,000 iterations gives a master once per derivation; HKDF SHA-256 splits it into the stored verifier and, with a fresh 16 byte salt on every write, an AES-GCM 256 key. Every write also takes a fresh 12 byte iv. `verifyLock` compares in constant time. `deriveKey` caches the key per lock for the page's life (`cachedKey`, `forgetKey`). It uses Web Crypto only, so it needs a secure origin.
 
-The envelope is `HBS1`, salt 16, iv 12, ciphertext, tag 16: 48 bytes over the input (computed). The optional context string is bound as additional data, so a blob moved to another item or file does not open.
+The envelope is `HBS1`, salt 16, iv 12, ciphertext, tag 16, so a sealed blob is 48 bytes longer than its input. The optional context string is bound as additional data, so a blob moved to another item or file does not open.
 
 `sealedSink` seals item text and metadata, vectors and kv values. The inner sink still sees item ids, vector and kv key names, the embedder id and sizes. The keyword index is never stored; `open` rebuilds it in memory from the opened items. A plain row in a sealed store throws: to lock an existing memory, export it and import it into a sealed one.
 
@@ -170,7 +174,7 @@ The full reference is in [docs/api/memory](../../docs/api/memory/README.md).
 | `./seal` | Web Crypto on a secure origin | yes (inferred) | yes (inferred) | yes (inferred) | yes (inferred) |
 | WebGPU, threads | not used | no | no | no | no |
 
-No WebGPU and no wasm threads, so the core loads from file:// as bytes or base64. Where IndexedDB fails, such as some private windows (inferred), the memory runs on a Map until the page closes and `status.notes` says so. Without an embedder, recall is keyword only. `status.simd` reports whether the core runs SIMD.
+No WebGPU and no wasm threads, so the core loads from file:// as bytes or base64. Where IndexedDB fails, as some private windows may make it, the memory runs on a Map until the page closes and `status.notes` says so. Without an embedder, recall is keyword only. `status.simd` reports whether the core runs SIMD.
 
 ## Errors and troubleshooting
 
@@ -202,50 +206,36 @@ Every `seal:` error is a `SealError` with a `code`: wrong-password, bad-lock, ba
 - [@hackbuild/agent](../agent/README.md) and [@hackbuild/act](../act/README.md) use a memory for their agents.
 - [@hackbuild/ai-views](../ai-views/README.md) has a memory inspector view.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The package bundles no weights. The embedders named above carry their own weight licences: Xenova/all-MiniLM-L6-v2 Apache-2.0, BAAI/bge-small-en-v1.5 MIT.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `cargo test -p hackbuild-memory` passes, 15 tests (14 unit, 1
-  parity fixture), with rustc 1.95 native; `cargo clippy --workspace
-  --all-targets -D warnings` and `cargo fmt --check` pass, and clippy
-  passes for the wasm32 target with rustc 1.92.
-- 2026-11-22: `npx vitest run packages/memory` passes, 44 tests, in Node
-  22.18.0 with fake-indexeddb 6.2.8 standing in for IndexedDB.
-- 2026-11-22: native and wasm parity: the wasm build (rustc 1.92, simd128
-  on, `hm_simd` returns 1) gives the same bits as the native build for
-  every hit term of 12 seeded queries over 48 seeded items and for 8 exp
-  and ln samples (`test/parity.test.ts` against
-  `crates/memory/tests/parity.json`).
-- exp and ln agree with the host libm to 2e-15 relative (computed in the
-  crate tests).
-
-- 2026-11-24: `npx vitest run packages/memory` passes 57 tests, the trace
-  parity for the linear and organic scorers, per term BM25 against the
-  core, edit one, exchange notes and the skip of turns in view,
-  compaction and the usage line with an injected storage manager
-  included.
-
-- 2026-11-24: `test/seal.test.ts`, 11 tests: round trip, a wrong
-  password rejects, two seals of one value differ in bytes, a tampered
-  byte or another context rejects, `verifyLock` true and false, the
-  cached key, and a sealed sink whose inner rows hold none of the text.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `cargo test -p hackbuild-memory` with rustc 1.95 native, 14 unit tests and 1 parity fixture; `cargo clippy --workspace --all-targets -D warnings` and `cargo fmt --check`; clippy for the wasm32 target with rustc 1.92 | passes, 15 tests; clippy and fmt pass |
+| 2026-11-22 | `npx vitest run packages/memory` in Node 22.18.0 with fake-indexeddb 6.2.8 standing in for IndexedDB | passes, 44 tests |
+| 2026-11-22 | native and wasm parity: the wasm build (rustc 1.92, simd128 on, `hm_simd` returns 1) against the native build for every hit term of 12 seeded queries over 48 seeded items and for 8 exp and ln samples (`test/parity.test.ts` against `crates/memory/tests/parity.json`) | same bits |
+| 2026-11-22 | exp and ln against the host libm, in the crate tests | agree to 2e-15 relative (computed) |
+| 2026-11-23 | the wasm core from file:// through the iife build, in Chrome 150 on an Apple M1, one automated pass nobody looked at | pass |
+| 2026-11-24 | `npx vitest run packages/memory`: the trace parity for the linear and organic scorers, per term BM25 against the core, edit one, exchange notes and the skip of turns in view, compaction and the usage line with an injected storage manager | passes 57 tests |
+| 2026-11-24 | `test/seal.test.ts`: round trip, a wrong password rejects, two seals of one value differ in bytes, a tampered byte or another context rejects, `verifyLock` true and false, the cached key, and a sealed sink whose inner rows hold none of the text | passes, 11 tests |
+| 2026-11-24 | PBKDF2 SHA-256 at 210,000 iterations in Node 22.18.0 on this Mac, 5 runs | 57 to 59 ms (measured) |
 
 ### Not verified by anything
 
 - Sealing in a real browser; only Node 22.18.0 Web Crypto ran.
-- The cost of one key derivation in a browser. In Node 22.18.0 on this
-  Mac, PBKDF2 SHA-256 at 210,000 iterations took 57 to 59 ms over 5 runs
-  (measured, 2026-11-24).
-
+- The cost of one key derivation in a browser; only Node was timed.
 - `usage` and `persist` against a real browser's storage manager.
-
 - IndexedDB in a real browser, quota errors and private windows.
-- Loading from file:// in a real page.
+- Loading from file:// in Safari, Firefox or on a phone.
 - Recall quality with a real embedder (MiniLM, bge-small); only the hashed
   embedder and fakes ran.
 - Speed: no timing was taken; brute force is expected to suit hundreds to
-  a few thousand items (inferred, not measured).
+  a few thousand items, an estimate nobody has measured.
 - Prefix reuse in a real runtime's KV cache; the test checks only that the
   prompt bytes grow at the end.
 
@@ -260,7 +250,3 @@ Every `seal:` error is a `SealError` with a `code`: wrong-password, bad-lock, ba
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The package bundles no weights. The embedders named above carry their own weight licences: Xenova/all-MiniLM-L6-v2 Apache-2.0, BAAI/bge-small-en-v1.5 MIT.

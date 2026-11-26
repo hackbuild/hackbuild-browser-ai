@@ -4,6 +4,8 @@ You give it a reply as it streams and it speaks it through the first voice engin
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/speak)](https://www.npmjs.com/package/@hackbuild/speak) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.4 kB measured](https://img.shields.io/badge/gzip-16.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: three voices of this package ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at or listened to: Kokoro 82M through kokoro-js 1.2.1 on webgpu fp32 and wasm q8, the bellows voice from bellows-voice 0.8.0, and the system voice. Pocket TTS, Safari and Firefox have not run.
+
 ## What it does
 
 - Cuts a streaming reply into segments, with a short first clause so speech starts early, and synthesizes the next segment while the current one plays.
@@ -33,21 +35,22 @@ It depends on @hackbuild/ai-env, @hackbuild/models and @hackbuild/audio-dsp. No 
 import { importEsm } from "@hackbuild/ai-env";
 import { bellowsEngine, createSpeaker, renderedWav, webSpeechEngine, type BellowsVoiceModule } from "@hackbuild/speak";
 
-// one AudioContext, made after a click so the browser lets it play
-const ctx = new AudioContext();
+// the browser lets audio play only after a click
+document.querySelector("button")!.onclick = async () => {
+  const ctx = new AudioContext();
+  // the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
+  const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
+  const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
 
-// the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
-const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
-const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
+  // feed a reply as it streams; the last call says it is complete
+  speaker.feed("Hello there, this is the first clause.");
+  speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
+  await speaker.done();
 
-// feed a reply as it streams; the last call says it is complete
-speaker.feed("Hello there, this is the first clause.");
-speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
-await speaker.done();
-
-// render a line offline and keep it as a wav
-const wav = renderedWav(await speaker.render("Saved to a file."));
-console.log("wav", wav.size, "bytes");
+  // render a line offline and keep it as a wav
+  const wav = renderedWav(await speaker.render("Saved to a file."));
+  console.log("wav", wav.size, "bytes");
+};
 ```
 
 ## Live example
@@ -86,7 +89,7 @@ Recent clips are kept by engine, voice, rate and text, bounded at 3 minutes of 2
 
 ### kokoro and the GPL phonemizer
 
-kokoro-js turns text into phonemes with the `phonemizer` package, whose npm metadata says Apache-2.0 but whose code is eSpeak NG compiled to wasm, which is GPL-3.0-or-later. This package stays MIT because it never bundles kokoro-js: you pass a loader for it. Kokoro is opt in: `kokoroEngine` refuses to load unless `allowGplPhonemizer: true` is passed, and `KOKORO_GPL_NOTICE` holds the text to show. No non-GPL phonemizer for kokoro-js was found on 2026-11-23, so there is no non-GPL Kokoro path; the MIT defaults are the bellows voice and the system voice. An app that ships kokoro-js takes on the GPL terms. `device: "webgpu"` runs fp32 and `"wasm"` (the default) runs q8; webgpu with q8 gave garbled audio in an earlier build.
+kokoro-js turns text into phonemes with the `phonemizer` package, whose npm metadata says Apache-2.0 but whose code is eSpeak NG compiled to wasm, which is GPL-3.0-or-later. This package stays MIT because it never bundles kokoro-js: you pass a loader for it. Kokoro is opt in: `kokoroEngine` refuses to load unless `allowGplPhonemizer: true` is passed, and `KOKORO_GPL_NOTICE` holds the text to show. No non-GPL phonemizer for kokoro-js was found on 2026-11-23, so there is no non-GPL Kokoro path; the MIT defaults are the bellows voice and the system voice. An app that ships kokoro-js takes on the GPL terms. `device: "webgpu"` runs fp32 and `"wasm"` (the default) runs q8; webgpu with q8 gives garbled audio.
 
 ### pocket tts
 
@@ -104,7 +107,7 @@ The worker is fetched as text and four rewrites run through @hackbuild/ai-env: s
 
 - Seed: one draw from the injected `rng` when the engine is made, plus the segment count, so the same Rng gives the same audio.
 - The render runs on the calling thread; pass `render(text, opts, signal)` to call `renderSpeech` in a worker instead.
-- Voices are the 14 bellows-voice starter voices (`BELLOWS_VOICES`); its naturalness is below the neural engines (inferred), so it fits a robot, creature or singing voice, or a fallback that needs no download.
+- Voices are the 14 bellows-voice starter voices (`BELLOWS_VOICES`); it sounds less natural than the neural engines, so it fits a robot, creature or singing voice, or a fallback that needs no download.
 
 ## API overview
 
@@ -181,43 +184,30 @@ When an engine fails to load or goes quiet, the chain falls back to the next one
 - [@hackbuild/audio-dsp](../audio-dsp/README.md) writes the wav that `renderedWav` returns.
 - [@hackbuild/models](../models/README.md) lists the voices from `SPEAK_RECORDS`.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Kokoro 82M Apache-2.0, with its kokoro-js phonemizer (eSpeak NG) GPL-3.0-or-later and opt in; Pocket TTS CC-BY-4.0; the bellows voice has no weights (code MIT); system voices are under the platform's terms.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/speak` passes, 17 tests (28 on 2026-11-23, bellows included), in Node
-  22.18.0 with a fake AudioContext, a fake Web Speech API, a fake
-  kokoro-js module and a fake Pocket worker: speakable text and its
-  offset map, segment cuts, gapless scheduling and fades, progress order
-  against the audio clock, the engine chain with a load failure and a
-  watchdog trip, the cache, stop, Pocket patching, missed patch refusal,
-  chunk streaming and clone preparation.
-
-- 2026-11-23: `test/bellows.test.ts`, 5 tests on a fake module: one
-  draw from the rng for the seed, the seed per segment, phoneme times from
-  the spans, a refusal without `renderSpeech`, a caller render. Then in
-  Node 22.18.0 against a local build of bellows-voice at ac30dc2: a 2.30 s
-  line rendered in 873 ms cold and 516 ms warm, byte identical for the
-  same rng seed and different for another, 25 phonemes (measured). The
-  0.7.3 path through `renderSpeechFrom` gave the same 2.30 s line in 916
-  ms cold and 489 ms warm, byte identical for one seed (measured), and a
-  unit test checks the score it posts.
-- 2026-11-23, later: a test renders "hello there." through the npm
-  bellows-voice 0.8.0 `/engine` (a dev dependency at the root): byte
-  identical for one rng seed, different for another.
-
-- 2026-11-24: `test/render.test.ts`, 6 tests on the stub engine and fakes:
-  word offsets through markdown, estimated times, the skip order, the
-  refusal copy through `humanError`, wav bytes decoded back, and
-  `speaker.render` with the chain's rate.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/speak` in Node 22.18.0 with a fake AudioContext, a fake Web Speech API, a fake kokoro-js module and a fake Pocket worker: speakable text and its offset map, segment cuts, gapless scheduling and fades, progress order against the audio clock, the engine chain with a load failure and a watchdog trip, the cache, stop, Pocket patching, missed patch refusal, chunk streaming and clone preparation | passes, 17 tests (28 on 2026-11-23, bellows included) |
+| 2026-11-23 | `test/bellows.test.ts` on a fake module: one draw from the rng for the seed, the seed per segment, phoneme times from the spans, a refusal without `renderSpeech`, a caller render | passes, 5 tests |
+| 2026-11-23 | Node 22.18.0 against a local build of bellows-voice at ac30dc2 | a 2.30 s line rendered in 873 ms cold and 516 ms warm, byte identical for the same rng seed and different for another, 25 phonemes (measured) |
+| 2026-11-23 | the 0.7.3 path through `renderSpeechFrom` | the same 2.30 s line in 916 ms cold and 489 ms warm, byte identical for one seed (measured); a unit test checks the score it posts |
+| 2026-11-23, later | a test renders "hello there." through the npm bellows-voice 0.8.0 `/engine` (a dev dependency at the root) | byte identical for one rng seed, different for another |
+| 2026-11-24 | `test/render.test.ts` on the stub engine and fakes: word offsets through markdown, estimated times, the skip order, the refusal copy through `humanError`, wav bytes decoded back, and `speaker.render` with the chain's rate | passes, 6 tests |
 
 ### Not verified by anything
 
-- Any real engine: Kokoro 82M on webgpu fp32 or wasm q8, the Pocket
-  worker (its message names are taken from earlier builds, not from
+- Any engine listened to by a person: Kokoro 82M on webgpu fp32 or wasm q8, the Pocket
+  worker (its message names are observed from the worker, not taken from
   upstream documentation), system voices in Chrome, Safari and Firefox.
 - Audible gaps or clicks at chunk joins; looked at by nobody.
-- Time to first audio (no measurement).
+- Time to first audio outside the one automated Chrome pass.
 - Offline render on a real engine; only the stub has rendered.
 - Pocket's patches against the current upstream worker source.
 
@@ -231,7 +221,3 @@ When an engine fails to load or goes quiet, the chain falls back to the next one
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Kokoro 82M Apache-2.0, with its kokoro-js phonemizer (eSpeak NG) GPL-3.0-or-later and opt in; Pocket TTS CC-BY-4.0; the bellows voice has no weights (code MIT); system voices are under the platform's terms.

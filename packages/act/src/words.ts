@@ -2,7 +2,7 @@
  * Word tables: buckets of words that name one mood, gesture, posture or
  * whole body action, so "joyful", "grinning" or a clip called "Greeting"
  * land on the same name however the model or the file phrases it. 256
- * words in 38 buckets (computed), carried over from earlier builds.
+ * words in 38 buckets (computed).
  *
  * The buckets feed `DEFAULT_ALIASES` (every bucket) and `DEFAULT_KEYWORDS`
  * (moods and conversational gestures only: postures and actions never

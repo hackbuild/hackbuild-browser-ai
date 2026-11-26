@@ -4,6 +4,8 @@ Turn sentences into vectors in the tab, for memory recall and action matching, w
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/embed)](https://www.npmjs.com/package/@hackbuild/embed) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.8 kB measured](https://img.shields.io/badge/gzip-6.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: potion-base-8M through the static embedder, and all-MiniLM-L6-v2 and bge-small-en-v1.5 through transformers.js 4.3.2 on wasm q8 and webgpu fp32, ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. Safari, Firefox and phones have not run.
+
 ## What it does
 
 - Builds a model2vec style static embedder in plain TypeScript from tokenizer.json, model.safetensors and config.json, with no ML runtime.
@@ -15,21 +17,21 @@ Turn sentences into vectors in the tab, for memory recall and action matching, w
 ## Install
 
 ```sh
-npm install @hackbuild/embed
+npm install @hackbuild/embed @hackbuild/weights
 ```
 
-It depends on @hackbuild/memory, @hackbuild/models and @hackbuild/devices, which install with it. It has no peers. transformers.js is passed in at run time for `miniLM` and `tjsEmbedder`, never imported by this package; `loadTransformers` in @hackbuild/devices loads the pinned 4.3.2.
+It depends on @hackbuild/memory, @hackbuild/models and @hackbuild/devices, which install with it. It has no peers. The quick start also uses `@hackbuild/weights`. transformers.js is passed in at run time for `miniLM` and `tjsEmbedder`, never imported by this package; `loadTransformers` in @hackbuild/devices loads the pinned 4.3.2.
 
 ## Quick start
 
 ```ts
-import { staticEmbedder, VectorIndex } from "@hackbuild/embed";
+import { EMBED_RECORDS, staticEmbedder, VectorIndex } from "@hackbuild/embed";
 import { openWeightStore } from "@hackbuild/weights";
 
-// potion-base-8M, weights MIT, fetched once and cached by the weight store
-const base = "https://huggingface.co/minishlab/potion-base-8M/resolve/main/";
+// potion-base-8M; its record gives the pinned base URL and the weight licence, the weight store caches each file
+const rec = EMBED_RECORDS.find((r) => r.id === "potion-base-8m")!;
 const store = await openWeightStore();
-const get = (file: string) => store.once({ url: base + file, licence: "MIT" });
+const get = (file: string) => store.once({ url: rec.source.url + file, licence: rec.licence });
 const dec = new TextDecoder();
 const e = staticEmbedder({ name: "potion-base-8M", tokenizer: dec.decode(await get("tokenizer.json")), weights: await get("model.safetensors"), config: dec.decode(await get("config.json")) });
 
@@ -113,7 +115,7 @@ No weights ship in this package. The static files load from the URL you give or 
 | MiniLM, bge-small | optional, fp32 | yes, q8 first | unknown | unknown | unknown | unknown |
 | `VectorIndex` | not used | not used | not used | yes | yes | yes |
 
-The static embedder is plain TypeScript and runs on the page, in a worker or in Node. The transformers.js ladders start on wasm q8 and fall back to wasm fp32, then webgpu fp32; q8 stays off webgpu because it garbled other models in earlier builds. With no model loaded, `hashedEmbedder` gives vectors with no download.
+The static embedder is plain TypeScript and runs on the page, in a worker or in Node. The transformers.js ladders start on wasm q8 and fall back to wasm fp32, then webgpu fp32; q8 stays off webgpu, where it has garbled the output of other models. With no model loaded, `hashedEmbedder` gives vectors with no download.
 
 ## Errors and troubleshooting
 
@@ -137,26 +139,28 @@ The static embedder is plain TypeScript and runs on the page, in a worker or in 
 - [@hackbuild/devices](../devices/README.md) loads the pinned transformers.js and builds the device ladders.
 - [@hackbuild/weights](../weights/README.md) fetches and caches the weight files.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weights are not part of this package: potion-base-8M is MIT, all-MiniLM-L6-v2 is Apache-2.0 and bge-small-en-v1.5 is MIT, per their model cards.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/embed` passes, 16 tests, in Node
-  22.18.0: tokenization against hand written expectations, safetensors
-  F32, F16 and I64 reads, mean and normalization, token weights and row
-  mapping, id stability, batching and the hub's static factory, all on
-  fixtures written in the test.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/embed` in Node 22.18.0: tokenization against hand written expectations, safetensors F32, F16 and I64 reads, mean and normalization, token weights and row mapping, id stability, batching and the hub's static factory, all on fixtures written in the test | passes, 16 tests |
+| 2026-11-23 | potion-base-8M loaded from its repo, real tokenizer.json included, vectors compared with the Python model2vec package 0.10.0 on 20 sentences; Chrome 150 on an Apple M1, one automated pass nobody looked at | pass, max abs difference 5.1e-7 (measured) |
+| 2026-11-23 | all-MiniLM-L6-v2 and bge-small-en-v1.5 through transformers.js 4.3.2 on wasm q8 and webgpu fp32, same pass | pass for both models on both rungs |
+| 2026-11-23 | time to embed 20 sentences, same pass | potion 1.8 ms; MiniLM wasm q8 251 ms, webgpu fp32 256 ms; bge wasm q8 418 ms, webgpu fp32 50 ms (measured) |
 
 ### Not verified by anything
 
-- Agreement with the Python model2vec package on potion-base-8M: no
-  reference vectors were computed here, so "bit exact" is not claimed.
-- The real potion-base-8M tokenizer.json loading (its model type was not
-  checked in this build; a Unigram file would be refused).
-- MiniLM and bge-small through transformers.js 4.3.2 in a browser, and
-  their speed.
-- Speed of the static embedder (the 0.08 ms per sentence figure is the
-  earlier build's, not measured here).
+- Bit exact agreement with the Python model2vec package; the vectors agree
+  to the difference in the table.
+- Any embedder in Safari, Firefox or on a phone.
+- Speed on any machine but the one in the table, and with more than 20
+  sentences.
 
 ## Size budget
 
@@ -168,7 +172,3 @@ The static embedder is plain TypeScript and runs on the page, in a worker or in 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weights are not part of this package: potion-base-8M is MIT, all-MiniLM-L6-v2 is Apache-2.0 and bge-small-en-v1.5 is MIT, per their model cards.

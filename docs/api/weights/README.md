@@ -321,7 +321,7 @@ Used and quota bytes of this origin's storage, and whether a file of a given siz
 fits(bytes): boolean;
 ```
 
-True when quota is unknown or free space is at least 1.2 times `bytes` (as earlier builds did).
+True when quota is unknown or free space is at least 1.2 times `bytes`.
 
 ###### Parameters
 
@@ -827,7 +827,7 @@ Hugging Face resolve URL base for a repo and revision. Pin a commit hash for rep
 function idbBackend(opts?): Backend;
 ```
 
-IndexedDB parts, the layout earlier builds used: one `kv` store with
+IndexedDB parts: one `kv` store with
 `<key>:meta` and `<key>:<n>` records. Works on file://.
 
 #### Parameters

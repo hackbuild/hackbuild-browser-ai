@@ -1,6 +1,5 @@
 /**
- * The data behind the level rail (as the earlier transcription tool drew
- * it): the speech band level per 10 ms frame, the noise floor and gate
+ * The data behind the level rail: the speech band level per 10 ms frame, the noise floor and gate
  * threshold lines, and per frame whether the gate kept the audio. `regate`
  * moves the threshold for a new margin without running the model again, so
  * a capture slider redraws the rail at once. `railBins` folds the frames to

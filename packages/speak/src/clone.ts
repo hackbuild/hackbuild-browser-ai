@@ -1,6 +1,6 @@
 /**
  * Voice clone reference preparation: mono in, linear resample to 24 kHz,
- * cut to 15 s, peak normalized to 0.9 (earlier builds' settings). The
+ * cut to 15 s, peak normalized to 0.9. The
  * reference audio is always the caller's; this package ships none.
  */
 

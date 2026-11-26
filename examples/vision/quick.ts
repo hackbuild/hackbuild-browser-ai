@@ -12,6 +12,8 @@ hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
 
 // each call loads its model on first use, runs it under the gpu lock, and releases it
 const video = document.querySelector("video")!;
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true }); // the webcam
+await video.play();
 const map = await depth(hub, video); // Depth Anything V2 small, weights Apache-2.0
 const boxes = await detect(hub, video, { scoreThreshold: 0.4 }); // MediaPipe EfficientDet lite0, Apache-2.0
 const line = await caption(hub, video); // SmolVLM 256M, Apache-2.0

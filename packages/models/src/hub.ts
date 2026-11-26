@@ -3,14 +3,14 @@
  * ladder through the provider's factory, keeps loaded models under a memory
  * budget (idle models are disposed oldest first), and serializes GPU work.
  *
- * exclusive(resource, fn, { priority }) is the queue earlier builds used: one job per
+ * exclusive(resource, fn, { priority }) is a queue with one job per
  * resource at a time, higher priority first, FIFO within a priority.
- * chain(name) is a plain serial queue, as earlier builds used.
+ * chain(name) is a plain serial queue.
  * Loads that run on webgpu go through exclusive("gpu") too, so a model
  * never compiles shaders while another one runs.
  *
  * run(l, fn, { minIntervalMs, idleOnly, frameBudgetMs }) schedules heavy
- * inference around rendering (earlier builds: a webgpu model shares the GPU with
+ * inference around rendering (a webgpu model shares the GPU with
  * the scene and stutters it, which JS profiling does not show): a minimum
  * gap between starts per model, waiting for an idle callback, and waiting
  * while recent frames are over budget (`reportFrame(ms)` from the render

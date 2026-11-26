@@ -1,6 +1,5 @@
 /**
- * The language list bound to the model (as the earlier transcription tool
- * did): auto detect plus 19 languages for a multilingual model; english
+ * The language list bound to the model: auto detect plus 19 languages for a multilingual model; english
  * only, locked, for an english only one. A record counts as english only
  * when a note says so or its repo id ends in `.en`, so a custom repo typed
  * by hand is caught too.
@@ -16,7 +15,7 @@ export interface Language {
   name: string;
 }
 
-/** The earlier transcription tool's list, in its order, after auto detect. */
+/** The 19 languages, in order, after auto detect. */
 export const WHISPER_LANGUAGES: readonly Language[] = [
   { code: "auto", name: "auto detect" },
   { code: "en", name: "english" },

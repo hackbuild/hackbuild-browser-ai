@@ -54,7 +54,7 @@ Every field of `Env` comes from calling the API: `requestAdapter()`, `adapter.fe
 
 ### threads
 
-`threads` is 1 unless the page is cross origin isolated, then `min(4, hardwareConcurrency)`. 4 is the cap the transcription build used, inferred as safe and not measured here; `maxThreads` changes it.
+`threads` is 1 unless the page is cross origin isolated, then `min(4, hardwareConcurrency)`. The cap of 4 is inferred as safe and not measured here; `maxThreads` changes it.
 
 ### file:// pages
 
@@ -126,17 +126,18 @@ No WebGPU and no wasm in this package; it reports whether they are there. Web Cr
 - [@hackbuild/chat](../chat/README.md) and the other runtime packages take a module that `importEsm` loaded, so a runtime is passed in and never bundled.
 - [@hackbuild/devices](../devices/README.md) reads `Env` to pick webgpu or wasm and the thread count for onnxruntime-web and transformers.js.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/ai-env` passes 16 tests under Node
-  22.18.0 with faked `navigator`, `Worker`, `fetch` and importer: probe
-  fields and notes, adapter timeout, module to classic rewrite with kept
-  options, missed rewrite report, relative import rewrite, base64 equal to
-  Node `Buffer` across the 32 KB step, import fallbacks blob to data, worker
-  fallback module to classic to inline, inline message round trip.
-- 2026-11-22: `tsc -b` typechecks the package under TypeScript 7.0.2.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/ai-env` under Node 22.18.0 with faked `navigator`, `Worker`, `fetch` and importer | 16 tests pass: probe fields and notes, adapter timeout, module to classic rewrite with kept options, missed rewrite report, relative import rewrite, base64 equal to Node `Buffer` across the 32 KB step, import fallbacks blob to data, worker fallback module to classic to inline, inline message round trip |
+| 2026-11-22 | `tsc -b` under TypeScript 7.0.2 | the package typechecks |
 
 ### Not verified by anything
 
@@ -157,7 +158,3 @@ No WebGPU and no wasm in this package; it reports whether they are there. Web Cr
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.

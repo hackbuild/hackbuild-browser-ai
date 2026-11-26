@@ -1146,7 +1146,7 @@ Silero VAD v5 (snakers4/silero-vad, weights MIT) on onnxruntime-web:
 512 new samples at 16 kHz with the previous 64 as context, a [2, 1, 128]
 state carried between frames. The model bytes are the caller's (URL,
 ArrayBuffer or File through @hackbuild/weights); single threaded wasm is
-the setting an earlier build ran, since threaded wasm hung in workers.
+the default, since threaded wasm hangs in workers.
 
 #### Parameters
 

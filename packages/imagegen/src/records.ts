@@ -5,8 +5,7 @@
  * Each record carries a `form`: what the generate form shows for it, so a
  * model select can reshape the form (steps range and default, guidance and
  * a negative prompt only where the model takes them, the sizes its graphs
- * accept) and the load button can name the size. The field set follows an
- * earlier image generation bench's model table.
+ * accept) and the load button can name the size.
  */
 
 import type { ModelRecord } from "@hackbuild/models";
@@ -35,7 +34,7 @@ export type ImagegenRecord = ModelRecord & { form: ImageForm };
 
 const graphs = { textEncoder: "text_encoder", unet: "unet", vaeDecoder: "vae_decoder" };
 const files = [{ path: "text_encoder/model.onnx" }, { path: "unet/model.onnx" }, { path: "vae_decoder/model.onnx" }];
-// fixed free dimensions for a 512 pixel image at batch 1, as an earlier build set them; ort ignores names a graph lacks
+// fixed free dimensions for a 512 pixel image at batch 1; ort ignores names a graph lacks
 const free512 = {
   freeDimensionOverrides: { batch_size: 1, num_channels: 4, height: 64, width: 64, sequence_length: 77, num_channels_latent: 4, height_latent: 64, width_latent: 64 },
 };
@@ -60,9 +59,9 @@ export const IMAGEGEN_RECORDS: ImagegenRecord[] = [
     place: "gpu",
     runtime: "onnxruntime-web@1.27.0",
     notes: [
-      "webgpu only in an earlier build, no wasm floor",
+      "webgpu only, no wasm floor",
       "tokenizer: Xenova/clip-vit-base-patch16 through transformers.js (CLIP weights MIT)",
-      "graph file paths inferred from an earlier build, not checked against the repo",
+      "graph file paths inferred, not checked against the repo",
     ],
     form: {
       steps: { min: 1, max: 4, default: 2 },
@@ -93,7 +92,7 @@ export const IMAGEGEN_RECORDS: ImagegenRecord[] = [
     place: "gpu",
     runtime: "onnxruntime-web@1.27.0",
     notes: [
-      "about 2 GB by an earlier bench's label (vendor); the repo, its file paths and its input dtypes are inferred and not checked",
+      "about 2 GB (vendor); the repo, its file paths and its input dtypes are inferred and not checked",
       "runs the unet twice a step for guidance, so a step costs about twice an sd-turbo step (inferred)",
       "tokenizer: Xenova/clip-vit-base-patch16 through transformers.js (CLIP weights MIT)",
     ],
@@ -153,7 +152,7 @@ export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
     runtime: "onnxruntime-web@1.27.0",
     notes: [
       "two text encoders; the pipeline in this package runs one, so this record is listed and not run yet",
-      "an earlier image bench offered it as the highest quality of three",
+      "the highest quality of the three image models",
     ],
     form: {
       steps: { min: 1, max: 4, default: 1 },

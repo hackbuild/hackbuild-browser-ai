@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "This package imports no runtime and no engine. Pass any `ChatEngine` from `@hackbuild/chat` as `engine`, or `scripted()` from there when you want no model; never import a runtime here.",
+    "`now` is required. Pass a clock such as `() => Date.now()`, or a fake clock in tests.",
+    "With a `sink`, call `await conv.restore()` before the first `send`. Nothing is saved until `restore()` resolves, so a page that skips it never writes its session.",
+    "`send` stops the reply that is still streaming before it adds the new turn, and resolves with `null` when the reply was empty or aborted before a word. Check for `null` instead of reading `reply.content`.",
+    "The `greeting` is shown first and never sent to the engine. Put instructions in `system`, and read what the next reply would send with `conv.request()`.",
+    "`importSession` throws `SessionError` for a file that is not JSON, has no messages list, or carries a newer version. Catch it and show its message instead of loading a broken session."
+  ]
+}

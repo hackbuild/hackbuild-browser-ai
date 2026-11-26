@@ -1,5 +1,5 @@
 /**
- * The phantom text filter (as earlier builds did). Whisper writes training set
+ * The phantom text filter. Whisper writes training set
  * watermarks and stock outros over silence. Watermarks are always
  * dropped; outros and weak one word lines only when the gate says the
  * audio under them was mostly silence, so a real outro survives. Loops

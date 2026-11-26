@@ -43,7 +43,7 @@ export const DEFAULT_KEYWORDS: Readonly<Record<string, readonly string[]>> = (()
 /**
  * Single words too common to carry a feeling or a gesture on their own
  * ("right", "sure", "love", "show"): skipped by the keyword step. 27
- * words (computed) from earlier builds, plus "please", which the light
+ * words (computed), plus "please", which the light
  * stemmer here folds onto "pleased".
  */
 export const WEAK_WORDS: readonly string[] = ["right", "look", "there", "show", "sure", "okay", "ok", "yes", "no", "think", "welcome", "love", "maybe", "win", "down", "soft", "warm", "fun", "rest", "plain", "normal", "default", "heart", "blue", "over", "this", "that", "please"];

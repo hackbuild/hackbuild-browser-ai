@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You import kokoro-js or bellows-voice at the top of the file. Pass a loader instead: `runtime: () => importEsm(url)` from @hackbuild/ai-env or `runtimeLoader` from @hackbuild/devices; this package never bundles a runtime.",
+    "You add `kokoroEngine` and it refuses to load. Its phonemizer is GPL-3.0-or-later, so it loads only with `allowGplPhonemizer: true`; show `KOKORO_GPL_NOTICE` first, or use `bellowsEngine` and `webSpeechEngine`, which carry no GPL code.",
+    "You call `bellowsEngine({ runtime })` without `rng`. The seed is one draw from the `rng` you inject, so pass one (`Math.random`, or a seeded Rng when you want the same audio twice).",
+    "You make the AudioContext at page load and hear nothing. Make it inside a click handler and pass it to `createSpeaker({ ctx, engines })`, with `webSpeechEngine()` last in the chain as the fallback.",
+    "You feed each new token on its own. `feed(text)` takes the whole visible reply so far, `feed(text, true)` marks it complete, and offsets in `onProgress` are in that text; call `stop()` for barge in and `dispose()` when the speaker goes away.",
+    "You expect Kokoro or Pocket weights to go through @hackbuild/weights. Kokoro's come through kokoro-js and Pocket's from its pinned Space commit, each with its own fetch, and each engine states its weight licence through `onStatus` on first load."
+  ]
+}

@@ -575,7 +575,7 @@ function miniLM(tjs, o?): Promise<Embedder>;
 
 MiniLM through a transformers.js module the caller loaded (for example
 `await loadTransformers()()` from @hackbuild/devices). Defaults: wasm and
-q8, the earlier chat build setting; pass device "webgpu" and dtype "fp32" to move it.
+q8; pass device "webgpu" and dtype "fp32" to move it.
 
 #### Parameters
 

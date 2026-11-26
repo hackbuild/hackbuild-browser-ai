@@ -15,26 +15,29 @@ Download model weights once, resume them when the download breaks, check their S
 ## Install
 
 ```sh
-npm install @hackbuild/weights
+npm install @hackbuild/weights @hackbuild/models
 ```
 
-No dependencies and no peers. No weights ship with this package; each file keeps its own licence.
+No dependencies and no peers. The quick start also installs @hackbuild/models for its model records and pinned hashes; the store does not need it. No weights ship with this package; each file keeps its own licence.
 
 ## Quick start
 
 ```ts
+import { CATALOG, pinnedBase, pinnedSha } from "@hackbuild/models";
 import { openWeightStore, WeightError } from "@hackbuild/weights";
 
 // one store over opfs, indexeddb parts, cache storage or memory, the first that opens
 const store = await openWeightStore();
 console.log("stored in", store.backend.name, (await store.estimate()).quota, "bytes of quota");
 
-// Qwen2.5 0.5B Instruct q4_k_m GGUF, weights Apache-2.0; an interrupted download resumes on the next get
-const url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
+// Qwen2.5 0.5B Instruct q4_k_m GGUF: the record names the repo, the file and the weight licence (Apache-2.0)
+const rec = CATALOG.find((r) => r.id === "qwen2.5-0.5b-instruct-gguf")!;
+const url = pinnedBase(rec.source!.repo!) + rec.source!.file!;
+const sha256 = pinnedSha(url);
 try {
-  const gguf = await store.get({ url, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, {
-    onProgress: (p) => console.log(p.fraction === null ? `${(p.loaded / 1e6).toFixed(0)} MB` : `${(p.fraction * 100).toFixed(0)}%`),
-  });
+  // an interrupted download resumes on the next get; the bytes are checked against the pinned sha-256
+  const ref = { url, key: `gguf:${rec.id}`, licence: rec.licence, ...(sha256 ? { sha256 } : {}) };
+  const gguf = await store.get(ref, { onProgress: (p) => console.log(p.fraction === null ? `${(p.loaded / 1e6).toFixed(0)} MB` : `${(p.fraction * 100).toFixed(0)}%`) });
   console.log(gguf.size, "bytes, cached for the next visit");
 } catch (e) {
   // code is http, sha256, quota, abort or range
@@ -50,11 +53,11 @@ The devices page runs resumable weight downloads and measures SHA-256 speed: [ha
 
 ### backends
 
-`auto` picks the first of opfs, idb, cache, memory that opens; on file:// opfs and cache are left out, as earlier builds did. A backend that throws on its first read is skipped. Pass `backends` to set the order or hand in backend objects.
+`auto` picks the first of opfs, idb, cache, memory that opens; on file:// opfs and cache are left out. A backend that throws on its first read is skipped. Pass `backends` to set the order or hand in backend objects.
 
 ### parts and resume
 
-Every backend stores numbered parts of `partBytes` (default 128 MB, the earlier builds' size) plus a meta record written after each part, so a multi GB file never sits in one buffer. An interrupted download keeps its parts. The next `get` sends `Range: bytes=<kept>-` with `If-Range` (ETag, else Last-Modified); a 206 continues, a 200 starts over, and a 206 with a different ETag or Last-Modified than the stored parts starts over too. A `Content-Range` that starts elsewhere is refused.
+Every backend stores numbered parts of `partBytes` (default 128 MB) plus a meta record written after each part, so a multi GB file never sits in one buffer. An interrupted download keeps its parts. The next `get` sends `Range: bytes=<kept>-` with `If-Range` (ETag, else Last-Modified); a 206 continues, a 200 starts over, and a 206 with a different ETag or Last-Modified than the stored parts starts over too. A `Content-Range` that starts elsewhere is refused.
 
 ### the hash
 
@@ -62,7 +65,7 @@ The SHA-256 is computed as bytes arrive (parts are read again on resume), in pla
 
 ### space
 
-Before a download with a known length, free space must be at least 1.2 times the file, as earlier builds did, else `WeightError` code `quota`. `store.estimate()` gives used and quota bytes and a `fits(bytes)` check. `store.persist()` asks the browser not to clear this origin's storage, and `store.persisted()` says whether it will (null when the browser cannot say).
+Before a download with a known length, free space must be at least 1.2 times the file, else `WeightError` code `quota`. `store.estimate()` gives used and quota bytes and a `fits(bytes)` check. `store.persist()` asks the browser not to clear this origin's storage, and `store.persisted()` says whether it will (null when the browser cannot say).
 
 ### licences
 
@@ -135,37 +138,23 @@ No WebGPU, no wasm and no threads. On file:// the store falls to IndexedDB parts
 - [@hackbuild/chat](../chat/README.md), [@hackbuild/transcribe](../transcribe/README.md) and the other model packages take the Blobs this store returns.
 - [@hackbuild/ai-views](../ai-views/README.md) loads a picked model through `weightsLoader(store)`.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship with this package. The quick start fetches Qwen2.5 0.5B Instruct GGUF, whose weights are Apache-2.0; every other file you store keeps its own licence, which the store states on first load.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/weights` passes 20 tests (23 on 2026-11-23, after the audit fixes) under Node
-  22.18.0 with a fake server built on `Response` and `ReadableStream`:
-  SHA-256 equal to Node `crypto` at block edges and odd chunkings; parts
-  exactly `partBytes` long; progress with a null total; resume after a
-  broken stream with the expected `Range` and `If-Range` and an equal hash;
-  restart when the server ignores the Range; hash mismatch removes the
-  parts; `once` and concurrent `get` make one fetch; quota refusal; one
-  licence line per key; user supplied files with hash check; the same
-  download, resume, list and evict run on the memory, IndexedDB
-  (fake-indexeddb 6.2.8), Cache Storage (fake) and OPFS (fake directory)
-  backends; repo fetch with an optional 404; ORT external data; the
-  transformers.js cache object.
-
-- 2026-11-24: rows with progress, cancel for every waiter with parts
-  kept, persist and persisted with and without the browser call, one
-  fetch for two stores on one backend under a fake lock, abort while
-  waiting on the lock (`test/weights.test.ts`).
-- 2026-11-24: `npm run check:origin` in headless Chrome 150: store
-  entries on opfs, idb and cache, a WebLLM entry and a
-  `transformersCache` put are read from another path of the same host,
-  and two pages asking for one key at once fetch it once (measured; rows
-  58 to 60 of docs/browser-checks.md).
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/weights` under Node 22.18.0 with a fake server built on `Response` and `ReadableStream` | 20 tests pass (23 on 2026-11-23, after the audit fixes): SHA-256 equal to Node `crypto` at block edges and odd chunkings; parts exactly `partBytes` long; progress with a null total; resume after a broken stream with the expected `Range` and `If-Range` and an equal hash; restart when the server ignores the Range; hash mismatch removes the parts; `once` and concurrent `get` make one fetch; quota refusal; one licence line per key; user supplied files with hash check; the same download, resume, list and evict run on the memory, IndexedDB (fake-indexeddb 6.2.8), Cache Storage (fake) and OPFS (fake directory) backends; repo fetch with an optional 404; ORT external data; the transformers.js cache object |
+| 2026-11-24 | `test/weights.test.ts` | pass: rows with progress, cancel for every waiter with parts kept, persist and persisted with and without the browser call, one fetch for two stores on one backend under a fake lock, abort while waiting on the lock |
+| 2026-11-24 | `npm run check:origin` in headless Chrome 150 (rows 58 to 60 of docs/browser-checks.md) | pass (measured): store entries on opfs, idb and cache, a WebLLM entry and a `transformersCache` put are read from another path of the same host, and two pages asking for one key at once fetch it once |
 
 ### Not verified by anything
 
 - The Web Lock in Safari and Firefox, and across a worker and a page.
-
 - A real browser. Not run: OPFS, Cache Storage and IndexedDB in Chrome or
   Safari; a multi GB GGUF download; resume against Hugging Face's CDN
   (whether it answers `If-Range` with 206 is unknown); quota numbers from
@@ -185,7 +174,3 @@ No WebGPU, no wasm and no threads. On file:// the store falls to IndexedDB parts
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship with this package. The quick start fetches Qwen2.5 0.5B Instruct GGUF, whose weights are Apache-2.0; every other file you store keeps its own licence, which the store states on first load.

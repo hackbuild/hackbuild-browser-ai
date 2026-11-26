@@ -18,13 +18,21 @@ npm install @hackbuild/ai-views
 
 Existing code that imports the old name keeps working with `npm install @hackbuild/ai-elements`.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
-- Verified (2026-11-25, `npx vitest run packages/ai-elements`): define
-  registers every ai-views element under the prefix and warns once.
-- Not verified: anything in a browser here; the views are checked under
-  ai-views.
+### Verified on this machine
 
+| date | check | result |
+|---|---|---|
+| 2026-11-25 | `npx vitest run packages/ai-elements` | pass: define registers every ai-views element under the prefix and warns once |
+
+### Not verified by anything
+
+- Anything in a browser here; the views are checked under ai-views.
 
 ## Size budget
 
@@ -36,7 +44,3 @@ Existing code that imports the old name keeps working with `npm install @hackbui
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0. This package uses no model and no weights.

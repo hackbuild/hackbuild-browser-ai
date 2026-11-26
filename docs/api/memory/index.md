@@ -1071,7 +1071,7 @@ Options for `Memory.add`: kind, scope, importance, emotion, novelty and the othe
 | ------ | ------ | ------ |
 | <a id="property-arousal"></a> `arousal?` | `number` | - |
 | <a id="property-dedup"></a> `dedup?` | `boolean` | Merge into a near duplicate in the same kind and scope. Default true. |
-| <a id="property-dupcosine"></a> `dupCosine?` | `number` | Cosine at or above this is a duplicate. Default 0.93 (inferred from earlier builds). |
+| <a id="property-dupcosine"></a> `dupCosine?` | `number` | Cosine at or above this is a duplicate. Default 0.93 (inferred). |
 | <a id="property-dupwindowms"></a> `dupWindowMs?` | `number` | Equal text within this many ms is a duplicate. Default 60 000. |
 | <a id="property-entities"></a> `entities?` | `string`[] | - |
 | <a id="property-importance"></a> `importance?` | `number` | - |
@@ -1180,7 +1180,7 @@ Numbers of one item as the core keeps them. Times in hours.
 
 ### CoreParams
 
-Recall parameters. Defaults are the values earlier builds used.
+Recall parameters; each one left out takes its default.
 
 #### Properties
 
@@ -1726,7 +1726,7 @@ An item kind: episode, gist, lesson, fact, rule, lore, doc or note.
 const CHARS_PER_TOKEN: 3.6 = 3.6;
 ```
 
-Characters per token for the default estimate (inferred from earlier builds, not measured on a tokenizer).
+Characters per token for the default estimate (inferred, not measured on a tokenizer).
 
 ***
 

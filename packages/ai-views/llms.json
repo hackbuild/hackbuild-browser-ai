@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import a model runtime into a view or expect a picker to start one. A pick loads only through the `loader` you pass to `useModelPick`; with none it throws `no loader for <id>: pass one to useModelPick, such as weightsLoader(store)`. Bring the runtime in with `importEsm` from @hackbuild/ai-env and start it inside your loader.",
+    "You pass `weightsLoader(store)` for a record that loads through its runtime, such as a WebLLM row. It fetches only records with a `source.url` or a repo and files, under `rec.licence`, and throws `<label> loads through its runtime. the page passes a loader for it.` for the rest; write your own loader for those.",
+    "You expect the elements to exist after import. Nothing registers on import; call `define()` once, or `define(\"hb\")` for `<hb-model-select>`, from `@hackbuild/ai-views/elements`.",
+    "You style the views locally or leave the stylesheet out. They draw in light DOM with the page's hackbuild-ui stylesheet, so load that stylesheet and install @virgilvox/hackbuild-ui as the required peer.",
+    "You import `@hackbuild/ai-views/vue` on a page without Vue. Only that entry imports Vue, an optional peer; the main entry is node safe state and `/elements` needs no framework."
+  ]
+}

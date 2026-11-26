@@ -1,5 +1,5 @@
 /**
- * Basic Pitch (Spotify, Apache-2.0 weights) run by hand (as earlier builds did):
+ * Basic Pitch (Spotify, Apache-2.0 weights) run by hand:
  * 22050 Hz mono, windows of 43844 samples on a 36164 sample hop with a
  * 3840 sample lead pad, 172 frames by 88 bins per window, 15 frames
  * trimmed off each end, only the frames and onsets outputs read (no
@@ -87,7 +87,7 @@ export interface Tfjs {
   loadGraphModel(url: string): Promise<{ execute(x: unknown, outs: string[]): { data(): Promise<Float32Array>; dispose(): void }[]; dispose?(): void }>;
 }
 
-/** Shader failures that mean "use the cpu backend" (as earlier builds did). */
+/** Shader failures that mean "use the cpu backend". */
 export function isShaderFailure(e: unknown): boolean {
   const m = (e instanceof Error ? e.message : String(e)).toLowerCase();
   return ["shader", "gett1", "overloaded", "webgl", "compile"].some((k) => m.includes(k));
@@ -217,7 +217,7 @@ export function decodeNotes(frames: Float32Array[], onsets: Float32Array[], o: {
   return notes.sort((a, b) => a.t - b.t || a.m - b.m);
 }
 
-/** Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust (as earlier builds did). */
+/** Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust. */
 export function refineNotes(notes: readonly Note[], o: { mergeGap?: number; harmonics?: boolean; minDur?: number; minVel?: number } = {}): Note[] {
   let out = [...notes].sort((a, b) => a.t - b.t || a.m - b.m);
   if (o.mergeGap && o.mergeGap > 0) {
@@ -249,7 +249,7 @@ export function refineNotes(notes: readonly Note[], o: { mergeGap?: number; harm
   return out;
 }
 
-/** One note at a time, keeping the higher (or lower) line (as earlier builds did). */
+/** One note at a time, keeping the higher (or lower) line. */
 export function keepMonophonic(notes: readonly Note[], pick: "high" | "low" = "high"): Note[] {
   const out: Note[] = [];
   for (const n of notes) {
@@ -269,7 +269,7 @@ export function keepMonophonic(notes: readonly Note[], pick: "high" | "low" = "h
   return out;
 }
 
-/** Note extraction presets (as earlier builds did). */
+/** Note extraction presets. */
 export const DETAILS = {
   tight: { onsetThresh: 0.6, frameThresh: 0.35, minFrames: 8, mergeGap: 0.03, minDur: 0.06 },
   normal: { onsetThresh: 0.5, frameThresh: 0.3, minFrames: 5, mergeGap: 0.05, minDur: 0.05 },

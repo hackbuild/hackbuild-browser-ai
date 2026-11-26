@@ -1,5 +1,5 @@
 /**
- * MaskStudio, after the earlier mask studio: drop an image, press a thing
+ * MaskStudio: drop an image, press a thing
  * to cut it out (a click segment model such as SlimSAM), fix the mask by
  * hand with the wand, brush and lasso of hackbuild-ui maskEditor (x swaps
  * add and erase, [ and ] size the brush, ctrl z undoes), zoom and fit, and

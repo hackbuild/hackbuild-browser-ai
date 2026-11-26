@@ -1,5 +1,5 @@
 /**
- * htdemucs stem separation (an earlier stem splitter). Every tier is the same
+ * htdemucs stem separation. Every tier is the same
  * network, so overlap is the speed control: fast is the fp16 weights
  * export at 10 percent overlap, slow the fp32 export at 40 percent. The
  * graph is fetched once and the ort ladder walks webgpu basic, all,

@@ -785,7 +785,7 @@ The tag in front of each recalled memory line under a user turn.
 const SAVE_DEBOUNCE_MS: 600 = 600;
 ```
 
-Debounce between a change and its save, in ms (vendor, from an earlier build).
+Debounce between a change and its save, in ms (vendor).
 
 ***
 

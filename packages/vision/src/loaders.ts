@@ -34,7 +34,7 @@ async function toRaw(tjs: TjsModule, img: ImageInput): Promise<unknown> {
   return R?.read ? R.read(img) : img;
 }
 
-/** Normalize a depth pipeline result. predicted_depth keeps the raw range (as earlier builds did); depth is the 8 bit image (as earlier builds did). */
+/** Normalize a depth pipeline result. predicted_depth keeps the raw range; depth is the 8 bit image. */
 export function depthFromOutput(out: { predicted_depth?: TensorLike; depth?: RawImageLike }): DepthMap {
   const pd = out.predicted_depth;
   if (pd && pd.data && pd.dims?.length >= 2) {

@@ -1,8 +1,8 @@
 /**
  * Model records: what a model provides, which runtime runs it, the device
  * and dtype ladder to walk, the quirks app code used to hard code, and the
- * weight licence. Ladders are per model (an earlier relief bench retries fp32 on the same
- * device, an earlier chat build drops to wasm q8, an earlier vision build retries q4 in a fresh heap), so
+ * weight licence. Ladders are per model (a depth model may retry fp32 on the same
+ * device, a chat model drop to wasm q8, a vision model retry q4 in a fresh heap), so
  * they live here instead of in one global ladder.
  */
 
@@ -63,7 +63,7 @@ export interface Rung {
   needs?: Need[];
   /** onnxruntime-web session options for this rung. */
   ort?: OrtRung;
-  /** Load into a fresh wasm heap (as earlier builds did). */
+  /** Load into a fresh wasm heap. */
   freshHeap?: boolean;
   /** Runtime specific knobs, e.g. `{ context_window_size: 4096 }` for WebLLM. */
   options?: Record<string, unknown>;
@@ -216,7 +216,7 @@ export function ladderFor(rec: ModelRecord, env?: Env): { rungs: Rung[]; skipped
   return { rungs, skipped };
 }
 
-/** The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm. */
+/** The onnxruntime-web ladder to walk after one fetch: webgpu at basic, all, disabled, then wasm. */
 export function ortLadder(): Rung[] {
   return [
     { device: "webgpu", ort: { executionProviders: ["webgpu", "wasm"], graphOptimizationLevel: "basic" } },
@@ -229,7 +229,7 @@ export function ortLadder(): Rung[] {
 /** The kind of a load failure as `classifyError` names it. */
 export type ErrorKind = "runtime-mismatch" | "out-of-memory" | "f16" | "device-lost" | "unsupported-op" | "network" | "abort" | "unknown";
 
-/** Name the failure so a ladder and a status line can act on it. Patterns come from the builds' logs. */
+/** Name the failure so a ladder and a status line can act on it. Patterns come from runtime error messages seen in logs. */
 export function classifyError(e: unknown): ErrorKind {
   const s = e instanceof Error ? `${e.name} ${e.message}` : String(e);
   if (/AbortError|aborted/i.test(s)) return "abort";

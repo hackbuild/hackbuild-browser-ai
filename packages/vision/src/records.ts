@@ -53,7 +53,7 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["earlier builds: fp16 on webgpu, fp32 on the same device after a failure"],
+    notes: ["fp16 on webgpu, fp32 on the same device after a failure"],
   },
   mp("efficientdet-lite0", "detect", "object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite", 7, "mediapipe efficientdet lite0 (coco, 80 classes)", "light, 80 things"),
   mp("selfie-segmenter", "segment.person", "image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite", 1, "mediapipe selfie segmenter"),
@@ -84,7 +84,7 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["earlier builds: one image embedding, then any number of point prompts"],
+    notes: ["one image embedding, then any number of point prompts"],
   },
   {
     id: "smolvlm-256m-instruct",
@@ -123,14 +123,13 @@ export const VISION_RECORDS: ModelRecord[] = [
     commercial: "unknown",
     place: "gpu",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["earlier builds: q4f16 on webgpu only; the licence limits commercial use by revenue, read it before shipping"],
+    notes: ["q4f16 on webgpu only; the licence limits commercial use by revenue, read it before shipping"],
   },
 ];
 
 /**
  * Records listed for pickers and never registered by default, so a hub's
- * routing by capability keeps its small defaults: larger alternates the
- * earlier tools offered (smolvlm 500m and 2 video, gemma 4 e2b, two more
+ * routing by capability keeps its small defaults: larger alternates (smolvlm 500m and 2 video, gemma 4 e2b, two more
  * depth models), and records under licences that limit use (YOLOv10 and
  * FastSAM are AGPL-3.0 upstream, Ultralytics; the face swap set is
  * InsightFace, non-commercial). A hub that runs one adds it itself. Sizes
@@ -154,7 +153,7 @@ const yolo10 = (size: "n" | "s" | "m", mb: number, speed: Speed, verdict: string
   licence: "AGPL-3.0 (Ultralytics weights, the model card's licence field)",
   commercial: false,
   place: "gpu",
-  notes: ["output [1, 300, 6] after the model's own selection, so no nms pass (vendor, the yolov10 paper)", "an earlier room offered nano, small and medium"],
+  notes: ["output [1, 300, 6] after the model's own selection, so no nms pass (vendor, the yolov10 paper)", "comes in nano, small and medium"],
 });
 
 /** Records listed for pickers and never registered by default: larger alternates, and records under licences that limit use (YOLOv10, FastSAM, the face swap set). */
@@ -196,7 +195,7 @@ export const PICKER_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["an earlier room offered it beside smolvlm 256m and 500m"],
+    notes: ["an option beside smolvlm 256m and 500m"],
   },
   {
     id: "depth-anything-v2-base",
@@ -252,7 +251,7 @@ export const PICKER_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "gpu",
     runtime: "@huggingface/transformers@4.3.2",
-    notes: ["an earlier dog sim used it as the cortex at about 3.3 GB (vendor there)"],
+    notes: ["about 3.3 GB (vendor)"],
   },
   yolo10("n", 9, "instant", "nano, quick"),
   yolo10("s", 28, "fast", "small, sharper"),
@@ -275,7 +274,7 @@ export const PICKER_RECORDS: ModelRecord[] = [
     licence: "AGPL-3.0 upstream (Ultralytics FastSAM); the export's card says apache-2.0",
     commercial: false,
     place: "cpu-worker",
-    notes: ["an earlier mask tool found every mask in one pass on onnxruntime-web (93 MB there, vendor)", "segment everything: prototype masks, nms, then a pick by click"],
+    notes: ["finds every mask in one pass on onnxruntime-web (93 MB, vendor)", "segment everything: prototype masks, nms, then a pick by click"],
   },
   {
     id: "scrfd-10g",
@@ -330,7 +329,7 @@ export const PICKER_RECORDS: ModelRecord[] = [
     licence: "InsightFace: non-commercial research only; the mirror's card says gpl-3.0",
     commercial: false,
     place: "gpu",
-    notes: ["128 px faces; an earlier face swap tool pasted the result back with a feathered mask"],
+    notes: ["128 px faces; paste the result back with a feathered mask"],
   },
 ];
 
@@ -374,6 +373,6 @@ export function yoloRecord(o: { url: string; sha256?: string; id?: string; licen
     licence: o.licence ?? "AGPL-3.0 (Ultralytics YOLOv8 weights), supplied by the app",
     commercial: false,
     place: "gpu",
-    notes: ["earlier builds: 640 letterbox, per class nms at iou 0.45, at most 13 boxes"],
+    notes: ["640 letterbox, per class nms at iou 0.45, at most 13 boxes"],
   };
 }

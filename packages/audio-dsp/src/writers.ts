@@ -1,7 +1,7 @@
 /**
- * File writers: txt, srt, vtt and json transcripts in the earlier transcription tool
- * layouts (byte for byte), lrc in the earlier lyrics tool's, 16 bit and float WAV, standard
- * MIDI files in the earlier transcription tool layout (format 1, 480 ticks per quarter,
+ * File writers: txt, srt, vtt and json transcripts in fixed
+ * layouts (byte for byte), lrc, 16 bit and float WAV, standard
+ * MIDI files (format 1, 480 ticks per quarter,
  * drums on channel 10), and a store only zip.
  */
 
@@ -63,7 +63,7 @@ export interface TranscriptJson {
   dropped?: readonly { start: number; text: string; why: string }[];
 }
 
-/** The earlier transcription tool json export: times to 3 decimals, two space indent. */
+/** The json export: times to 3 decimals, two space indent. */
 export function toJson(t: TranscriptJson): string {
   return JSON.stringify(
     {
@@ -111,7 +111,7 @@ export function parseLrc(text: string): Segment[] {
   return lines.map((l, i) => ({ ...l, end: i + 1 < lines.length ? lines[i + 1]!.start : l.start + Math.max(1.5, l.text.length * 0.07) }));
 }
 
-/** Word timing spread across a line by character count (as earlier builds did). */
+/** Word timing spread across a line by character count. */
 export function spreadWords(text: string, start: number, end: number): Segment[] {
   const toks = text.trim().split(/\s+/).filter(Boolean);
   if (!toks.length) return [];

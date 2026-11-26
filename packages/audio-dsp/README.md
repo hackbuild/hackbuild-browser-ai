@@ -54,7 +54,7 @@ The suite's transcribe page runs its front end on this core: [hackbuild-suite tr
 
 ### the kernels
 
-All from the earlier transcription tool's July and August builds unless noted: dc blocker (pole 0.9975), RBJ biquads, frame levels (25 ms frames on a 10 ms hop at 16 kHz), percentiles, minimum statistics noise floor (median of 1.5 s minima), spectral subtraction from a noise print (512 point sqrt Hann, median of up to 320 quiet frames, temporal and cross bin gain smoothing), lookahead limiter (4 ms blocks, 120 ms release), resampling (windowed sinc, linear, and the earlier live captioner style FIR decimator), Hann STFT magnitudes, RMS and peak envelopes, onset picking (novelty over a local mean), tempo by autocorrelation with a phase search, a vector strength grid fit, and LPC formants.
+The kernels: dc blocker (pole 0.9975), RBJ biquads, frame levels (25 ms frames on a 10 ms hop at 16 kHz), percentiles, minimum statistics noise floor (median of 1.5 s minima), spectral subtraction from a noise print (512 point sqrt Hann, median of up to 320 quiet frames, temporal and cross bin gain smoothing), lookahead limiter (4 ms blocks, 120 ms release), resampling (windowed sinc, linear, and an FIR decimator), Hann STFT magnitudes, RMS and peak envelopes, onset picking (novelty over a local mean), tempo by autocorrelation with a phase search, a vector strength grid fit, and LPC formants.
 
 ### the sinc resampler
 
@@ -70,15 +70,15 @@ sin, cos, exp, ln and atan2 are written out in the crate, so the native and wasm
 
 ### the gate
 
-`gate(db, threshold, n)` is the earlier transcription tool's hysteresis gate: on after 3 frames, off after 25, 0.25 s pad, merge under 0.30 s, drop under 0.20 s. Regions come back in samples, end exclusive. `gateThreshold(floor, p95, margin)` places the threshold and `coverage(regions, a, b)` gives the share of a span the gate kept.
+`gate(db, threshold, n)` is a hysteresis gate: on after 3 frames, off after 25, 0.25 s pad, merge under 0.30 s, drop under 0.20 s. Regions come back in samples, end exclusive. `gateThreshold(floor, p95, margin)` places the threshold and `coverage(regions, a, b)` gives the share of a span the gate kept.
 
 ### overlap add
 
-`planSegments`, `fadeWeight` and `OverlapAdd` are the htdemucs overlap add from an earlier August build: segments of S samples on a stride of S (1 - overlap), overlap capped at 0.6, a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
+`planSegments`, `fadeWeight` and `OverlapAdd` are the overlap add htdemucs uses: segments of S samples on a stride of S (1 - overlap), overlap capped at 0.6, a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
 
 ### writers
 
-`toTxt`, `toSrt`, `toVtt` and `toJson` write the earlier transcription tool's layouts byte for byte; `toLrc`, `parseLrc` and `spreadWords` follow earlier builds. `encodeWav` writes 16 bit PCM or 32 bit float and `decodeWav` reads them back. `writeMidi` writes format 1, 480 ticks per quarter, drums on channel 10, note times in seconds. `zipStore` writes a store only zip, reproducible with a fixed date, and `unzipStore` reads such a zip back and checks each entry's crc32.
+`toTxt`, `toSrt`, `toVtt` and `toJson` write fixed transcript layouts byte for byte; `toLrc` and `parseLrc` write and read lrc lyrics, and `spreadWords` spreads word times across a line by character count. `encodeWav` writes 16 bit PCM or 32 bit float and `decodeWav` reads them back. `writeMidi` writes format 1, 480 ticks per quarter, drums on channel 10, note times in seconds. `zipStore` writes a store only zip, reproducible with a fixed date, and `unzipStore` reads such a zip back and checks each entry's crc32.
 
 ## API overview
 
@@ -108,7 +108,7 @@ The full reference is in [docs/api/audio-dsp](../../docs/api/audio-dsp/README.md
 | `loadDsp` and the kernels | WebAssembly with simd128 | yes | yes (inferred) | yes (inferred) | yes (inferred) |
 | gate, overlap add, writers | nothing | yes | yes | yes | yes |
 
-No WebGPU and no wasm threads. A browser without wasm SIMD cannot instantiate the core, and there is no scalar fallback build (inferred from the build script). Loading from file:// is meant to work through the inlined base64 but has not been tried in a real page. Node runs it too; the tests do.
+No WebGPU and no wasm threads. A browser without wasm SIMD cannot instantiate the core, and the build script makes no scalar fallback build. Loading from file:// through the inlined base64 passed in one automated Chrome pass; Safari has not tried it. Node runs it too; the tests do.
 
 ## Errors and troubleshooting
 
@@ -133,51 +133,30 @@ No WebGPU and no wasm threads. A browser without wasm SIMD cannot instantiate th
 - [@hackbuild/speak](../speak/README.md) writes rendered speech with `encodeWav`.
 - [@hackbuild/media](../media/README.md) decodes the files whose channels you pass in.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)), the Rust crate included; this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `cargo test -p hackbuild-audio-dsp` passes 11 tests (10
-  unit, 1 parity fixture) under rustc 1.95; `cargo clippy -D warnings`
-  passes natively; `cargo fmt --check` passes. Clippy for wasm32 first
-  ran on 2026-11-23 under the rustup 1.95.0 toolchain and passes; the
-  wasm32 claim made on 2026-11-22 could not have run, since the Homebrew
-  rustc has no wasm32 standard library.
-- 2026-11-22: `npx vitest run packages/audio-dsp` passes 16 tests (19 on 2026-11-23, local fixture suite included) under
-  Node 22.18.0, including native and wasm parity: the wasm build (simd128
-  on) gives the same bits as the native build for 14 kernel outputs over
-  a seeded 3 s signal (hashed), the onset list, tempo, grid fit, noise
-  floor and percentile, and 35 math samples.
-- 2026-11-22: parity with real exports from an earlier transcription tool: `toTxt`, `toSrt`, `toVtt`
-  and `toJson` reproduce byte for byte the 76 txt, srt, vtt and json files
-  of one batch zip from that tool (19 transcripts) from their segments. Those
-  files hold personal speech, so they stay out of git; the test reads
-  `.local/transcripts` (gitignored) or `TRANSCRIPT_FIXTURES` and is skipped
-  without them.
-
-- 2026-11-23: `cargo test -p hackbuild-audio-dsp` passes 14 tests (13
-  unit, 1 parity fixture); the parity fixture adds a test vowel and its
-  three formants, and the wasm build gives the same bits (vitest, 17
-  tests). Against bellowsjs 0.5.0's `estimateFormants` on 15 frames of
-  five test vowels, the port agrees within 7.1e-9 Hz on all 45 formants;
-  1,000 frames of a 10 s vowel took 214 ms in wasm against 283 ms in the
-  JS, Node 22.18.0 (measured).
-
-- 2026-11-23: the sinc resampler from 16 to 48 kHz over 10 minutes took
-  3,751 ms in wasm in Node 22.18.0 (measured), where the per tap kernel
-  took 4,825 ms for 30 s, about 96.5 s for 10 minutes (computed; the
-  browser pass measured 94,421 ms). The table output stays within 1e-5 of
-  the per tap kernel on four rate pairs (crate test) and the parity
-  fixture's sinc hash did not move.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `cargo test -p hackbuild-audio-dsp` under rustc 1.95 (10 unit, 1 parity fixture); `cargo clippy -D warnings` natively; `cargo fmt --check` | passes 11 tests; clippy and fmt pass. Clippy for wasm32 first ran on 2026-11-23 under the rustup 1.95.0 toolchain and passes; the wasm32 claim made on 2026-11-22 could not have run, since the Homebrew rustc has no wasm32 standard library |
+| 2026-11-22 | `npx vitest run packages/audio-dsp` under Node 22.18.0, including native and wasm parity: 14 kernel outputs over a seeded 3 s signal (hashed), the onset list, tempo, grid fit, noise floor and percentile, and 35 math samples | passes 16 tests (19 on 2026-11-23, local fixture suite included); the wasm build (simd128 on) gives the same bits as the native build |
+| 2026-11-22 | parity with real exports of another transcription tool: `toTxt`, `toSrt`, `toVtt` and `toJson` from their segments. Those files hold personal speech, so they stay out of git; the test reads `.local/transcripts` (gitignored) or `TRANSCRIPT_FIXTURES` and is skipped without them | byte for byte the 76 txt, srt, vtt and json files of one batch zip from that tool (19 transcripts) |
+| 2026-11-23 | `cargo test -p hackbuild-audio-dsp` (13 unit, 1 parity fixture); the parity fixture adds a test vowel and its three formants | passes 14 tests; the wasm build gives the same bits (vitest, 17 tests) |
+| 2026-11-23 | the formants port against bellowsjs 0.5.0's `estimateFormants` on 15 frames of five test vowels, Node 22.18.0 | agrees within 7.1e-9 Hz on all 45 formants; 1,000 frames of a 10 s vowel took 214 ms in wasm against 283 ms in the JS (measured) |
+| 2026-11-23 | the sinc resampler from 16 to 48 kHz over 10 minutes, Node 22.18.0 | 3,751 ms in wasm (measured), where the per tap kernel took 4,825 ms for 30 s, about 96.5 s for 10 minutes (computed; the browser pass measured 94,421 ms). The table output stays within 1e-5 of the per tap kernel on four rate pairs (crate test) and the parity fixture's sinc hash did not move |
+| 2026-11-23 | the inlined wasm core from a file:// page and kernel speed on 10 minutes of 16 kHz audio, one automated pass in Chrome 150 on an Apple M1 that nobody has looked at | passes over http and from file:// (iife build); sinc resample 16 to 48 kHz 3,267 ms, dc block 71 ms, biquad 75 ms, spectral subtraction 1,740 ms, limiter 289 ms, stft 1,188 ms, all kernels 8,677 ms (measured) |
 
 ### Not verified by anything
 
-- The kernels against the earlier transcription tool JS functions sample for sample. The
-  crate keeps their arithmetic order but sums frames in two lanes, so
-  the numbers differ from the JS builds in the last bits (inferred, not
-  measured).
-- Speed in a browser: no timing was taken.
-- Loading the wasm from file:// in a real page.
+- The kernels sample for sample against the JS functions they were
+  written from. The crate keeps their arithmetic order but sums frames
+  in two lanes, so the numbers can differ from the JS in the last bits.
+- Speed and loading in Safari, Firefox or on a phone.
 
 ## Size budget
 
@@ -190,7 +169,3 @@ No WebGPU and no wasm threads. A browser without wasm SIMD cannot instantiate th
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)), the Rust crate included; this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.

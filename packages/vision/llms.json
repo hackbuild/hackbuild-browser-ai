@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import `@huggingface/transformers` or `@mediapipe/tasks-vision` at the top of your file. Pass the loaders instead: `tjsProvider({ runtime: loadTransformers() })` from @hackbuild/devices and `mediapipeProvider({ runtime: loadTasksVision() })`, and each runtime loads at run time from its pinned URL.",
+    "You call `attachVision(hub, tjs)` and expect models to load. It adds the records and the transformers.js loaders only; also call `hub.provide(\"tjs\", tjs.factory)` and `hub.provide(\"mediapipe\", mediapipeProvider(...))`.",
+    "You expect MediaPipe weights to go through the weight store on their own. They load by URL from `MP_MODELS`; pass `store` to `mediapipeProvider` to read them through @hackbuild/weights with resume, sha-256 and the licence line.",
+    "You expect YOLO or a model from `PICKER_RECORDS` to answer `detect` or a `model` id. None is registered by default; build YOLO with `yoloRecord({ url })` for an export you supply (licence AGPL-3.0 unless you pass `licence`) and add it, or any picker record, with `hub.registry.add`.",
+    "You run `depth` on the main thread beside a render loop and trust `schedule` to keep the frames. Run `depthWorker({ urls: transformersUrls(), device })` instead; it loads only registered depth records and throws \"is not a registered depth record\" unless you pass `record` with its licence named."
+  ]
+}

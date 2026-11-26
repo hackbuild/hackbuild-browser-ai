@@ -49,7 +49,7 @@ export interface AddOptions {
   meta?: Record<string, unknown>;
   /** Merge into a near duplicate in the same kind and scope. Default true. */
   dedup?: boolean;
-  /** Cosine at or above this is a duplicate. Default 0.93 (inferred from earlier builds). */
+  /** Cosine at or above this is a duplicate. Default 0.93 (inferred). */
   dupCosine?: number;
   /** Equal text within this many ms is a duplicate. Default 60 000. */
   dupWindowMs?: number;

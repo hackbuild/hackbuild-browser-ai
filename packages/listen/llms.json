@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You import onnxruntime-web at the top of the file for Silero. Pass the runtime in: `sileroVad(await loadOrt()(), bytes)` with `loadOrt` from @hackbuild/devices; this package bundles no runtime.",
+    "You pass `sileroVad` a URL. It takes the model bytes: fetch them with `store.once({ url, sha256, licence })` from @hackbuild/weights, taking `url`, `sha256` and `licence` from `VAD_RECORDS[0]`, so the hash is checked and the licence comes from the record.",
+    "You push blocks and nothing happens. The listener drops every block until you call `start()`, and `stop()` resets the machine and the VAD state.",
+    "You leave out `inputRate`. It defaults to 48000, so pass `ctx.sampleRate` from the AudioContext that feeds `micBlocks`, or the 16 kHz frames are cut from the wrong rate.",
+    "You download the models before asking for the microphone. Call `openMic()` first so the prompt shows at once, and keep its echo cancellation on, since barge in counts on the character's voice being cancelled out of the input.",
+    "You expect barge in to work on its own. Wire `setTalking` to @hackbuild/speak's `onSpeaking` and `onBargeIn` to the speaker's `stop()`; transcription failures arrive in `onError`, never as a throw."
+  ]
+}

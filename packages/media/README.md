@@ -22,22 +22,26 @@ No dependencies and no peers. It runs no model and fetches nothing.
 ## Quick start
 
 ```ts
-import { decodeAudio, lumaHistogram, pickKeyframes, record } from "@hackbuild/media";
+import { decodeAudio, lumaHistogram, pickKeyframes, sampleTimes } from "@hackbuild/media";
 
-// audio at 16 kHz for speech to text, from a file the user dropped
-const file = new File([], "clip.mp4");
-const { channels, duration } = await decodeAudio(file, 16000);
-console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
-
-// keyframes from frames you sampled off a video into RGBA pixels
-const frames: { t: number; rgba: Uint8ClampedArray }[] = [];
-const keys = pickKeyframes(frames.map((f) => ({ t: f.t, hist: lumaHistogram(f.rgba) })), { threshold: 0.3, maxGap: 10, max: 12 });
-console.log("keyframes at", keys.map((i) => frames[i]?.t));
-
-// record a canvas for five seconds
-const canvas = document.querySelector("canvas")!;
-const rec = record(canvas.captureStream(30));
-setTimeout(async () => console.log("recorded", rec.mimeType, (await rec.stop()).size, "bytes"), 5000);
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const file = input.files![0]!;
+  const { channels, duration } = await decodeAudio(file, 16000); // the audio at 16 kHz for speech to text
+  console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
+  // one small frame a second off a video element, then keyframes by scene change
+  const video = Object.assign(document.createElement("video"), { src: URL.createObjectURL(file), muted: true });
+  await new Promise((r) => (video.onloadeddata = r));
+  const g = new OffscreenCanvas(64, 36).getContext("2d")!;
+  const frames: { t: number; hist: Float32Array }[] = [];
+  for (const t of sampleTimes(video.duration, 1)) {
+    video.currentTime = t;
+    await new Promise((r) => (video.onseeked = r));
+    g.drawImage(video, 0, 0, 64, 36);
+    frames.push({ t, hist: lumaHistogram(g.getImageData(0, 0, 64, 36).data) });
+  }
+  console.log("keyframes at", pickKeyframes(frames, { threshold: 0.3, maxGap: 10, max: 12 }).map((i) => frames[i]!.t));
+};
 ```
 
 ## Live example
@@ -99,14 +103,17 @@ A page cannot fetch YouTube audio: the request is blocked by CORS. That needs an
 - [@hackbuild/stems](../stems/README.md) takes 44.1 kHz stereo from `decodeAudio`.
 - [@hackbuild/vision](../vision/README.md) can caption the keyframes `pickKeyframes` chose.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/media` passes 3 tests under Node
-  22.18.0 with fake browser objects: decode and resample flow and the
-  refused container message, histogram distance and keyframe picking
-  with gap and cap, MIME picking and chunk collection.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/media` under Node 22.18.0 with fake browser objects: decode and resample flow and the refused container message, histogram distance and keyframe picking with gap and cap, MIME picking and chunk collection | passes 3 tests |
 
 ### Not verified by anything
 
@@ -123,7 +130,3 @@ A page cannot fetch YouTube audio: the request is blocked by CORS. That needs an
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.

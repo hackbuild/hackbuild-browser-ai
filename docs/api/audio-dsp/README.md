@@ -112,7 +112,7 @@ decimate(
 ): Float32Array;
 ```
 
-FIR low pass then every factor-th sample (earlier builds: factor 3, 41 taps, 7 kHz from 48 kHz).
+FIR low pass then every factor-th sample (for example factor 3, 41 taps, 7 kHz from 48 kHz).
 
 ###### Parameters
 
@@ -141,7 +141,7 @@ denoise(
 ): Float32Array;
 ```
 
-Spectral subtraction; earlier builds: alpha 1.2, 1.8, 2.6 with gain floors 0.15, 0.08, 0.04.
+Spectral subtraction; usual settings: alpha 1.2, 1.8, 2.6 with gain floors 0.15, 0.08, 0.04.
 
 ###### Parameters
 
@@ -312,7 +312,7 @@ frameDb(
 ): Float32Array;
 ```
 
-Level per frame in dB; the earlier transcription tool uses 400 sample frames on a 160 sample hop at 16 kHz.
+Level per frame in dB; the transcribe front end uses 400 sample frames on a 160 sample hop at 16 kHz.
 
 ###### Parameters
 
@@ -472,7 +472,7 @@ resample(
 ): Float32Array;
 ```
 
-Windowed sinc by default; "linear" is the earlier transcription tool interpolator.
+Windowed sinc by default; "linear" is a linear interpolator.
 
 ###### Parameters
 
@@ -692,7 +692,7 @@ One resonance: centre frequency and bandwidth, Hz.
 
 ### GateOptions
 
-The hysteresis gate from the earlier transcription tool, over frame levels in dB: speech
+The hysteresis gate over frame levels in dB: speech
 turns on after 3 frames above the threshold and off after 25 below,
 regions are padded, merged across short gaps and dropped when short.
 Regions come back in samples, end exclusive.
@@ -744,8 +744,7 @@ One track for `writeMidi`: a name, its notes, a General MIDI program, or drums o
 
 ### OlaSegment
 
-Overlap add for models that take fixed length segments (htdemucs in
-an earlier August build): segments of S samples on a stride of
+Overlap add for models that take fixed length segments (htdemucs): segments of S samples on a stride of
 S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each
 end, weights floored at 1e-4, and a division by the summed weights.
 
@@ -774,9 +773,9 @@ One onset from `Dsp.pickOnsets`: the attack foot frame, the novelty peak frame a
 
 ### Segment
 
-File writers: txt, srt, vtt and json transcripts in the earlier transcription tool
-layouts (byte for byte), lrc in the earlier lyrics tool's, 16 bit and float WAV, standard
-MIDI files in the earlier transcription tool layout (format 1, 480 ticks per quarter,
+File writers: txt, srt, vtt and json transcripts in fixed
+layouts (byte for byte), lrc, 16 bit and float WAV, standard
+MIDI files (format 1, 480 ticks per quarter,
 drums on channel 10), and a store only zip.
 
 #### Properties
@@ -1009,7 +1008,7 @@ function gateThreshold(
 ): number;
 ```
 
-Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8 (as earlier builds did).
+Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8.
 
 #### Parameters
 
@@ -1127,7 +1126,7 @@ function spreadWords(
 ): Segment[];
 ```
 
-Word timing spread across a line by character count (as earlier builds did).
+Word timing spread across a line by character count.
 
 #### Parameters
 
@@ -1170,7 +1169,7 @@ hh:mm:ss,mmm (srt) or hh:mm:ss.mmm (vtt); milliseconds rounded, capped at 999.
 function toJson(t): string;
 ```
 
-The earlier transcription tool json export: times to 3 decimals, two space indent.
+The json export: times to 3 decimals, two space indent.
 
 #### Parameters
 

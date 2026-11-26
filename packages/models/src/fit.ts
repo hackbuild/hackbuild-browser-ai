@@ -127,8 +127,8 @@ export interface Preset {
 }
 
 /**
- * Size presets that fill the rack, named by weight class (the earlier slot
- * rack's three presets, light to heavy). Picks are CATALOG ids; the total
+ * Size presets that fill the rack, named by weight class (three presets,
+ * light to heavy). Picks are CATALOG ids; the total
  * is computed from the records, never written by hand.
  */
 export const PRESETS: readonly Preset[] = [

@@ -4,6 +4,8 @@ Put a model picker, a chat, a transcriber, a mask studio or a camera frame on yo
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/ai-views)](https://www.npmjs.com/package/@hackbuild/ai-views) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 12.4 kB measured](https://img.shields.io/badge/gzip-12.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet.
+
 ## What it does
 
 - Gives each job (chat, speech to text, vision, detector, masks, image, voice, depth, embed, face swap, landmarks) a model picker whose rows say whether a model fits this machine and why not.
@@ -104,7 +106,7 @@ A pick loads only through its loader (none is an error the row shows), runs it f
 
 ### jobs and records
 
-Jobs and their records: chat (40 records, computed), speech to text (6), vision language (SmolVLM 256M and 500M, SmolVLM2 256M video, LFM2-VL 450M, Gemma 4 E2B), detector (EfficientDet lite0, YOLOv10 n, s and m), masks (SlimSAM, FastSAM-s), image (SD-Turbo, SD 1.5, and SDXL-Turbo greyed as not run yet), voice (Kokoro, Pocket TTS, the vocal tract, the system voice), depth, embed, landmarks and face swap (scrfd, ArcFace, inswapper). The records come from the packages that run them; a record listed in more than one place counts once. Every record carries its weight licence; the non commercial ones are marked in the picker.
+Jobs and their records: chat (the chat rows of the @hackbuild/models catalogue), speech to text (six records), vision language (SmolVLM 256M and 500M, SmolVLM2 256M video, LFM2-VL 450M, Gemma 4 E2B), detector (EfficientDet lite0, YOLOv10 n, s and m), masks (SlimSAM, FastSAM-s), image (SD-Turbo, SD 1.5, and SDXL-Turbo greyed as not run yet), voice (Kokoro, Pocket TTS, the vocal tract, the system voice), depth, embed, landmarks and face swap (scrfd, ArcFace, inswapper). The records come from the packages that run them; a record listed in more than one place counts once. Every record carries its weight licence; the non commercial ones are marked in the picker.
 
 ## API overview
 
@@ -209,21 +211,24 @@ No WebGPU or wasm here; the model you load brings its own needs, and its row say
 - [@hackbuild/memory](../memory/README.md) gives the recall the memory inspector shows.
 - [@hackbuild/vision](../vision/README.md), [@hackbuild/speak](../speak/README.md), [@hackbuild/embed](../embed/README.md) and [@hackbuild/imagegen](../imagegen/README.md) supply the records of their jobs.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here. Each record names its weight licence in the table above, among them Apache-2.0, MIT, CC-BY-NC-4.0, AGPL-3.0 (YOLOv10, FastSAM), the InsightFace non-commercial research terms, the Stability AI licences and CreativeML OpenRAIL-M. The quick start loads Qwen2.5 0.5B Instruct GGUF, weights Apache-2.0.
+
 ## What is verified, and what is not
 
-- Verified (2026-11-25, `npx vitest run packages/ai-views`): every job
-  has the records above with a speed word and a verdict; rows carry size,
-  memory, backend, marks, detail and options, and a row that does not fit
-  names why; a pick loads with progress, cancels and keeps a failure's
-  words; presets total their download; the chat thread streams with the
-  reasoning apart and memory used; the queue runs, edits with undo and
-  exports; the frame mapping crops and mirrors; define registers every
-  element.
-- Verified headless (2026-11-25, `node tools/smoke-views.mjs`): one smoke
-  per demo page on stub providers with no weights.
-- Not verified: a real model through any view in this package (the
-  demos use stubs); touch drawing on a phone; screen readers.
+### Verified on this machine
 
+| date | check | result |
+|---|---|---|
+| 2026-11-25 | `npx vitest run packages/ai-views` | pass: every job has the records above with a speed word and a verdict; rows carry size, memory, backend, marks, detail and options, and a row that does not fit names why; a pick loads with progress, cancels and keeps a failure's words; presets total their download; the chat thread streams with the reasoning apart and memory used; the queue runs, edits with undo and exports; the frame mapping crops and mirrors; define registers every element |
+| 2026-11-25 | `node tools/smoke-views.mjs`, headless | pass: one smoke per demo page on stub providers with no weights |
+
+### Not verified by anything
+
+- A real model through any view in this package (the demos use stubs).
+- Touch drawing on a phone.
+- Screen readers.
 
 ## Size budget
 
@@ -235,7 +240,3 @@ No WebGPU or wasm here; the model you load brings its own needs, and its row say
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here. Each record names its weight licence in the table above, among them Apache-2.0, MIT, CC-BY-NC-4.0, AGPL-3.0 (YOLOv10, FastSAM), the InsightFace non-commercial research terms, the Stability AI licences and CreativeML OpenRAIL-M. The quick start loads Qwen2.5 0.5B Instruct GGUF, weights Apache-2.0.

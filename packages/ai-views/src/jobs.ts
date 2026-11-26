@@ -12,7 +12,7 @@ import { SPEAK_RECORDS } from "@hackbuild/speak";
 import { TRANSCRIBE_RECORDS } from "@hackbuild/transcribe";
 import { PICKER_RECORDS, VISION_RECORDS, faceApiRecord } from "@hackbuild/vision";
 
-/** face-api weights (MIT) as an earlier face swap tool loaded them, from the package CDN. */
+/** Base URL of the face-api weights (MIT) on the package CDN. */
 export const FACE_API_BASE = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/";
 
 /** A job a model picker serves, such as chat, transcribe, vision or masks. */

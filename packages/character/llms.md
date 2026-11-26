@@ -295,20 +295,19 @@ import { CHARACTER_WASM_BASE64 } from "@hackbuild/character/inline";
 // load the wasm core from the inlined base64 (or pass { url } or { bytes })
 const core = await loadCharacterCore({ base64: CHARACTER_WASM_BASE64 });
 
-// read a card the user dropped: PNG, CHARX or JSON, detected from the bytes
-const file = new File([], "card.png");
-const read = core.read(new Uint8Array(await file.arrayBuffer()));
-
-// any version to V3, then add or update the profile extension
-const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
-console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
-
-// fill the greeting and pick the lorebook entries the last turns activate
-console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
-console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
-
-// write it back as a PNG with both card chunks
-console.log(core.writePng(card).length, "bytes");
+// read a card the user picks: PNG, CHARX or JSON, detected from the bytes
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const read = core.read(new Uint8Array(await input.files![0]!.arrayBuffer()));
+  // any version to V3, then add or update the profile extension
+  const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
+  console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
+  // fill the greeting and pick the lorebook entries the last turns activate
+  console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
+  console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
+  // write it back as a PNG with both card chunks
+  console.log(core.writePng(card).length, "bytes");
+};
 ```
 
 ### from the concepts
@@ -325,10 +324,11 @@ console.log(core.writePng(card).length, "bytes");
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You call card methods on the module itself. Await `loadCharacterCore` once and call `read`, `upgrade`, `migrate`, `validate` and `writePng` on the `CharacterCore` it returns; every method is synchronous after that.
+- You fetch `character.wasm` by a relative URL from a file:// page and the fetch fails. Import `CHARACTER_WASM_BASE64` from `@hackbuild/character/inline` and pass `{ base64: CHARACTER_WASM_BASE64 }`, or pass `{ bytes }` you already hold.
+- You pass a `File` or `Blob` to `core.read`. Pass a `Uint8Array` of the file's bytes, for example `new Uint8Array(await file.arrayBuffer())`; the format is detected from the bytes.
+- You read `profileOf(card)` on a card straight from `read` and get null. Run `core.migrate(core.upgrade(read.card), { create: true })` to get a V3 card with the profile extension added.
+- You treat a bad card as a quiet failure. Every failed core call throws a `CharacterError` with the core's message, so wrap `read` and the writers in try and catch, and use `validate` to list problems by path without throwing.
 
 ## Errors this package throws
 

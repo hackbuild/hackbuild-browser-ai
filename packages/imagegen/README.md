@@ -4,6 +4,8 @@ Generate an image from a prompt in your tab with SD-Turbo or SD 1.5 on onnxrunti
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/imagegen)](https://www.npmjs.com/package/@hackbuild/imagegen) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.2 kB measured](https://img.shields.io/badge/gzip-6.2%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet.
+
 ## What it does
 
 - Runs the CLIP text encoder, a seeded Euler loop over the UNet and the VAE decoder, and returns RGBA ready for ImageData.
@@ -14,10 +16,10 @@ Generate an image from a prompt in your tab with SD-Turbo or SD 1.5 on onnxrunti
 ## Install
 
 ```sh
-npm install @hackbuild/imagegen
+npm install @hackbuild/imagegen @hackbuild/ai-env @hackbuild/devices @hackbuild/weights
 ```
 
-It depends on [@hackbuild/models](../models/README.md). The hub path also needs [@hackbuild/devices](../devices/README.md) for the ort provider and [@hackbuild/weights](../weights/README.md) for the store; install them when you load through the hub. No package is bundled from these runtimes; they load at run time:
+It depends on [@hackbuild/models](../models/README.md). The hub path in the quick start also needs [@hackbuild/ai-env](../ai-env/README.md) for `probe`, [@hackbuild/devices](../devices/README.md) for the ort provider and [@hackbuild/weights](../weights/README.md) for the store; the line above installs them. No package is bundled from these runtimes; they load at run time:
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -38,7 +40,7 @@ const hub = createHub({ env: await probe() });
 hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore() }).factory);
 attachImagegen(hub);
 
-// sd-turbo, 2397 MiB (vendor), Stability AI Non-Commercial Research Community License: no commercial use
+// sd-turbo; gen.record.licence names its weight licence (Stability AI, no commercial use)
 const gen = await loadImagegen(hub, { id: "sd-turbo" });
 
 // the CLIP tokenizer (weights MIT) through transformers.js, 77 ids
@@ -90,7 +92,7 @@ const img = await gen.generate(tokenize, { prompt, negative, seed, signal });
 
 ### each model has a form
 
-Each record carries a `form`, the fields a model select reshapes the form to, after an earlier image generation bench's model table. `applyForm` fills the defaults, clamps steps and guidance, drops fields the model does not take, and refuses a size its graphs do not accept with a `FormError` whose message is the copy. `loadLabel(record)` names the size and its source for the load button.
+Each record carries a `form`, the fields a model select reshapes the form to. `applyForm` fills the defaults, clamps steps and guidance, drops fields the model does not take, and refuses a size its graphs do not accept with a `FormError` whose message is the copy. `loadLabel(record)` names the size and its source for the load button.
 
 | record | steps (min, max, default) | guidance | negative prompt | sizes | spacing |
 |---|---|---|---|---|---|
@@ -102,7 +104,7 @@ SDXL-Turbo has two text encoders and the pipeline here runs one, so it is listed
 
 ### the scheduler
 
-Written from the published diffusers description: 1000 scaled linear betas from 0.00085 to 0.012, sigma = sqrt((1 - alphaBar) / alphaBar), trailing spacing (1 step is 999; 4 steps are 999, 749, 499, 249), UNet input divided by sqrt(sigma^2 + 1), and an Euler step on the predicted noise. Sigma at 999 is 14.6146 (computed). Leading spacing (SD 1.5) is 1000 // steps apart plus 1, and its first noise is scaled by sqrt(sigma^2 + 1), as diffusers does. The scheduler is a few thousand multiply adds per step, so it stays in TypeScript and no Rust crate was written.
+Written from the published diffusers description: 1000 scaled linear betas from 0.00085 to 0.012, sigma = sqrt((1 - alphaBar) / alphaBar), trailing spacing (1 step is 999; 4 steps are 999, 749, 499, 249), UNet input divided by sqrt(sigma^2 + 1), and an Euler step on the predicted noise. Leading spacing (SD 1.5) is 1000 // steps apart plus 1, and its first noise is scaled by sqrt(sigma^2 + 1), as diffusers does. The scheduler is a few thousand multiply adds per step, so it stays in TypeScript and no Rust crate was written.
 
 ### guidance
 
@@ -114,7 +116,7 @@ Noise is mulberry32 seeded, through Box-Muller to a normal; pass `rng` to replac
 
 ### graph names and sizes
 
-The text encoder maps `input_ids` to `last_hidden_state`; the UNet maps `sample`, `timestep` (int64) and `encoder_hidden_states` to `out_sample`; the VAE decoder maps `latent_sample` to `sample`, as in an earlier build. The latent is divided by `VAE_SCALE` (0.18215) before decoding. Output sides are multiples of 8; the default is 512.
+The text encoder maps `input_ids` to `last_hidden_state`; the UNet maps `sample`, `timestep` (int64) and `encoder_hidden_states` to `out_sample`; the VAE decoder maps `latent_sample` to `sample`. The latent is divided by `VAE_SCALE` (0.18215) before decoding. Output sides are multiples of 8; the default is 512.
 
 ## API overview
 
@@ -158,7 +160,7 @@ Sizes sum the Hugging Face file listing (no download). No weights ship in the pa
 | WASM | none | no wasm path | no wasm path | no wasm path | no wasm path |
 | threads | none | not used | not used | not used | not used |
 
-The records list only a WebGPU rung, as in an earlier build; with no WebGPU adapter there is no fallback, and the demo page disables the load button and says so. Phones usually cannot hold the weights.
+The records list only a WebGPU rung; with no WebGPU adapter there is no fallback, and the demo page disables the load button and says so. Phones usually cannot hold the weights.
 
 ## Errors and troubleshooting
 
@@ -176,32 +178,28 @@ The records list only a WebGPU rung, as in an earlier build; with no WebGPU adap
 - [@hackbuild/weights](../weights/README.md) downloads and caches the three graphs.
 - [@hackbuild/depth-mesh](../depth-mesh/README.md) can turn a generated image into a relief solid.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: SD-Turbo export, Stability AI Non-Commercial Research Community License; SD 1.5, CreativeML OpenRAIL-M; SDXL-Turbo, Stability AI Community License; CLIP tokenizer, MIT.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/imagegen` passes, 10 tests, in
-  Node 22.18.0: sigmas, trailing timesteps, seeded noise statistics, an
-  Euler step that removes exactly predicted noise, id padding, RGBA
-  conversion, the graph call order and shapes against fake sessions,
-  seed reproducibility and abort.
-
-- 2026-11-24: `test/hub.test.ts`, 8 tests: both forms, the load label,
-  applyForm clamps and refusals, leading timesteps, the guidance mix
-  against a hand computed latent, a load of sd-1.5 through the devices
-  ort provider and a memory weight store with fake sessions (three
-  fetches, graphs keyed by folder, 13 hub runs for 5 steps), the stub
-  mode, and a refusal when the graphs are missing.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/imagegen` in Node 22.18.0: sigmas, trailing timesteps, seeded noise statistics, an Euler step that removes exactly predicted noise, id padding, RGBA conversion, the graph call order and shapes against fake sessions, seed reproducibility and abort | passes 10 tests; sigma at timestep 999 is 14.6146 (computed) |
+| 2026-11-24 | `test/hub.test.ts`: both forms, the load label, applyForm clamps and refusals, leading timesteps, the guidance mix against a hand computed latent, a load of sd-1.5 through the devices ort provider and a memory weight store with fake sessions, the stub mode, and a refusal when the graphs are missing | passes 8 tests; three fetches, graphs keyed by folder, 13 hub runs for 5 steps |
 
 ### Not verified by anything
 
 - SD-Turbo on real onnxruntime-web webgpu: graph names, image quality,
   speed and memory.
-- The repo file paths in both records (inferred), and whether
+- The repo file paths in both records, which are inferred, and whether
   `microsoft/stable-diffusion-v1.5-webnn` exists with those paths, takes
   float32 inputs and runs on onnxruntime-web webgpu. SD 1.5 image quality
   with this sampler.
-- A wasm path; an earlier build had none.
+- A wasm path: none is written.
 
 ## Size budget
 
@@ -213,7 +211,3 @@ The records list only a WebGPU rung, as in an earlier build; with no WebGPU adap
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: SD-Turbo export, Stability AI Non-Commercial Research Community License; SD 1.5, CreativeML OpenRAIL-M; SDXL-Turbo, Stability AI Community License; CLIP tokenizer, MIT.

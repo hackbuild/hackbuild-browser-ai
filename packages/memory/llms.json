@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "`open` needs a loaded core. Call `loadCore` first with `{ url }`, `{ bytes }` or `{ base64: MEMORY_WASM_BASE64 }` from `@hackbuild/memory/inline`, and pass it as `core`; on file:// use the base64 form, since the core has no threads and loads from bytes.",
+    "Without `embed`, recall is keyword only and `status.mode` says `keyword`. `hashedEmbedder()` downloads nothing and matches shared words only; for real recall pass an embedder from `@hackbuild/embed`, whose weights carry their own licence.",
+    "`recall` strengthens every hit and counts a use. Call `explain` when you want the trace of a query without changing the memory.",
+    "When IndexedDB fails, `open` still resolves and the memory lives in a Map until the page closes. Read `status.notes` and tell the person instead of assuming it was saved.",
+    "A lost password means sealed data is gone. `deriveKey` throws `SealError` with code `wrong-password` for a wrong one, and a plain row in a sealed store throws, so export a plain memory and import it into a sealed one.",
+    "Inject recall with `injectRecall` or `RecallConversation`, which keep a fixed note in the system message and put recalled lines under the latest user message only. Do not put recall into the system prompt per turn, or the runtime loses its cached prefix."
+  ]
+}

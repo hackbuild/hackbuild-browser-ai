@@ -166,7 +166,7 @@ interface CloneOptions {
 }
 ```
 
-Voice clone reference preparation: mono in, linear resample to 24 kHz, cut to 15 s, peak normalized to 0.9 (earlier builds' settings).
+Voice clone reference preparation: mono in, linear resample to 24 kHz, cut to 15 s, peak normalized to 0.9.
 
 ```ts
 function createSpeaker(o: SpeakerOptions): Speaker
@@ -703,29 +703,32 @@ Word spans in a text: [start, end) character offsets.
 import { importEsm } from "@hackbuild/ai-env";
 import { bellowsEngine, createSpeaker, renderedWav, webSpeechEngine, type BellowsVoiceModule } from "@hackbuild/speak";
 
-// one AudioContext, made after a click so the browser lets it play
-const ctx = new AudioContext();
+// the browser lets audio play only after a click
+document.querySelector("button")!.onclick = async () => {
+  const ctx = new AudioContext();
+  // the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
+  const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
+  const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
 
-// the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
-const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
-const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
+  // feed a reply as it streams; the last call says it is complete
+  speaker.feed("Hello there, this is the first clause.");
+  speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
+  await speaker.done();
 
-// feed a reply as it streams; the last call says it is complete
-speaker.feed("Hello there, this is the first clause.");
-speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
-await speaker.done();
-
-// render a line offline and keep it as a wav
-const wav = renderedWav(await speaker.render("Saved to a file."));
-console.log("wav", wav.size, "bytes");
+  // render a line offline and keep it as a wav
+  const wav = renderedWav(await speaker.render("Saved to a file."));
+  console.log("wav", wav.size, "bytes");
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import kokoro-js or bellows-voice at the top of the file. Pass a loader instead: `runtime: () => importEsm(url)` from @hackbuild/ai-env or `runtimeLoader` from @hackbuild/devices; this package never bundles a runtime.
+- You add `kokoroEngine` and it refuses to load. Its phonemizer is GPL-3.0-or-later, so it loads only with `allowGplPhonemizer: true`; show `KOKORO_GPL_NOTICE` first, or use `bellowsEngine` and `webSpeechEngine`, which carry no GPL code.
+- You call `bellowsEngine({ runtime })` without `rng`. The seed is one draw from the `rng` you inject, so pass one (`Math.random`, or a seeded Rng when you want the same audio twice).
+- You make the AudioContext at page load and hear nothing. Make it inside a click handler and pass it to `createSpeaker({ ctx, engines })`, with `webSpeechEngine()` last in the chain as the fallback.
+- You feed each new token on its own. `feed(text)` takes the whole visible reply so far, `feed(text, true)` marks it complete, and offsets in `onProgress` are in that text; call `stop()` for barge in and `dispose()` when the speaker goes away.
+- You expect Kokoro or Pocket weights to go through @hackbuild/weights. Kokoro's come through kokoro-js and Pocket's from its pinned Space commit, each with its own fetch, and each engine states its weight licence through `onStatus` on first load.
 
 ## Errors this package throws
 

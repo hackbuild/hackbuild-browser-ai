@@ -1,7 +1,6 @@
 /**
  * Speech to text records for the models hub. Ladders and dtypes are
- * the earlier transcription tool's per model table; sizes are inferred from the builds'
- * notes, except rows marked vendor: those sum the quantized encoder and
+ * one per model table; sizes are inferred from the model notes, except rows marked vendor: those sum the quantized encoder and
  * decoder in the hub listing (no download, 2026-11-25), in MiB. Licences are the model cards' as of 2026-11-22.
  */
 
@@ -34,7 +33,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     ladder: LADDERS.whisperTurbo(),
     licence: "MIT",
     place: "gpu",
-    notes: ["best accuracy, multilingual, wants webgpu (as earlier builds did)", "download per rung: 1.5 gb fp16 encoder and q4 decoder, 2.7 gb fp32 encoder, 1.0 gb q8 on wasm (vendor)"],
+    notes: ["best accuracy, multilingual, wants webgpu", "download per rung: 1.5 gb fp16 encoder and q4 decoder, 2.7 gb fp32 encoder, 1.0 gb q8 on wasm (vendor)"],
   }),
   asr({
     id: "whisper-base",
@@ -71,7 +70,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
     sizeMB: 90,
     ladder: LADDERS.whisperSmall(false),
     licence: "MIT (the OpenAI Whisper release; the Xenova ONNX card says apache-2.0)",
-    notes: ["english only; the earlier transcription tool's no gpu default"],
+    notes: ["english only; the default with no gpu"],
   }),
   asr({
     id: "whisper-tiny.en",
@@ -102,7 +101,7 @@ export const TRANSCRIBE_RECORDS: ModelRecord[] = [
   }),
 ];
 
-/** The record earlier builds picked: turbo with a webgpu adapter, base.en without. */
+/** The default record: turbo with a webgpu adapter, base.en without. */
 export function defaultTranscribeId(webgpu: boolean): string {
   return webgpu ? "whisper-large-v3-turbo" : "whisper-base.en";
 }

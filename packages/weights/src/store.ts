@@ -1,8 +1,8 @@
 /**
  * One weight store over OPFS, Cache Storage, IndexedDB parts and memory.
  *
- * A download is written as parts of `partBytes` (default 128 MB, the size
- * earlier builds use) with a meta record updated after each part. An
+ * A download is written as parts of `partBytes` (default 128 MB) with a
+ * meta record updated after each part. An
  * interrupted download keeps what it has; the next `get` asks the server
  * for the rest with a Range request guarded by If-Range, and starts over
  * when the server answers 200 instead of 206 or when the 206 carries a
@@ -100,7 +100,7 @@ export interface DownloadRow {
 export interface Estimate {
   used: number | null;
   quota: number | null;
-  /** True when quota is unknown or free space is at least 1.2 times `bytes` (as earlier builds did). */
+  /** True when quota is unknown or free space is at least 1.2 times `bytes`. */
   fits(bytes: number): boolean;
 }
 

@@ -302,7 +302,7 @@ Samples in one model window, 43844.
 const DETAILS: object;
 ```
 
-Note extraction presets (as earlier builds did).
+Note extraction presets.
 
 #### Type Declaration
 
@@ -494,7 +494,7 @@ function estimateTempo(
 ): object;
 ```
 
-bpm (2 decimals) and grid offset in seconds (3 decimals), the earlier transcription tool estimateTempo.
+bpm (2 decimals) and grid offset in seconds (3 decimals).
 
 #### Parameters
 
@@ -527,7 +527,7 @@ function fitGridToNotes(dsp, notes):
   | null;
 ```
 
-Grid from transcribed notes by vector strength; null when R is under 0.25 (as earlier builds did).
+Grid from transcribed notes by vector strength; null when R is under 0.25.
 
 #### Parameters
 
@@ -553,7 +553,7 @@ Grid from transcribed notes by vector strength; null when R is under 0.25 (as ea
 function isShaderFailure(e): boolean;
 ```
 
-Shader failures that mean "use the cpu backend" (as earlier builds did).
+Shader failures that mean "use the cpu backend".
 
 #### Parameters
 
@@ -573,7 +573,7 @@ Shader failures that mean "use the cpu backend" (as earlier builds did).
 function keepMonophonic(notes, pick?): Note[];
 ```
 
-One note at a time, keeping the higher (or lower) line (as earlier builds did).
+One note at a time, keeping the higher (or lower) line.
 
 #### Parameters
 
@@ -608,7 +608,7 @@ Stub builders for the models hub: the `notes` capability returns `stubPitch()`.
 function refineNotes(notes, o?): Note[];
 ```
 
-Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust (as earlier builds did).
+Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust.
 
 #### Parameters
 

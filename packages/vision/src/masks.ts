@@ -1,7 +1,7 @@
 /**
  * Mask operations and mask export, as plain functions on `Mask` (0 to 255
- * per pixel, 128 and up counts as inside). The operations are the earlier
- * mask studio's set (union, subtract, invert, smooth, expand, shrink,
+ * per pixel, 128 and up counts as inside). The operations are a mask
+ * editor's set (union, subtract, invert, smooth, expand, shrink,
  * keep the largest piece); dilate and erode use an exact distance
  * transform, so a radius costs the same at any size and the image border
  * is not eaten. Exports: grey PNG, PNG with the mask as alpha, an SVG
@@ -47,7 +47,7 @@ export function maskIntersect(a: Mask, b: Mask): Mask {
   return make(a, a.data.map((v, i) => Math.min(v, b.data[i]!)));
 }
 
-/** `a` with `b` taken out (shift with a selection tool in the earlier mask studio). */
+/** `a` with `b` taken out (shift with a selection tool in a mask editor). */
 export function maskSubtract(a: Mask, b: Mask): Mask {
   same("maskSubtract", a, b);
   return make(a, a.data.map((v, i) => Math.min(v, 255 - b.data[i]!)));
@@ -122,7 +122,7 @@ export function maskErode(m: Mask, r: number): Mask {
   return make(m, Uint8Array.from(d, (v) => (v > r * r ? 255 : 0)));
 }
 
-/** Soft edges: a gaussian of radius `r` with sigma r / 2 (the earlier mask studio's smooth, before its rethreshold), edges clamped. */
+/** Soft edges: a gaussian of radius `r` with sigma r / 2 (a smooth without a rethreshold), edges clamped. */
 export function maskFeather(m: Mask, r: number): Mask {
   if (r <= 0) return make(m, m.data.slice());
   const { width: w, height: h } = m;

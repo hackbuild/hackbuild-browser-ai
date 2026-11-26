@@ -4,6 +4,8 @@ You feed it microphone blocks and it hands back each thing the person said as te
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/listen)](https://www.npmjs.com/package/@hackbuild/listen) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 7.3 kB measured](https://img.shields.io/badge/gzip-7.3%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet.
+
 ## What it does
 
 - Finds utterances in microphone audio with a VAD state machine fed by Silero VAD v5 or an energy gate with no weights.
@@ -15,10 +17,10 @@ You feed it microphone blocks and it hands back each thing the person said as te
 ## Install
 
 ```sh
-npm install @hackbuild/listen
+npm install @hackbuild/listen @hackbuild/devices @hackbuild/weights
 ```
 
-It depends on @hackbuild/models and @hackbuild/transcribe and has no peers. onnxruntime-web for Silero and the transcriber's runtime are passed in by you, for example through the loaders in @hackbuild/devices.
+It depends on @hackbuild/models and @hackbuild/transcribe and has no peers; the quick start also uses @hackbuild/devices for the runtimes and @hackbuild/weights for the Silero bytes. onnxruntime-web for Silero and the transcriber's runtime are passed in by you, for example through the loaders in @hackbuild/devices.
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -39,8 +41,8 @@ import { openWeightStore } from "@hackbuild/weights";
 const stream = await openMic();
 const ctx = new AudioContext();
 // Silero VAD v5 (weights MIT) on onnxruntime-web, its bytes cached by the weight store
-const silero = VAD_RECORDS[0]!.source;
-const bytes = await (await openWeightStore()).once({ url: silero.url!, sha256: silero.sha256!, licence: "MIT" });
+const silero = VAD_RECORDS[0]!;
+const bytes = await (await openWeightStore()).once({ url: silero.source.url!, sha256: silero.source.sha256!, licence: silero.licence });
 const vad = await sileroVad((await loadOrt()()) as unknown as OrtLike, bytes);
 // Whisper (weights MIT) through the models hub turns each utterance into text; mic blocks feed the listener
 const hub = createHub();
@@ -59,7 +61,7 @@ The package page is at [hackbuild-browser-ai/listen](https://hackbuild.github.io
 
 ### frames
 
-Input is brought to 16 kHz (the transcribe package's FIR decimator for 32 and 48 kHz, its windowed sinc resampler for 44.1, 24 and 22.05 kHz) and cut into 512 sample frames (32 ms, computed).
+Input is brought to 16 kHz (the transcribe package's FIR decimator for 32 and 48 kHz, its windowed sinc resampler for 44.1, 24 and 22.05 kHz) and cut into 512 sample frames.
 
 ### the vad machine
 
@@ -71,7 +73,7 @@ While `setTalking(true)`, thresholds swap to positive 0.85 and 450 ms of speech 
 
 ### sources
 
-`sileroVad(ort, bytes)` runs Silero VAD v5 on onnxruntime-web, 512 new samples with 64 of context and a [2, 1, 128] state carried across frames, single threaded wasm by default, since threaded wasm hung inside workers in an earlier build. The model bytes are yours (URL, ArrayBuffer or File through @hackbuild/weights). `energyVad()` maps dB over a tracked noise floor to a probability; it cannot tell speech from music.
+`sileroVad(ort, bytes)` runs Silero VAD v5 on onnxruntime-web, 512 new samples with 64 of context and a [2, 1, 128] state carried across frames, single threaded wasm by default, since threaded wasm hangs inside workers. The model bytes are yours (URL, ArrayBuffer or File through @hackbuild/weights). `energyVad()` maps dB over a tracked noise floor to a probability; it cannot tell speech from music.
 
 ### the phantom filter
 
@@ -85,14 +87,14 @@ Each transcript goes through @hackbuild/transcribe's phantom filter with the utt
 
 An `Interim` is `{ text, stable, t }`: the whole hypothesis so far, the leading words unchanged since the previous one, and seconds since the utterance began. Each one replaces the last.
 
-- Window path: pass `onInterim` and the listener decodes the growing window every 0.8 s of new audio (computed, `interim.everySec`) once it holds 0.5 s, at most one decode in flight; a result that lands after the utterance ended is dropped. `interim.transcribe` can name a smaller model than the final one. The phantom filter runs on the final only.
+- Window path: pass `onInterim` and the listener decodes the growing window every `interim.everySec` seconds of new audio (default 0.8) once it holds 0.5 s, at most one decode in flight; a result that lands after the utterance ended is dropped. `interim.transcribe` can name a smaller model than the final one. The phantom filter runs on the final only.
 - System recognizer: `speechEngine` has interim results on, restarts 150 ms after it ends on its own, reports "denied" when the microphone is refused and "unsupported" with no recognizer. Chrome sends the audio to its own service; say so.
-- Gate: `selfGate` drops results that arrive while the character speaks or within `tailMs` (default 400 ms, inferred) after.
+- Gate: `selfGate` drops results that arrive while the character speaks or within `tailMs` (default 400 ms) after.
 - `dictate(field)` writes interim words after what the person typed, fires an input event on each write, commits on the final, restores on an empty final or `cancel()`, and calls `onCommit` after a non empty final, for a hands free send.
 
 ### conversation settings
 
-`CONVERSATION` is a machine preset for spoken turns: 900 ms of quiet ends an utterance (vendor) in place of the default 600 ms, so a breath does not cut a sentence. `dropWhileTalking: true` on the listener leaves out an utterance that began while the character talked, for when barge in is off; `gateMs` also drops one that began that many ms after the voice stopped.
+`CONVERSATION` is a machine preset for spoken turns: 900 ms of quiet ends an utterance in place of the default 600 ms, so a breath does not cut a sentence. `dropWhileTalking: true` on the listener leaves out an utterance that began while the character talked, for when barge in is off; `gateMs` also drops one that began that many ms after the voice stopped.
 
 ## API overview
 
@@ -157,39 +159,29 @@ This package throws no errors of its own. A failed transcription or VAD run goes
 - [@hackbuild/weights](../weights/README.md) fetches, checks and caches the Silero bytes.
 - [@hackbuild/devices](../devices/README.md) has `loadOrt` and `loadTransformers` for the runtimes.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Silero VAD v5 MIT; Whisper MIT; Moonshine per its record in @hackbuild/transcribe.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/listen` passes, 11 tests, in Node
-  22.18.0: the machine's start, confirm, end, misfire and length cut, the
-  threshold swap and barge in, decimated 48 kHz blocks to one utterance,
-  the phantom filter, the hub transcriber with a stub model, and the
-  Silero feed shapes against a fake onnxruntime.
-
-- 2026-11-24: the conversation preset's 900 ms end, and
-  `dropWhileTalking` dropping speech that began over the voice and
-  keeping it after (`test/listen.test.ts`).
-
-- 2026-11-25: interim text on both paths against stub engines
-  (`test/interim.test.ts`, 9 tests): the window decode throttle, the
-  stable prefix, a late decode dropped, the gate after the voice stops,
-  the system recognizer's joined interim results, gate, 150 ms restart,
-  denied and unsupported states, and `dictate` writes, commits and
-  restores.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/listen` in Node 22.18.0: the machine's start, confirm, end, misfire and length cut, the threshold swap and barge in, decimated 48 kHz blocks to one utterance, the phantom filter, the hub transcriber with a stub model, and the Silero feed shapes against a fake onnxruntime | passes, 11 tests |
+| 2026-11-24 | the conversation preset's 900 ms end, and `dropWhileTalking` dropping speech that began over the voice and keeping it after (`test/listen.test.ts`) | passes |
+| 2026-11-25 | interim text on both paths against stub engines (`test/interim.test.ts`): the window decode throttle, the stable prefix, a late decode dropped, the gate after the voice stops, the system recognizer's joined interim results, gate, 150 ms restart, denied and unsupported states, and `dictate` writes, commits and restores | passes, 9 tests |
 
 ### Not verified by anything
 
 - Interim text from a real Whisper model or a real browser recognizer,
   and whether 0.8 s between decodes keeps up on a phone.
-
 - The 900 ms preset in a real conversation.
-
 - Silero VAD v5 on real onnxruntime-web, and whether its output and
   state names match this code (taken from the model's published python
   wrapper, not run here).
-- Barge in with real speakers and echo cancellation; an earlier build
-  did not verify it either.
+- Barge in with real speakers and echo cancellation.
 - The capture worklet and `openMic` in a browser, including from file://.
 - Latency from end of speech to text (no measurement).
 
@@ -203,7 +195,3 @@ This package throws no errors of its own. A failed transcription or VAD run goes
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Silero VAD v5 MIT; Whisper MIT; Moonshine per its record in @hackbuild/transcribe.

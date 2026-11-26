@@ -1,5 +1,5 @@
 /**
- * FrameView and CameraFeed, after the eyes view of an earlier room: a
+ * FrameView and CameraFeed: a
  * frame in a hackbuild-ui camera tile with what the models found drawn
  * over it (boxes with their word and score, landmark points and lines),
  * a count in the corner and the caption under it. CameraFeed opens the

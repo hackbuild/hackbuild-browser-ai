@@ -1,9 +1,8 @@
 /**
- * Transcript exports in the earlier transcription tool's layouts: txt, srt,
+ * Transcript exports as txt, srt,
  * vtt and json per file, and one store only zip with four files per
  * source plus `manifest.json`. The manifest records the model and language
- * of each file's own run (the earlier tool wrote the select values at
- * export time, which could differ from the run). A speaker label, when a
+ * of each file's own run. A speaker label, when a
  * person set one, leads the line in txt and srt and is a voice tag in vtt.
  */
 

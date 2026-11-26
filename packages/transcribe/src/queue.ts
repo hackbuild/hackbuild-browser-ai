@@ -1,7 +1,6 @@
 /**
- * The file queue (as the earlier transcription tool ran it): files are
- * accepted by type or extension, a file over 1.5 GB (vendor, the earlier
- * tool's limit) gets a warning, and each job goes queued, running
+ * The file queue: files are
+ * accepted by type or extension, a file over 1.5 GB gets a warning, and each job goes queued, running
  * (decoding, then working), done or failed. Decoding measures the file:
  * duration, sample rate, channels, peak and rms level. Stop puts the
  * running job back to queued; a failure keeps its line of copy. The
@@ -68,7 +67,7 @@ export interface QueueOptions<F extends FileLike, R> {
 
 const AV = /\.(mp4|m4v|mov|webm|mkv|avi|mpg|mpeg|ogv|m4a|mp3|wav|flac|ogg|opus|aac|wma|3gp)$/i;
 
-/** Audio or video by MIME type, or by one of the earlier tool's extensions. */
+/** Audio or video by MIME type, or by one of its known extensions. */
 export function acceptsFile(f: Pick<FileLike, "name" | "type">): boolean {
   return f.type.startsWith("audio/") || f.type.startsWith("video/") || AV.test(f.name);
 }

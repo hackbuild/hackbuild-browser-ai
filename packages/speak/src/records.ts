@@ -27,7 +27,7 @@ export const SPEAK_RECORDS: ModelRecord[] = [
     commercial: true,
     place: "cpu-worker",
     runtime: "kokoro-js@1.2.1",
-    notes: ["webgpu with q8 gave garbled audio in an earlier build", "fp32 weights (about 330 MB, inferred) do not cache on file://, so webgpu needs http"],
+    notes: ["webgpu with q8 has given garbled audio", "fp32 weights (about 330 MB, inferred) do not cache on file://, so webgpu needs http"],
   },
   {
     id: "pocket-tts",

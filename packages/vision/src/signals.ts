@@ -14,8 +14,7 @@
  * language model, written only when it changed. Frames never leave the
  * tab: only these signals and the text made from them do.
  *
- * Thresholds below are vendor figures from earlier builds; none was
- * measured here.
+ * Thresholds below are vendor figures; none was measured here.
  */
 
 import type { Landmarks } from "./types.js";

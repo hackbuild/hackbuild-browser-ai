@@ -82,7 +82,7 @@ interface EegNetRunner {
 }
 ```
 
-Where a neural model (EEGNet on tfjs in an earlier biosignal build) plugs in.
+Where a neural model (such as EEGNet on tfjs) plugs in.
 
 ```ts
 interface Epoch {
@@ -143,27 +143,30 @@ import { BIOSIGNAL_WASM_BASE64 } from "@hackbuild/biosignal/inline";
 
 // the wasm core, inlined so nothing is fetched
 const bs = await loadBiosignal({ base64: BIOSIGNAL_WASM_BASE64 });
-
-// continuous EEG at 256 Hz, one Float32Array per channel, and labelled events
-const channels: Float32Array[] = [new Float32Array(256 * 60), new Float32Array(256 * 60)];
-const events = [{ at: 256, label: 0 }, { at: 256 * 10, label: 1 }];
-const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows per trial
-
-// alpha and beta bands; folds hold whole trials, so no window leaks across
-const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
-console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
-
-// train on everything, then save the model as JSON (reload with bs.load)
-const model = bs.train(epochs, bands, 256, { classes: 2 });
-console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  // a CSV at 256 Hz: one row per sample, one column per channel, then a label where a trial starts
+  const rows = (await input.files![0]!.text()).trim().split("\n").map((l) => l.trim().split(","));
+  const n = rows[0]!.length - 1;
+  const channels = Array.from({ length: n }, (_, c) => Float32Array.from(rows, (r) => Number(r[c])));
+  const events = rows.flatMap((r, at) => (r[n] ? [{ at, label: Number(r[n]) }] : []));
+  const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows of 1 s per trial
+  // alpha and beta bands; folds hold whole trials, so no window leaks across
+  const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
+  console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
+  // train on everything, then save the model as JSON (reload with bs.load)
+  const model = bs.train(epochs, bands, 256, { classes: 2 });
+  console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch `biosignal.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: BIOSIGNAL_WASM_BASE64 }` from `@hackbuild/biosignal/inline` to `loadBiosignal`, which fetches nothing.
+- You cut windows yourself and give every window its own trial. Build epochs with `epochsFromEvents`, which marks each event's windows with one `trial`, so `crossValidate` keeps whole trials on one side of a fold; `byTrial: false` gives the leaky number.
+- You call `train` or `crossValidate` without `classes`, or with labels outside it. `classes` is required and every label must be 0 to `classes - 1`, or it throws a `RangeError` such as "label 2 is outside 0 to 1".
+- You reload a saved model with `JSON.parse` alone. Pass the parsed object to `bs.load`, which checks its kind, version and header and throws "not a hackbuild biosignal model, or a newer version" otherwise.
+- You call `predict` after `dispose`. The classifier lives in the wasm core and throws "model was dropped" once freed; dispose it only when you are done with it.
 
 ## Errors this package throws
 

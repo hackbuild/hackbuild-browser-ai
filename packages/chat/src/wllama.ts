@@ -2,8 +2,7 @@
  * wllama (llama.cpp in wasm, GGUF) engine. Pinned to @wllama/wllama 4.0.0,
  * whose published types keep the 3.8.1 calls this file uses
  * (`createChatCompletion({ stream: true })`, `loadModel(blobs, params)`,
- * `getLoadedContextInfo()`, `isSupportWebGPU()`); 3.8.1 is the version the
- * earlier builds ran and stays the fallback. The module is passed
+ * `getLoadedContextInfo()`, `isSupportWebGPU()`); 3.8.1 stays the fallback. The module is passed
  * in, so the runtime is an optional peer. On file:// import it through
  * `@hackbuild/ai-env` importEsm, which swaps its module worker for a
  * classic one. GGUF weights keep each model's licence; pass it with the
@@ -44,7 +43,7 @@ const FINISH: Record<string, Finish> = { stop: "stop", length: "length", content
 export interface WllamaDriverOptions {
   wllama: WllamaLike;
   id?: string;
-  /** Keep the KV prefix between calls (as earlier builds did). Default true. */
+  /** Keep the KV prefix between calls. Default true. */
   cachePrompt?: boolean;
 }
 
@@ -60,7 +59,7 @@ export function wllamaDriver(o: WllamaDriverOptions): Driver {
         stream: true,
         max_tokens: req.maxTokens,
         cache_prompt: o.cachePrompt ?? true,
-        // an earlier chat build defaults
+        // sampling defaults
         top_p: req.topP ?? 0.95,
         top_k: req.topK ?? 40,
         min_p: req.minP ?? 0.05,
@@ -119,7 +118,7 @@ export interface LoadWllamaOptions extends EngineOptions {
   /** GGUF file(s) as Blobs, e.g. from `@hackbuild/weights` store.get(). Split GGUF files go in order. */
   blobs: Blob[];
   id?: string;
-  /** Context size. Default 6144 (as earlier builds did). */
+  /** Context size. Default 6144. */
   nCtx?: number;
   /** Default: all layers on webgpu when wllama reports support, else 0. */
   nGpuLayers?: number;

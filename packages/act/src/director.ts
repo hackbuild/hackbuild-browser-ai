@@ -15,9 +15,9 @@
  *            never inferred from speech
  *
  * Keep the raw tagged reply in the chat history, not the visible text.
- * With tags stripped from history, 1B and 2B models were measured to stop
- * tagging by the third turn in the builds this protocol comes from; the
- * model copies its own earlier replies.
+ * With tags stripped from history, 1B and 2B models were measured
+ * elsewhere to stop tagging by the third turn; the model copies its own
+ * past replies.
  */
 
 import { createTagParser, type Tag, type TagParser } from "@hackbuild/structured";

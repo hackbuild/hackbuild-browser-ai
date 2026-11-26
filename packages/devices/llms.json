@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You import `@huggingface/transformers` or `onnxruntime-web` at the top of your file. Pass `loadTransformers()` to `tjsProvider` and `loadOrt()` to `ortProvider`; both import once per page from pinned URLs through the file:// safe `importEsm`, and a failed import retries on the next call.",
+    "You call `hub.provide` for a runtime in each package or component. Provide `tjs` and `ort` once per page; every model package registers its loader on the same provider with `tjs.loader(capability, fn)`.",
+    "You expect transformers.js weights to persist on file://. The browser cache is off there; pass `cache: transformersCache(store)` from @hackbuild/weights to `tjsProvider`. Wasm threads come from the probe, so do not set them yourself.",
+    "You build an ort record without files or fetch the graph per rung. `ortProvider` needs `store` and reads each file once through `store.once`, then builds every rung's session from the same bytes; a record without `source.url`, `source.file` or `source.files` throws \"an ort record needs source.url, source.file or source.files\". The weight licence is the record's `licence`.",
+    "You pass `{ integrity: RUNTIME_SHA256 }` and leave ort's wasm paths alone. The checked text imports from a Blob URL, which moves `import.meta.url`; pass `wasmPaths: ortWasmPaths()` to `ortProvider` when you turn integrity on.",
+    "You show the raw error from a failed load. Pass it to `humanError(e)`, or `humanError(\"mic\", e)` and `humanError(\"camera\", e)` for a device, and show the one lowercase line it returns."
+  ]
+}

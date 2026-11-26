@@ -162,7 +162,7 @@ A loaded depth model: `estimate` returns a DepthMap for an image.
 function depthToRgba(d: { data: Float32Array; height: number; width: number }): Uint8ClampedArray
 ```
 
-A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (an earlier relief bench stores depth as a PNG data URL).
+A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (store it as a PNG data URL to keep it with a design).
 
 ```ts
 function depthWorker(o: DepthWorkerOptions): Promise<DepthWorker>
@@ -211,7 +211,7 @@ Objects in an image from the routed detector (MediaPipe EfficientDet by default,
 function detectCadenceMs(lastLatencyMs: number): number
 ```
 
-Detection cadence as earlier builds ran it: wait max(0.45 s, 4 times the last latency) between runs.
+Detection cadence: wait max(0.45 s, 4 times the last latency) between runs.
 
 ```ts
 interface Detection {
@@ -294,7 +294,7 @@ A face landmark fallback record over face-api.js tiny nets (code MIT; weights MI
 function fitSize(w: number, h: number, maxPx?: number): { height: number; scale: number; width: number }
 ```
 
-Scale so the longest side is at most maxPx (as earlier builds did).
+Scale so the longest side is at most maxPx.
 
 ```ts
 function fixedLandmarker(count: number, source?: string): Landmarker
@@ -437,7 +437,7 @@ interface LoopOptions<T> {
 }
 ```
 
-A perception loop beside a render loop: one step at a time (the earlier scan bench's busy guard), each step started no sooner than `interval(lastLatency)` after the previous one began (an earlier scene app detection cadence, the earlier chat build's fixed periods), stopped by `stop()` or an abort signal.
+A perception loop beside a render loop: one step at a time (a busy guard), each step started no sooner than `interval(lastLatency)` after the previous one began (an adaptive cadence or a fixed period), stopped by `stop()` or an abort signal.
 
 ```ts
 interface Mask {
@@ -472,7 +472,7 @@ Shrink by a disc of radius `r` pixels; the image border does not count as outsid
 function maskFeather(m: Mask, r: number): Mask
 ```
 
-Soft edges: a gaussian of radius `r` with sigma r / 2 (the earlier mask studio's smooth, before its rethreshold), edges clamped.
+Soft edges: a gaussian of radius `r` with sigma r / 2 (a smooth without a rethreshold), edges clamped.
 
 ```ts
 function maskFromRle(r: MaskRle): Mask
@@ -517,7 +517,7 @@ COCO style uncompressed run length: column major, the first run counts outside p
 function maskSubtract(a: Mask, b: Mask): Mask
 ```
 
-`a` with `b` taken out (shift with a selection tool in the earlier mask studio).
+`a` with `b` taken out (shift with a selection tool in a mask editor).
 
 ```ts
 function maskThreshold(m: Mask, t?: number): Mask
@@ -755,7 +755,7 @@ class ResultCache<T> {
 }
 ```
 
-A small LRU of results by key (an earlier relief bench keeps the depth map with the design so it never reruns).
+A small LRU of results by key, so a depth map is computed once per image.
 
 ```ts
 function samLoader(ctx: TjsLoadContext): Promise<Segmenter>
@@ -923,6 +923,8 @@ hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
 
 // each call loads its model on first use, runs it under the gpu lock, and releases it
 const video = document.querySelector("video")!;
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true }); // the webcam
+await video.play();
 const map = await depth(hub, video); // Depth Anything V2 small, weights Apache-2.0
 const boxes = await detect(hub, video, { scoreThreshold: 0.4 }); // MediaPipe EfficientDet lite0, Apache-2.0
 const line = await caption(hub, video); // SmolVLM 256M, Apache-2.0
@@ -958,10 +960,11 @@ await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBu
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import `@huggingface/transformers` or `@mediapipe/tasks-vision` at the top of your file. Pass the loaders instead: `tjsProvider({ runtime: loadTransformers() })` from @hackbuild/devices and `mediapipeProvider({ runtime: loadTasksVision() })`, and each runtime loads at run time from its pinned URL.
+- You call `attachVision(hub, tjs)` and expect models to load. It adds the records and the transformers.js loaders only; also call `hub.provide("tjs", tjs.factory)` and `hub.provide("mediapipe", mediapipeProvider(...))`.
+- You expect MediaPipe weights to go through the weight store on their own. They load by URL from `MP_MODELS`; pass `store` to `mediapipeProvider` to read them through @hackbuild/weights with resume, sha-256 and the licence line.
+- You expect YOLO or a model from `PICKER_RECORDS` to answer `detect` or a `model` id. None is registered by default; build YOLO with `yoloRecord({ url })` for an export you supply (licence AGPL-3.0 unless you pass `licence`) and add it, or any picker record, with `hub.registry.add`.
+- You run `depth` on the main thread beside a render loop and trust `schedule` to keep the frames. Run `depthWorker({ urls: transformersUrls(), device })` instead; it loads only registered depth records and throws "is not a registered depth record" unless you pass `record` with its licence named.
 
 ## Errors this package throws
 

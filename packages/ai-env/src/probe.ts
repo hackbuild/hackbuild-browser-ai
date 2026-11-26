@@ -52,7 +52,7 @@ export interface ProbeOptions {
   globals?: ProbeGlobals;
   /** Give up on requestAdapter or getDirectory after this many ms. Default 3000. */
   timeoutMs?: number;
-  /** Upper bound for threads when isolated. Default 4 (as earlier builds did). */
+  /** Upper bound for threads when isolated. Default 4. */
   maxThreads?: number;
 }
 

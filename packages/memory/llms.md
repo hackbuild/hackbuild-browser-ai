@@ -79,7 +79,7 @@ Fixed lines always go in; ranked sections join highest priority first while they
 const CHARS_PER_TOKEN: 3.6
 ```
 
-Characters per token for the default estimate (inferred from earlier builds, not measured on a tokenizer).
+Characters per token for the default estimate (inferred, not measured on a tokenizer).
 
 ```ts
 interface CompactOptions {
@@ -215,7 +215,7 @@ interface CoreParams {
 }
 ```
 
-Recall parameters.
+Recall parameters; each one left out takes its default.
 
 ```ts
 type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string }
@@ -844,10 +844,12 @@ const file = await seal(key, workspaceJson, "file:workspace.json");
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- `open` needs a loaded core. Call `loadCore` first with `{ url }`, `{ bytes }` or `{ base64: MEMORY_WASM_BASE64 }` from `@hackbuild/memory/inline`, and pass it as `core`; on file:// use the base64 form, since the core has no threads and loads from bytes.
+- Without `embed`, recall is keyword only and `status.mode` says `keyword`. `hashedEmbedder()` downloads nothing and matches shared words only; for real recall pass an embedder from `@hackbuild/embed`, whose weights carry their own licence.
+- `recall` strengthens every hit and counts a use. Call `explain` when you want the trace of a query without changing the memory.
+- When IndexedDB fails, `open` still resolves and the memory lives in a Map until the page closes. Read `status.notes` and tell the person instead of assuming it was saved.
+- A lost password means sealed data is gone. `deriveKey` throws `SealError` with code `wrong-password` for a wrong one, and a plain row in a sealed store throws, so export a plain memory and import it into a sealed one.
+- Inject recall with `injectRecall` or `RecallConversation`, which keep a fixed note in the system message and put recalled lines under the latest user message only. Do not put recall into the system prompt per turn, or the runtime loses its cached prefix.
 
 ## Errors this package throws
 

@@ -1,5 +1,5 @@
 /**
- * Line tagged formats: the earlier agent build's THOUGHT / ACTION ReAct with multi line bodies
+ * Line tagged formats: THOUGHT / ACTION ReAct with multi line bodies
  * (PATH, CONTENT, CODE), the vision sandbox's short Thought / Action, and
  * the three line SAW / THOUGHT / GOAL cortex. A tag line is `NAME:` at the
  * start of a line, any case; its value runs until the next tag line. Raw
@@ -34,7 +34,7 @@ export function parseLines(text: string, o: LinesOptions): Record<string, string
   return out;
 }
 
-/** The body of a fenced block when there is one, else the text trimmed (as earlier builds did). */
+/** The body of a fenced block when there is one, else the text trimmed. */
 export function grabCode(value: string): { code: string; lang: string | null } {
   const m = /```([\w+-]*)\n?([\s\S]*?)(?:```|$)/.exec(value);
   if (m) return { code: m[2]!.replace(/\n$/, ""), lang: m[1] || null };

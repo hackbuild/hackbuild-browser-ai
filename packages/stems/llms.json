@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You import onnxruntime-web at the top of the file. Pass `loadOrt()` from @hackbuild/devices as the `runtime` of `ortProvider` and register its `.factory` with `hub.provide(\"ort\", ...)` after `attachStems(hub)`; this package bundles no runtime.",
+    "You fetch the htdemucs graph yourself. `ortProvider({ runtime, store })` fetches it once through `store.once` on the @hackbuild/weights store you open with `openWeightStore()`, and the hub states the licence from the record on first load.",
+    "You pass a 48 kHz or mono buffer to `separate`. It takes 44.1 kHz (`SAMPLE_RATE`) left and right channels: decode with `decodeAudio(file, 44100)` from @hackbuild/media and pass the left channel twice for a mono file.",
+    "You load another htdemucs ONNX export and get `this htdemucs export needs a spectrogram input`. Only waveform only exports with one input run here; use the `htdemucs-fast` or `htdemucs-slow` records from StemSplitio.",
+    "You expect `htdemucs-slow` to be a bigger model. Every tier is the same network and overlap is the speed control: pass `overlap` from 0 to 0.6, lower is faster, and treat the AbortError `separation stopped` from your `signal` as a cancel."
+  ]
+}

@@ -5,8 +5,8 @@
 ### FileProgressEvent
 
 transformers.js reports progress per file. A status line wants one
-fraction across files, and an MB count when totals are unknown (an earlier relief bench
-summed loaded over total by file name).
+fraction across files, and an MB count when totals are unknown; loaded and total are summed
+by file name.
 
 #### Properties
 
@@ -245,10 +245,10 @@ The dtypes to try on WebGPU and on wasm, their order, a fresh heap retry, and op
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-freshheapretry"></a> `freshHeapRetry?` | `boolean` | Retry the last wasm dtype in a fresh heap after an out of memory (as earlier builds did). |
+| <a id="property-freshheapretry"></a> `freshHeapRetry?` | `boolean` | Retry the last wasm dtype in a fresh heap after an out of memory. |
 | <a id="property-options"></a> `options?` | `Record`\<`string`, `unknown`\> | Extra runtime options copied onto every rung, e.g. `{ task: "depth-estimation" }`. |
 | <a id="property-wasm"></a> `wasm?` | readonly [`Dtype`](#dtype)[] | dtypes tried on wasm, in order. |
-| <a id="property-wasmfirst"></a> `wasmFirst?` | `boolean` | Put wasm before webgpu (an earlier chat build keeps perception off the gpu the chat model uses). |
+| <a id="property-wasmfirst"></a> `wasmFirst?` | `boolean` | Put wasm before webgpu, to keep perception off the gpu a chat model uses. |
 | <a id="property-webgpu"></a> `webgpu?` | readonly [`Dtype`](#dtype)[] | dtypes tried on webgpu, in order. |
 
 ***
@@ -465,19 +465,19 @@ A custom loader for one capability on the transformers.js provider; it returns t
 const LADDERS: object;
 ```
 
-Ladders by name, from the builds. Each model record may copy one or write its own.
+Ladders by name, one per model family. Each model record may copy one or write its own.
 
 #### Type Declaration
 
 | Name | Type | Default value | Description |
 | ------ | ------ | ------ | ------ |
-| <a id="property-depth"></a> `depth()` | () => `Rung`[] | - | an earlier relief bench runDepth. |
-| <a id="property-ort-1"></a> `ort()` | (`opts`) => `Rung`[] | `ortRungs` | onnxruntime-web rungs: the earlier transcription tool walk, or wasm only when the graph is known to fail on webgpu. |
-| <a id="property-perceptioncpu"></a> `perceptionCpu()` | () => `Rung`[] | - | earlier builds: perception models on cpu by default. |
-| <a id="property-smolvlm"></a> `smolvlm()` | () => `Rung`[] | - | SmolVLM (weights Apache-2.0): fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm, as earlier builds ran it. |
-| <a id="property-vlmgpuonly"></a> `vlmGpuOnly()` | () => `Rung`[] | - | earlier builds: q4f16 on webgpu only. |
+| <a id="property-depth"></a> `depth()` | () => `Rung`[] | - | Depth: fp16 then fp32 on webgpu, q8 then fp32 on wasm. |
+| <a id="property-ort-1"></a> `ort()` | (`opts`) => `Rung`[] | `ortRungs` | onnxruntime-web rungs: webgpu then wasm, or wasm only when the graph is known to fail on webgpu. |
+| <a id="property-perceptioncpu"></a> `perceptionCpu()` | () => `Rung`[] | - | Perception models on cpu by default. |
+| <a id="property-smolvlm"></a> `smolvlm()` | () => `Rung`[] | - | SmolVLM (weights Apache-2.0): fp16 embed and vision, q4 decoder on webgpu; q8 vision on wasm. |
+| <a id="property-vlmgpuonly"></a> `vlmGpuOnly()` | () => `Rung`[] | - | q4f16 on webgpu only. |
 | <a id="property-whispersmall"></a> `whisperSmall()` | (`q4Decoder`) => `Rung`[] | - | whisper-base and the Xenova .en exports (weights MIT; the ONNX cards say apache-2.0). |
-| <a id="property-whisperturbo"></a> `whisperTurbo()` | () => `Rung`[] | - | whisper-large-v3-turbo (weights MIT), as the earlier transcription tool ran it. |
+| <a id="property-whisperturbo"></a> `whisperTurbo()` | () => `Rung`[] | - | whisper-large-v3-turbo (weights MIT). |
 
 ***
 
@@ -529,7 +529,7 @@ transformers.js pipeline task per capability, for the default loader.
 function classifyError(e): ErrorKind;
 ```
 
-Name the failure so a ladder and a status line can act on it. Patterns come from the builds' logs.
+Name the failure so a ladder and a status line can act on it. Patterns come from runtime error messages seen in logs.
 
 #### Parameters
 
@@ -734,7 +734,7 @@ A memoized loader of the pinned transformers.js; call the returned function to i
 function ortLadder(): Rung[];
 ```
 
-The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm.
+The onnxruntime-web ladder to walk after one fetch: webgpu at basic, all, disabled, then wasm.
 
 #### Returns
 
@@ -768,7 +768,7 @@ The onnxruntime-web provider for the models hub: fetches each graph once through
 function ortRungs(opts?): Rung[];
 ```
 
-onnxruntime-web rungs: the earlier transcription tool walk, or wasm only when the graph is known to fail on webgpu.
+onnxruntime-web rungs: webgpu then wasm, or wasm only when the graph is known to fail on webgpu.
 
 #### Parameters
 

@@ -237,7 +237,7 @@ Encodes text as a base64 data: URL, JavaScript by default.
 function toClassicWorker(src: string): { count: number; text: string }
 ```
 
-Turn module workers into classic workers: Chrome refuses module workers from a file:// page (as earlier builds did).
+Turn module workers into classic workers: Chrome refuses module workers from a file:// page.
 
 ```ts
 interface WorkerLike {
@@ -282,10 +282,12 @@ worker.postMessage(21);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a runtime with a static `import` or a bare `import()` of a CDN URL. Load it with `importEsm(urls)` and pass the module on, so it also works from a file:// page; give a list of URLs to get a CDN fallback in one call.
+- You point `importEsm` at a build whose imports use bare specifiers. It rewrites relative imports only, so use a bundled CDN build such as jsDelivr `+esm`.
+- You read `navigator.hardwareConcurrency` for wasm threads. Use `env.threads` from `probe()`: it is 1 unless the page is cross origin isolated, then at most `maxThreads` (default 4).
+- You assume OPFS and Cache Storage on a file:// page. `probe()` reports both false there without calling them, and `importEsm` swaps module workers for classic ones by default, since Chrome refuses module workers from a file:// page.
+- You pass `integrity` or a worker `sha256` on a plain http page that is not localhost. The check needs Web Crypto, which exists only in a secure context, and it throws `no web crypto in this context, so a sha256 cannot be checked`.
+- You add `"inline"` to the `spawnWorker` rungs for code you do not trust. The inline rung runs the source on the page with the DOM and storage in reach, and a `{ url }` source runs inline only with a matching `sha256`.
 
 ## Errors this package throws
 

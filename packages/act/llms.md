@@ -563,10 +563,12 @@ const talk = talkingLoop(binding.all);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You expect untagged sentences to fire cues. The director mode defaults to `"tags"`; pass `mode: "hybrid"` to `createDirector` to run the inferrer on sentences with no tag.
+- You fire cues as the text streams in. `feed` and `finish` only place cues; call `director.reached(offset)` with the character offset your voice reports in the visible text, and cues fire then.
+- You send the raw model text to speech. Send the `text` that `feed` and `finish` return, which has the tags stripped, and keep the raw tagged reply in the chat history so the model keeps tagging.
+- You call `pickClip` without an `rng`. It requires `{ rng }`; pass a seeded function returning numbers in 0 to 1, since nothing here calls Math.random.
+- You list clip names the avatar cannot play. Build the vocabulary with `buildVocabulary` from the avatar's own expressions and clips, or from `bindActs(...).acts`, so `promptBlock` and `grammar` offer only names it can realize.
+- You read `director.record()` right after `finish` when you pass an `embedder`. Cues the embedder resolves or infers arrive later; await `director.settle()` first.
 
 ## Errors this package throws
 

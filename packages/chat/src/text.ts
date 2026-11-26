@@ -4,8 +4,7 @@
  * normalizeMessages: Gemma templates have no system role and need strict
  * user, assistant alternation that starts with user. The system prompt is
  * merged into the first user turn, same role turns are joined, and leading
- * assistant turns are dropped (an earlier chat build normalizeMessages, an earlier chat build
- * buildMessages).
+ * assistant turns are dropped.
  *
  * ThinkSplitter: separates think blocks from visible text as the stream
  * arrives, closed or unclosed, and never shows half a tag.

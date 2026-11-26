@@ -4,6 +4,8 @@ Turn a recording into notes, drum hits, a tempo and a MIDI file, in the tab.
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/notes)](https://www.npmjs.com/package/@hackbuild/notes) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.6 kB measured](https://img.shields.io/badge/gzip-5.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet.
+
 ## What it does
 
 - Runs Spotify's Basic Pitch graph on tfjs through the models hub, framing the windows by hand.
@@ -15,34 +17,34 @@ Turn a recording into notes, drum hits, a tempo and a MIDI file, in the tab.
 ## Install
 
 ```sh
-npm install @hackbuild/notes
+npm install @hackbuild/notes @hackbuild/ai-env @hackbuild/media
 ```
 
-It depends on `@hackbuild/models` and `@hackbuild/audio-dsp`. It has no peer dependencies: you pass tfjs 3.21.0 in at runtime through `tfjsPitchProvider`, so nothing of tfjs is bundled.
+It depends on `@hackbuild/models` and `@hackbuild/audio-dsp`. The quick start also uses @hackbuild/ai-env to import tfjs and @hackbuild/media to decode the file. It has no peer dependencies: you pass tfjs 3.21.0 in at runtime through `tfjsPitchProvider`, so nothing of tfjs is bundled.
 
 ## Quick start
 
 ```ts
 import { importEsm } from "@hackbuild/ai-env";
+import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
 import { attachNotes, decodeNotes, DETAILS, refineNotes, runPitch, tfjsPitchProvider, writeMidi, type PitchModel, type Tfjs } from "@hackbuild/notes";
 
-// a hub with the Basic Pitch record (weights Apache-2.0), tfjs 3.21.0 passed in at runtime
+// a hub with the Basic Pitch record (weights Apache-2.0, stated by the hub from the record), tfjs 3.21.0 passed in at runtime
 const hub = createHub();
 attachNotes(hub);
 hub.provide("tfjs", tfjsPitchProvider({ runtime: () => importEsm<Tfjs>("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/+esm") }));
-
-// ten seconds of 22050 Hz mono audio, for example from decodeAudio in @hackbuild/media
-const mono = new Float32Array(22050 * 10);
-
-// frame and onset posteriors from Basic Pitch, then notes
-const m = await hub.use<PitchModel>("notes");
-const post = await hub.run(m, (pitch) => runPitch(pitch, mono, { onProgress: (f) => console.log(`${Math.round(f * 100)} percent`) }));
-hub.release(m);
-const notes = refineNotes(decodeNotes(post.frames, post.onsets, DETAILS.normal), DETAILS.normal);
-// a MIDI file with one bass track at 120 bpm
-const mid = writeMidi([{ name: "bass", notes, program: 33 }], 120);
-console.log(`${notes.length} notes, ${mid.length} bytes`);
+// a picked file at 22050 Hz, frame and onset posteriors from Basic Pitch, then notes and a MIDI file
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const { channels } = await decodeAudio(input.files![0]!, 22050);
+  const m = await hub.use<PitchModel>("notes");
+  const post = await hub.run(m, (pitch) => runPitch(pitch, channels[0]!, { onProgress: (f) => console.log(`${Math.round(f * 100)} percent`) }));
+  hub.release(m);
+  const notes = refineNotes(decodeNotes(post.frames, post.onsets, DETAILS.normal), DETAILS.normal);
+  const mid = writeMidi([{ name: "bass", notes, program: 33 }], 120); // one bass track at 120 bpm
+  console.log(`${notes.length} notes, ${mid.length} bytes`);
+};
 ```
 
 ## Live example
@@ -53,7 +55,7 @@ The package page is at [hackbuild-browser-ai/notes](https://hackbuild.github.io/
 
 ### basic pitch runs by hand
 
-`runPitch` takes 22050 Hz mono and cuts it into windows of 43844 samples on a 36164 sample hop, with a 3840 sample lead pad. Each window gives 172 frames by 88 bins; 15 frames are trimmed off each end and only the frames and onsets outputs are read, no contours. Frames step by 256 samples inside a window, so the mean rate is 86.58 frames per second (computed); `bpFrameTime` and `bpFrameCount` do that arithmetic.
+`runPitch` takes 22050 Hz mono and cuts it into windows of 43844 samples on a 36164 sample hop, with a 3840 sample lead pad. Each window gives 172 frames by 88 bins; 15 frames are trimmed off each end and only the frames and onsets outputs are read, no contours. Frames step by 256 samples inside a window; `bpFrameTime` gives a frame's time in seconds and `bpFrameCount` the frame count for a number of samples.
 
 ### the tfjs runtime is passed in
 
@@ -124,16 +126,17 @@ When the webgl backend fails to start or a shader fails to compile, the ladder f
 - [@hackbuild/stems](../stems/README.md) separates a mix first, so you can hand the bass stem to `runPitch` and the drum stem to `drumNotes`.
 - [@hackbuild/models](../models/README.md) is the hub that loads and schedules the model.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The Basic Pitch weights are Apache-2.0 (Spotify) and are not part of this package.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/notes` passes 6 tests under Node
-  22.18.0 with the real audio-dsp wasm core and fake tfjs: window framing
-  and the kept frame count, the provider falling from webgl to cpu after
-  a shader compile error, note decoding with gap bridging and onset
-  splits, refinement and the monophonic line, the stub path into a MIDI
-  file, and a synthetic 120 bpm kit giving kicks, snares, tempo and grid.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/notes` under Node 22.18.0 with the real audio-dsp wasm core and fake tfjs: window framing and the kept frame count, the provider falling from webgl to cpu after a shader compile error, note decoding with gap bridging and onset splits, refinement and the monophonic line, the stub path into a MIDI file, and a synthetic 120 bpm kit giving kicks, snares, tempo and grid | passes 6 tests |
 
 ### Not verified by anything
 
@@ -151,7 +154,3 @@ When the webgl backend fails to start or a shader fails to compile, the ladder f
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The Basic Pitch weights are Apache-2.0 (Spotify) and are not part of this package.

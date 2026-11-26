@@ -13,7 +13,7 @@ export interface ChatSink {
   save(session: ChatSession): Promise<void>;
 }
 
-/** Debounce between a change and its save, in ms (vendor, from an earlier build). */
+/** Debounce between a change and its save, in ms (vendor). */
 export const SAVE_DEBOUNCE_MS = 600;
 
 const defaultTimers: Timers = {

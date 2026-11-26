@@ -1,6 +1,5 @@
 /**
- * The state behind TranscribeDrop and TranscriptView, after the earlier
- * transcription tool: drop files, they queue as channels, run one at a
+ * The state behind TranscribeDrop and TranscriptView: drop files, they queue as channels, run one at a
  * time, and each becomes a transcript with timestamps that a person can
  * edit (with undo) and export as txt, srt, vtt or json. The engine is a
  * function the page passes, so a stub runs the view with no weights.

@@ -15,7 +15,7 @@ Get a tool decision or tagged text out of a small model in the tab, in the forma
 ## Install
 
 ```sh
-npm install @hackbuild/structured
+npm install @hackbuild/structured @hackbuild/chat
 ```
 
 It depends on `@hackbuild/chat`, which installs with it. No peers; the runtime that runs the model is the one your chat engine loads.
@@ -48,11 +48,11 @@ The package page is at [hackbuild-browser-ai/structured](https://hackbuild.githu
 
 | mode | what the model writes | from |
 |---|---|---|
-| constrained | JSON under a strict per tool `anyOf`; the loose schema after a grammar refusal; tolerant parse of free text after that | an earlier chat build |
+| constrained | JSON under a strict per tool `anyOf`; the loose schema after a grammar refusal; tolerant parse of free text after that | grammar constrained decoding (XGrammar, llama.cpp grammars) |
 | prompt | `<tool_call>{"name", "arguments"}</tool_call>` after a `<tools>` system block | Hermes and Qwen format |
 | native | the runtime's own tool calls, `tool_choice: "auto"` | WebLLM Hermes builds, remote APIs |
 | tags | `[tool: argument]` inside prose | the BonziBuddy style tool grammar |
-| lines | `THOUGHT:` and `ACTION: tool(a, b)`, cut at the next THOUGHT | an earlier agent build |
+| lines | `THOUGHT:` and `ACTION: tool(a, b)`, cut at the next THOUGHT | the ReAct format |
 
 `auto` takes native when the quirks say the runtime has tools, constrained when the engine takes schemas, prompt for tool call tag models, else lines. A reply with no tool becomes `respond_to_user` with the text. The `Decision` holds `{ mode, thought, tool: { name, args } | null, say, raw, fallback: "none" | "loose" | "text", stop }`.
 
@@ -126,24 +126,24 @@ This package throws no errors of its own; an engine error from `call` comes from
 - [@hackbuild/act](../act/README.md) and [@hackbuild/converse](../converse/README.md) work with tagged replies of the kind `createTagParser` reads.
 - [@hackbuild/agent](../agent/README.md) runs tool loops on decisions like these.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/structured` passes 24 tests under
-  Node 22.18.0 with scripted engines: sanitizer and both agent schemas,
-  JSON repair cases, largest object scan, tool decision shapes, every
-  guard, the tag parser on whole text and one character at a time with
-  offsets, resolution order, line parsing with markdown decoration, action
-  forms, keyword caps, mode choice, and each of the five modes including
-  the strict to loose fallback and guards across calls.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/structured` under Node 22.18.0 with scripted engines: sanitizer and both agent schemas, JSON repair cases, largest object scan, tool decision shapes, every guard, the tag parser on whole text and one character at a time with offsets, resolution order, line parsing with markdown decoration, action forms, keyword caps, mode choice, and each of the five modes including the strict to loose fallback and guards across calls | passes 24 tests |
 
 ### Not verified by anything
 
 - Any real model. Not run: whether XGrammar in WebLLM compiles the
   sanitized strict anyOf for a given tool list, how often a 0.5B to 4B model
   stays inside each mode, and which mode works best per model; those need a
-  browser run with weights and are listed for the phase C agent package.
+  browser run with weights.
 
 ## Size budget
 
@@ -155,7 +155,3 @@ This package throws no errors of its own; an engine error from `call` comes from
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.

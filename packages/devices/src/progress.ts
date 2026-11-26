@@ -1,7 +1,7 @@
 /**
  * transformers.js reports progress per file. A status line wants one
- * fraction across files, and an MB count when totals are unknown (an earlier relief bench
- * summed loaded over total by file name).
+ * fraction across files, and an MB count when totals are unknown; loaded and total are summed
+ * by file name.
  */
 
 export interface FileProgressEvent {

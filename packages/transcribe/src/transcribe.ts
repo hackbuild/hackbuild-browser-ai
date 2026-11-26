@@ -95,7 +95,7 @@ export async function transcribe(hub: Hub, dsp: Dsp, pcm16k: Float32Array, o: Tr
   return { segments: kept, dropped, stats: { ...base, wall, rtf: a.stats.dur / Math.max(0.001, wall) }, rail, model: model.record.id, language };
 }
 
-/** Mono from a decoded buffer, as earlier builds chose it: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest. */
+/** Mono from a decoded buffer: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest. */
 export function toMono(channels: readonly Float32Array[], mode: "auto" | "mix" | "L" | "R" = "auto"): Float32Array {
   const C = channels.length;
   if (C === 1 || mode === "L") return channels[0]!.slice();

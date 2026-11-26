@@ -125,13 +125,13 @@ interface GateOptions {
 }
 ```
 
-The hysteresis gate from the earlier transcription tool, over frame levels in dB: speech turns on after 3 frames above the threshold and off after 25 below, regions are padded, merged across short gaps and dropped when short.
+The hysteresis gate over frame levels in dB: speech turns on after 3 frames above the threshold and off after 25 below, regions are padded, merged across short gaps and dropped when short.
 
 ```ts
 function gateThreshold(noiseDb: number, loudDb: number, marginDb?: number): number
 ```
 
-Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8 (as earlier builds did).
+Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8.
 
 ```ts
 function loadDsp(src: CoreSource): Promise<Dsp>
@@ -174,7 +174,7 @@ interface OlaSegment {
 }
 ```
 
-Overlap add for models that take fixed length segments (htdemucs in an earlier August build): segments of S samples on a stride of S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
+Overlap add for models that take fixed length segments (htdemucs): segments of S samples on a stride of S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
 
 ```ts
 interface Onset {
@@ -227,13 +227,13 @@ interface Segment {
 }
 ```
 
-File writers: txt, srt, vtt and json transcripts in the earlier transcription tool layouts (byte for byte), lrc in the earlier lyrics tool's, 16 bit and float WAV, standard MIDI files in the earlier transcription tool layout (format 1, 480 ticks per quarter, drums on channel 10), and a store only zip.
+File writers: txt, srt, vtt and json transcripts in fixed layouts (byte for byte), lrc, 16 bit and float WAV, standard MIDI files (format 1, 480 ticks per quarter, drums on channel 10), and a store only zip.
 
 ```ts
 function spreadWords(text: string, start: number, end: number): Segment[]
 ```
 
-Word timing spread across a line by character count (as earlier builds did).
+Word timing spread across a line by character count.
 
 ```ts
 function timestamp(t: number, comma: boolean): string
@@ -245,7 +245,7 @@ hh:mm:ss,mmm (srt) or hh:mm:ss.mmm (vtt); milliseconds rounded, capped at 999.
 function toJson(t: TranscriptJson): string
 ```
 
-The earlier transcription tool json export: times to 3 decimals, two space indent.
+The json export: times to 3 decimals, two space indent.
 
 ```ts
 function toLrc(lines: readonly Segment[], title?: string): string
@@ -330,10 +330,11 @@ console.log(wav.length, "bytes", toSrt(regions.map(([a, b]) => ({ start: a / 160
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch the wasm by a relative URL and the page breaks on file://. Pass `{ base64: AUDIO_DSP_WASM_BASE64 }` from `@hackbuild/audio-dsp/inline` to `loadDsp`; use `{ url }` or `{ bytes }` only when you host the file yourself, and a failed fetch throws `audio-dsp wasm: http <status> for <url>`.
+- You call the kernels before `loadDsp` resolves, or expect them on the module. Await `loadDsp(src)` once and call every kernel on the `Dsp` it returns; each call copies its input into wasm memory and hands back a new `Float32Array`.
+- You expect a scalar fallback on an old browser. The core needs WebAssembly with simd128 and there is no build without it, so feature check and tell the person the browser is too old.
+- You read `gate` regions as seconds. They come back in samples, end exclusive; divide by the sample rate before you pass them to `toSrt` or `toVtt`, which take seconds.
+- You pass `stftMag` a window that is not a power of two, or `frameDb` a fractional hop. Both throw a RangeError naming the bad value; use whole numbers, and a power of two for the window.
 
 ## Errors this package throws
 

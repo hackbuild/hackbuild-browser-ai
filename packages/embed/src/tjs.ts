@@ -65,7 +65,7 @@ export interface TjsLike {
 /**
  * MiniLM through a transformers.js module the caller loaded (for example
  * `await loadTransformers()()` from @hackbuild/devices). Defaults: wasm and
- * q8, the earlier chat build setting; pass device "webgpu" and dtype "fp32" to move it.
+ * q8; pass device "webgpu" and dtype "fp32" to move it.
  */
 export async function miniLM(tjs: TjsLike, o: Partial<TjsEmbedderOptions> = {}): Promise<Embedder> {
   if (!tjs.pipeline) throw new Error("the transformers.js module has no pipeline export");

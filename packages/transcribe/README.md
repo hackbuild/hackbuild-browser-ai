@@ -4,6 +4,8 @@ Turn a recording into timed text in the tab, with Whisper or Moonshine behind a 
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/transcribe)](https://www.npmjs.com/package/@hackbuild/transcribe) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.6 kB measured](https://img.shields.io/badge/gzip-16.6%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: one model of this package has run in a real browser: whisper-base.en on wasm q8 and webgpu fp32 over one sentence spoken by Kokoro, in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. whisper-large-v3-turbo, the other Whisper models, Moonshine, the live segmenter on a microphone and the Web Speech adapter have not run.
+
 ## What it does
 
 - Cleans and levels 16 kHz audio, gates out the silence and packs the speech into reels of at most 26 s, with a source map back to file time.
@@ -15,7 +17,7 @@ Turn a recording into timed text in the tab, with Whisper or Moonshine behind a 
 ## Install
 
 ```sh
-npm install @hackbuild/transcribe
+npm install @hackbuild/transcribe @hackbuild/media @hackbuild/weights
 ```
 
 It depends on @hackbuild/ai-env, @hackbuild/models, @hackbuild/devices and @hackbuild/audio-dsp, and has no peers. transformers.js is not a dependency: `loadTransformers()` from @hackbuild/devices imports the pinned build (`@huggingface/transformers@4.3.2`) at run time. Use @hackbuild/media to decode files and @hackbuild/weights to cache weights.
@@ -29,20 +31,20 @@ import { AUDIO_DSP_WASM_BASE64 } from "@hackbuild/audio-dsp/inline";
 import { loadTransformers, tjsProvider } from "@hackbuild/devices";
 import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
-import { asSrt, attachTranscribe, defaultTranscribeId, toMono, transcribe } from "@hackbuild/transcribe";
+import { asSrt, attachTranscribe, defaultTranscribeId, toMono, transcribe, TRANSCRIBE_RECORDS } from "@hackbuild/transcribe";
 import { openWeightStore, transformersCache } from "@hackbuild/weights";
 
-// a hub with the whisper and moonshine records; transformers.js comes in through the devices loader, weights through the store
-const env = await probe();
-const hub = createHub({ env });
+// a hub with the whisper and moonshine records; transformers.js comes in through the devices loader, weights through the store with each record's licence
+const hub = createHub({ env: await probe() });
 attachTranscribe(hub);
-hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache: transformersCache(await openWeightStore(), { licenceFor: () => "MIT" }) }).factory);
-
-// 16 kHz mono from a dropped file, then whisper (weights MIT): large-v3-turbo with webgpu, base.en without
+hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache: transformersCache(await openWeightStore(), { licenceFor: (url) => TRANSCRIBE_RECORDS.find((r) => r.source.modelId && url.includes(r.source.modelId))?.licence ?? null }) }).factory);
 const dsp = await loadDsp({ base64: AUDIO_DSP_WASM_BASE64 });
-const { channels } = await decodeAudio(new File([], "talk.mp3"), 16000);
-const out = await transcribe(hub, dsp, toMono(channels), { model: defaultTranscribeId(env.webgpu), language: "en" });
-console.log(asSrt(out.segments), out.dropped.length, "lines dropped");
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => { // 16 kHz mono from the picked file, then whisper: large-v3-turbo with webgpu, base.en without
+  const { channels } = await decodeAudio(input.files![0]!, 16000);
+  const out = await transcribe(hub, dsp, toMono(channels), { model: defaultTranscribeId(hub.env?.webgpu ?? false), language: "en" });
+  console.log(asSrt(out.segments), out.dropped.length, "lines dropped");
+};
 ```
 
 ## Live example
@@ -53,7 +55,7 @@ The transcribe page in the suite drops a file or speaks a sentence with Kokoro a
 
 ### the front end
 
-`analyze` takes the earlier transcription tool's steps at 16 kHz: dc block, an 80 Hz high pass run twice, a 250 to 3800 Hz copy for speech decisions, a minimum statistics noise floor, the gate at floor plus 6 dB, the speech level and a gain toward -20 dBFS capped at +60 dB (that tool's default cap; its readme says +45). `finishReel` then denoises each reel from the noise print, levels it again (plus or minus 9 dB), gains and limits it at 0.891. `frontEndOptions` fills the defaults: high pass, gate margin, silence skip, target level, gain cap, denoise strength 0 to 3, per reel levelling.
+`analyze` takes these steps at 16 kHz: dc block, an 80 Hz high pass run twice, a 250 to 3800 Hz copy for speech decisions, a minimum statistics noise floor, the gate at floor plus 6 dB, the speech level and a gain toward -20 dBFS capped at +60 dB. `finishReel` then denoises each reel from the noise print, levels it again (plus or minus 9 dB), gains and limits it at 0.891. `frontEndOptions` fills the defaults: high pass, gate margin, silence skip, target level, gain cap, denoise strength 0 to 3, per reel levelling.
 
 ### reels and the source map
 
@@ -61,11 +63,11 @@ The transcribe page in the suite drops a file or speaks a sentence with Kokoro a
 
 ### one model call per reel
 
-`transcribe(hub, dsp, pcm16k, options)` runs the front end, one ASR call per reel under `hub.run` (so a webgpu model takes the gpu lock), the source map and the phantom filter. Pass `schedule` to keep a rendering page smooth, `signal` to stop, and `onProgress` for reels done and the realtime factor. The result carries `segments`, `dropped` with the reason, `stats` (levels in dB, computed), `rail`, `model` and `language`. `toMono` picks one channel when it is 6 dB louder, else mixes the channels within 20 dB of the loudest. `attachTranscribe(hub)` adds the records; `transcribeStubs()` and `stubAsr()` give a `?stub` path with no weights.
+`transcribe(hub, dsp, pcm16k, options)` runs the front end, one ASR call per reel under `hub.run` (so a webgpu model takes the gpu lock), the source map and the phantom filter. Pass `schedule` to keep a rendering page smooth, `signal` to stop, and `onProgress` for reels done and the realtime factor. The result carries `segments`, `dropped` with the reason, `stats` (levels in dB), `rail`, `model` and `language`. `toMono` picks one channel when it is 6 dB louder, else mixes the channels within 20 dB of the loudest. `attachTranscribe(hub)` adds the records; `transcribeStubs()` and `stubAsr()` give a `?stub` path with no weights.
 
 ### english only models
 
-transformers.js rejects `task` and `language` for an english only model, which made the earlier transcription tool fail on the Xenova tiny.en, base.en and small.en rows; `transcribe` passes neither to them. Their repos list the fp32 and q8 (`_quantized`) encoder and merged decoder files the ladder asks for (measured from the hub file listing, 2026-11-24). `englishOnly` also catches a custom repo id ending in `.en`, and `languagesFor(record, wanted)` gives auto detect plus 19 languages, or english only and locked with the reason.
+transformers.js rejects `task` and `language` for an english only model, which fails on the Xenova tiny.en, base.en and small.en rows; `transcribe` passes neither to them. Their repos list the fp32 and q8 (`_quantized`) encoder and merged decoder files the ladder asks for (checked against the hub file listing on 2026-11-24). `englishOnly` also catches a custom repo id ending in `.en`, and `languagesFor(record, wanted)` gives auto detect plus 19 languages, or english only and locked with the reason.
 
 ### the phantom filter
 
@@ -77,7 +79,7 @@ Whisper writes training set watermarks and stock outros over silence. `cleanup` 
 
 ### queue, rail and exports
 
-`createQueue` takes a `decode` and a `run`, so a page passes `decodeAudio` and `transcribe` and a test passes stubs. It accepts audio and video by type or extension, warns on a file over 1.5 GB (vendor, the earlier tool's limit), and moves each job through queued, running (decoding, then working), done or failed; stop puts the running job back to queued, and a failure keeps its line of copy. Pass `humanError` from @hackbuild/devices as `explain` for the shared failure copy. A transcript's `rail` holds frame levels, the floor and gate threshold and the kept frames; `regate(rail, { vadMargin })` moves the gate without a model run and `railBins(rail, width)` folds it for drawing. Segments take an optional `speaker` (by hand; no diarization runs), `confidence`, `words` and `edited`. `asTxt`, `asSrt`, `asVtt` and `asJson` write one file; `bundle(docs)` writes a store only zip with four files per source and `manifest.json` holding each file's own model, language and levels.
+`createQueue` takes a `decode` and a `run`, so a page passes `decodeAudio` and `transcribe` and a test passes stubs. It accepts audio and video by type or extension, warns on a file over 1.5 GB, and moves each job through queued, running (decoding, then working), done or failed; stop puts the running job back to queued, and a failure keeps its line of copy. Pass `humanError` from @hackbuild/devices as `explain` for the shared failure copy. A transcript's `rail` holds frame levels, the floor and gate threshold and the kept frames; `regate(rail, { vadMargin })` moves the gate without a model run and `railBins(rail, width)` folds it for drawing. Segments take an optional `speaker` (by hand; no diarization runs), `confidence`, `words` and `edited`. `asTxt`, `asSrt`, `asVtt` and `asJson` write one file; `bundle(docs)` writes a store only zip with four files per source and `manifest.json` holding each file's own model, language and levels.
 
 ### importing a transcript
 
@@ -118,7 +120,7 @@ The full reference is in [docs/api/transcribe](../../docs/api/transcribe/README.
 | whisper tiny.en | `whisper-tiny.en` | 39 (vendor) | MIT (the OpenAI Whisper release; the Xenova ONNX card says apache-2.0) | Xenova/whisper-tiny.en |
 | moonshine base | `moonshine-base` | 60 (vendor) | MIT for the english models per the model card, not checked further; commercial use unknown | onnx-community/moonshine-base-ONNX |
 
-Ladders and dtypes are the earlier transcription tool's per model table: turbo runs an fp16 encoder with a q4 decoder, then an fp32 encoder, then q8 on wasm; the others run fp32 (base also q4) on webgpu and q8 on wasm. Moonshine gives no timestamps, so each reel is one chunk. Weights are never bundled: transformers.js fetches them from the Hugging Face hub, and passing `transformersCache(store)` from @hackbuild/weights as the provider's `cache` keeps them in the weight store. The hub states each record's licence before its first load.
+Ladders and dtypes come from one per model table: turbo runs an fp16 encoder with a q4 decoder, then an fp32 encoder, then q8 on wasm; the others run fp32 (base also q4) on webgpu and q8 on wasm. Moonshine gives no timestamps, so each reel is one chunk. Weights are never bundled: transformers.js fetches them from the Hugging Face hub, and passing `transformersCache(store)` from @hackbuild/weights as the provider's `cache` keeps them in the weight store. The hub states each record's licence before its first load.
 
 ## Browser support
 
@@ -158,42 +160,26 @@ Every `TranscriptImportError` message is the copy to show the user. A file over 
 - [@hackbuild/weights](../weights/README.md) caches the weights.
 - [@hackbuild/listen](../listen/README.md) puts this behind a microphone and a VAD.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weights: Whisper is MIT (the OpenAI release; the Xenova ONNX cards say apache-2.0); Moonshine's english models are MIT per the model card, not checked further.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/transcribe` passes 10 tests (18 on 2026-11-23, local fixture suites included) under
-  Node 22.18.0 with the real audio-dsp wasm core and fake runtimes: reel
-  cuts and the source map, the phantom filter rules, the front end on a
-  seeded signal, channel picking, the stub path, a whisper record loaded
-  through the transformers.js provider with language passing and the
-  english only rule, the live segmenter (tail, blips, queue cap, fixed
-  windows, 48 to 16 kHz streaming decimation, and 44.1, 32, 24, 22.05 and 8 kHz to 16 kHz
-  through the fractional resampler at the right speed, measured on a 440 Hz tone), and the Web Speech adapter.
-- 2026-11-22: parity with real exports from an earlier transcription tool: re-running the phantom
-  filter over each transcript's kept plus dropped lines gives the earlier transcription tool's
-  split and reasons for all 19 transcripts of one batch zip. The files
-  hold personal speech and stay in the gitignored `.local/transcripts`; the
-  test is skipped without them. Dropped lines carry no end time in the
-  export, so the test gives them 2 s, and coverage is set to full.
-
-- 2026-11-24: `npx vitest run packages/transcribe` passes 29 tests: the
-  language list and the english only lock, the four exports with speaker,
-  confidence and words, the zip read back with crc checks and the
-  manifest, the rail against the analysis and `regate`, and the queue
-  states, failure copy, cancel and stop with stub decoders and runs.
-
-- 2026-11-24: `test/import.test.ts`, 8 tests: json, srt and vtt
-  exported by asJson, asSrt and asVtt (speakers, escapes, a two line cue,
-  a stamp past an hour) parse back equal and export again byte for byte;
-  the audio-dsp toSrt, toVtt and toJson layouts read back; vtt and srt
-  written by hand in other tools' styles; the refusal copy.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/transcribe` under Node 22.18.0 with the real audio-dsp wasm core and fake runtimes: reel cuts and the source map, the phantom filter rules, the front end on a seeded signal, channel picking, the stub path, a whisper record loaded through the transformers.js provider with language passing and the english only rule, the live segmenter (tail, blips, queue cap, fixed windows, 48 to 16 kHz streaming decimation, and 44.1, 32, 24, 22.05 and 8 kHz to 16 kHz through the fractional resampler at the right speed, measured on a 440 Hz tone), and the Web Speech adapter | passes 10 tests (18 on 2026-11-23, local fixture suites included) |
+| 2026-11-22 | parity with real exports of another transcription tool: re-running the phantom filter over each transcript's kept plus dropped lines. The files hold personal speech and stay in the gitignored `.local/transcripts`; the test is skipped without them. Dropped lines carry no end time in the export, so the test gives them 2 s, and coverage is set to full | the same split and reasons for all 19 transcripts of one batch zip |
+| 2026-11-24 | `npx vitest run packages/transcribe`: the language list and the english only lock, the four exports with speaker, confidence and words, the zip read back with crc checks and the manifest, the rail against the analysis and `regate`, and the queue states, failure copy, cancel and stop with stub decoders and runs | passes 29 tests |
+| 2026-11-24 | `test/import.test.ts`: json, srt and vtt exported by asJson, asSrt and asVtt (speakers, escapes, a two line cue, a stamp past an hour) parse back equal and export again byte for byte; the audio-dsp toSrt, toVtt and toJson layouts read back; vtt and srt written by hand in other tools' styles; the refusal copy | passes 8 tests |
 
 ### Not verified by anything
 
-- Any Whisper or Moonshine model in a browser; word error rates.
+- Any Whisper model beyond base.en, and Moonshine, in a browser; word error rates on real speech.
 - The queue over real files and `decodeAudio` in a browser.
-- The front end against the earlier transcription tool on the same audio file sample for sample;
+- The front end sample for sample against another tool on the same audio file;
   no input audio from that tool was available, only its text outputs.
 - Moonshine's licence beyond the model card line.
 
@@ -207,7 +193,3 @@ Every `TranscriptImportError` message is the copy to show the user. A file over 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weights: Whisper is MIT (the OpenAI release; the Xenova ONNX cards say apache-2.0); Moonshine's english models are MIT per the model card, not checked further.

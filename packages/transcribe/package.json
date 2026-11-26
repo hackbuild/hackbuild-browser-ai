@@ -1,7 +1,7 @@
 {
   "name": "@hackbuild/transcribe",
   "version": "0.1.2",
-  "description": "Speech to text in a tab: the quiet speech front end, silence reel packing with a source map, Whisper and Moonshine records for the models hub, a phantom text filter, the earlier live captioner live segmenter, a Web Speech adapter and a stub.",
+  "description": "Speech to text in a tab: the quiet speech front end, silence reel packing with a source map, Whisper and Moonshine records for the models hub, a phantom text filter, a live segmenter, a Web Speech adapter and a stub.",
   "type": "module",
   "license": "MIT",
   "author": "Moheeb Zara <hackbuildvideo@gmail.com>",

@@ -148,7 +148,7 @@ Closed heightfield solid: cell size px, origin (x0, y0), on the plane z0.
 model(voxel, cap?): VoxelModel;
 ```
 
-A voxel model for ICP tracking (as earlier builds did). Call `dispose` when done.
+A voxel model for ICP tracking. Call `dispose` when done.
 
 ###### Parameters
 
@@ -171,7 +171,7 @@ morphOpen(
 ): Uint8Array;
 ```
 
-Erode then dilate with a 3 by 3 square (as earlier builds did).
+Erode then dilate with a 3 by 3 square.
 
 ###### Parameters
 
@@ -191,7 +191,7 @@ Erode then dilate with a 3 by 3 square (as earlier builds did).
 relief(values, o): Float32Array;
 ```
 
-Heights in mm, 0 where there is no relief (as earlier builds did).
+Heights in mm, 0 where there is no relief.
 
 ###### Parameters
 
@@ -474,7 +474,7 @@ One entry of [HEIGHT\_SOURCES](#height_sources): the name, the label to show, wh
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-label"></a> `label` | `string` | The bench's label in the height from select. |
+| <a id="property-label"></a> `label` | `string` | The label for a height source select. |
 | <a id="property-name"></a> `name` | [`HeightSourceName`](#heightsourcename) | - |
 | <a id="property-needsmodel"></a> `needsModel` | `boolean` | Needs a depth model or a stored depth map. |
 | <a id="property-params"></a> `params` | readonly (keyof [`ReliefParams`](#reliefparams))[] | Options that apply to this source. |
@@ -554,7 +554,7 @@ Options for [photoRelief](#photorelief-1): the height source, a depth map or a c
 | <a id="property-smooth"></a> `smooth?` | `number` | Smoothing radius, mm. Default 0.3. | [`ReliefParams`](#reliefparams).[`smooth`](#property-smooth-1) |
 | <a id="property-source-1"></a> `source` | [`HeightSourceName`](#heightsourcename) | - | - |
 | <a id="property-threshold"></a> `threshold?` | `number` | Inflate: brightness below this is inside when the art has no alpha. Default 0.5. | [`ReliefParams`](#reliefparams).[`threshold`](#property-threshold-1) |
-| <a id="property-width-2"></a> `width?` | `number` | Relief width on the print, mm. Default 30 (the bench's default layer). | [`ReliefParams`](#reliefparams).[`width`](#property-width-3) |
+| <a id="property-width-2"></a> `width?` | `number` | Relief width on the print, mm. Default 30. | [`ReliefParams`](#reliefparams).[`width`](#property-width-3) |
 
 ***
 
@@ -603,7 +603,7 @@ The relief settings in mm and 0 to 1 units; [RELIEF\_DEFAULTS](#relief_defaults)
 | <a id="property-invert-2"></a> `invert` | `boolean` | Depth and brightness: far or dark is high. Inflate: light art on dark is the silhouette. |
 | <a id="property-smooth-1"></a> `smooth` | `number` | Smoothing radius, mm. Default 0.3. |
 | <a id="property-threshold-1"></a> `threshold` | `number` | Inflate: brightness below this is inside when the art has no alpha. Default 0.5. |
-| <a id="property-width-3"></a> `width` | `number` | Relief width on the print, mm. Default 30 (the bench's default layer). |
+| <a id="property-width-3"></a> `width` | `number` | Relief width on the print, mm. Default 30. |
 
 ***
 
@@ -672,7 +672,7 @@ The three height sources: Depth Anything depth, brightness, or an inflated silho
 const HEIGHT_SOURCES: readonly HeightSource[];
 ```
 
-The height from select, in the bench's order and words.
+The height sources, in the order and words a height source select shows.
 
 ***
 
@@ -800,7 +800,7 @@ Depth per cell, resampled bilinear from the map's own size.
 function fitToPrint(m, sizeMM): Mesh;
 ```
 
-Centre the mesh and scale it so its longest side is `sizeMM` (as earlier builds did).
+Centre the mesh and scale it so its longest side is `sizeMM`.
 
 #### Parameters
 
@@ -827,8 +827,7 @@ function inflateHeight(
 ```
 
 Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over
-t, the distance to the outline over the largest distance (as the bench
-did). Art with transparency carries its shape in alpha; opaque art is
+t, the distance to the outline over the largest distance. Art with transparency carries its shape in alpha; opaque art is
 inside where darker than `threshold` (lighter with `invert`).
 
 #### Parameters
@@ -904,7 +903,7 @@ function photoRelief(
 ): Promise<PhotoRelief>;
 ```
 
-Photo to relief in one call: a height source, the bench's parameters,
+Photo to relief in one call: a height source, the relief parameters,
 the relief mask and the erase and restore brushes, then the closed
 solid. Export it with `toStl`.
 
@@ -998,7 +997,7 @@ function trackGood(
 ): boolean;
 ```
 
-The earlier scan bench gate for a tracked frame: enough inliers, low error, and no jump.
+The accept test for a tracked frame: enough inliers, low error, and no jump.
 
 #### Parameters
 

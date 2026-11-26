@@ -18,7 +18,7 @@ Options for `loadWllama`: the module, wasm URL, GGUF blobs, context size, GPU la
 | <a id="property-id"></a> `id?` | `string` | - | - |
 | <a id="property-maxtokens"></a> `maxTokens?` | `number` | Default max tokens. 512. | [`EngineOptions`](index.md#engineoptions).[`maxTokens`](index.md#property-maxtokens-1) |
 | <a id="property-module"></a> `module` | [`WllamaModule`](#wllamamodule) | - | - |
-| <a id="property-nctx"></a> `nCtx?` | `number` | Context size. Default 6144 (as earlier builds did). | - |
+| <a id="property-nctx"></a> `nCtx?` | `number` | Context size. Default 6144. | - |
 | <a id="property-ngpulayers"></a> `nGpuLayers?` | `number` | Default: all layers on webgpu when wllama reports support, else 0. | - |
 | <a id="property-noschema"></a> `noSchema?` | `boolean` | Start with schemas off (a runtime known to reject them). | [`EngineOptions`](index.md#engineoptions).[`noSchema`](index.md#property-noschema) |
 | <a id="property-now"></a> `now?` | () => `number` | Clock in ms for reply stats. Default performance.now where present, else Date.now. | [`EngineOptions`](index.md#engineoptions).[`now`](index.md#property-now) |
@@ -36,7 +36,7 @@ Options for `wllamaDriver`: a loaded Wllama, an id and whether to keep the KV pr
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-cacheprompt"></a> `cachePrompt?` | `boolean` | Keep the KV prefix between calls (as earlier builds did). Default true. |
+| <a id="property-cacheprompt"></a> `cachePrompt?` | `boolean` | Keep the KV prefix between calls. Default true. |
 | <a id="property-id-1"></a> `id?` | `string` | - |
 | <a id="property-wllama"></a> `wllama` | [`WllamaLike`](#wllamalike) | - |
 

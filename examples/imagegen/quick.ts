@@ -9,7 +9,7 @@ const hub = createHub({ env: await probe() });
 hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore() }).factory);
 attachImagegen(hub);
 
-// sd-turbo, 2397 MiB (vendor), Stability AI Non-Commercial Research Community License: no commercial use
+// sd-turbo; gen.record.licence names its weight licence (Stability AI, no commercial use)
 const gen = await loadImagegen(hub, { id: "sd-turbo" });
 
 // the CLIP tokenizer (weights MIT) through transformers.js, 77 ids

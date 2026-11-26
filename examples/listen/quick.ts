@@ -8,8 +8,8 @@ import { openWeightStore } from "@hackbuild/weights";
 const stream = await openMic();
 const ctx = new AudioContext();
 // Silero VAD v5 (weights MIT) on onnxruntime-web, its bytes cached by the weight store
-const silero = VAD_RECORDS[0]!.source;
-const bytes = await (await openWeightStore()).once({ url: silero.url!, sha256: silero.sha256!, licence: "MIT" });
+const silero = VAD_RECORDS[0]!;
+const bytes = await (await openWeightStore()).once({ url: silero.source.url!, sha256: silero.source.sha256!, licence: silero.licence });
 const vad = await sileroVad((await loadOrt()()) as unknown as OrtLike, bytes);
 // Whisper (weights MIT) through the models hub turns each utterance into text; mic blocks feed the listener
 const hub = createHub();

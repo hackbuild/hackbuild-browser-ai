@@ -1,12 +1,13 @@
 import { importEsm } from "@hackbuild/ai-env";
 import type { ChatMessage } from "@hackbuild/chat";
 import { loadWllama, wllamaUrls, type WllamaModule } from "@hackbuild/chat/wllama";
+import { CATALOG, pinnedBase } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 
-// Qwen2.5 0.5B Instruct q4_k_m GGUF, weights Apache-2.0, cached by the weight store
-const store = await openWeightStore();
-const url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
-const gguf = await store.get({ url, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" });
+// Qwen2.5 0.5B Instruct q4_k_m GGUF; the record names the weight licence, the store caches the file
+const rec = CATALOG.find((r) => r.id === "qwen2.5-0.5b-instruct-gguf")!;
+const url = pinnedBase(rec.source.repo!) + rec.source.file!;
+const gguf = await (await openWeightStore()).get({ url, licence: rec.licence });
 
 // the runtime is passed in, never bundled
 const chat = await loadWllama({ module: await importEsm<WllamaModule>(wllamaUrls().esm), blobs: [gguf] });

@@ -134,7 +134,7 @@ export function yoloDetector(m: OrtModel, o: { size?: number; labels?: readonly 
   };
 }
 
-/** Detection cadence as earlier builds ran it: wait max(0.45 s, 4 times the last latency) between runs. */
+/** Detection cadence: wait max(0.45 s, 4 times the last latency) between runs. */
 export function detectCadenceMs(lastLatencyMs: number): number {
   return Math.max(450, 4 * lastLatencyMs);
 }

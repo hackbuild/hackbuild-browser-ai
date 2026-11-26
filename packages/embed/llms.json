@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "Never import `@huggingface/transformers` here. Pass the module to `miniLM` or a pipeline to `tjsEmbedder`, for example `await loadTransformers()()` from `@hackbuild/devices`; the static embedder needs no runtime at all.",
+    "`loadStaticEmbedder(base)` fetches straight from the URL and does not cache. To keep the files, read them with `store.once({ url, licence: rec.licence })` from `@hackbuild/weights`, taking the URL from the record's `source.url` in `EMBED_RECORDS`, and pass the bytes to `staticEmbedder`.",
+    "Take the weight licence from the record (`rec.licence` in `EMBED_RECORDS`): potion-base-8M and bge-small-en-v1.5 are MIT, all-MiniLM-L6-v2 is Apache-2.0. Never write it as a constant.",
+    "The static embedder reads WordPiece and WordLevel tokenizers only. A Unigram or BPE tokenizer.json throws `tokenizer model ... is not supported`, so point it at a model2vec repo such as potion-base-8M.",
+    "Keep the embedder `id` with your stored vectors. It changes whenever the weights, tokenizer, dtype, device, pooling or normalization change, and `@hackbuild/memory` re-embeds on a new id; never compare vectors from two ids.",
+    "`miniLM` runs on wasm q8 by default. Pass `device: \"webgpu\"` with `dtype: \"fp32\"` to move it; never pair webgpu with q8."
+  ]
+}

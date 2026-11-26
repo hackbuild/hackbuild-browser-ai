@@ -18,7 +18,7 @@ export interface DepthMap {
   height: number;
   /** 0 to 1 per pixel, larger is nearer (Depth Anything is relative inverse depth). */
   data: Float32Array;
-  /** The raw model output range before normalizing, for stable scale across frames (as earlier builds did). */
+  /** The raw model output range before normalizing, for stable scale across frames. */
   range: [min: number, max: number];
 }
 

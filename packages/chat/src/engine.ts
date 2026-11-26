@@ -1,7 +1,7 @@
 /**
  * The engine wraps a driver with the rules every runtime needs:
  * role normalization from quirks, think block splitting, stop strings cut
- * on the client, and the schema fallback (an earlier chat build `$W`: the first schema
+ * on the client, and the schema fallback (the first schema
  * refusal turns schemas off for this engine and the schema moves into the
  * prompt as text).
  */

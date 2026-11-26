@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You import transformers.js, onnxruntime-web or WebLLM yourself and call it directly. Register a factory per provider with `hub.provide(\"tjs\", tjsProvider({ runtime: loadTransformers(), cache }).factory)` from @hackbuild/devices, so the runtime comes in at run time, then ask the hub with `hub.use(capability)`.",
+    "You write a record without `licence`, or hard code a licence string where the record has one. `createRegistry` refuses a record with no licence, and the hub states `record.licence` once before the first load; read the licence from the record.",
+    "You call `hub.use` and never `hub.release`. A model stays resident until its refs reach zero, and with `budgetMB` set a new load throws `HubError` code `budget` when busy models fill it; release what you are done with.",
+    "You run webgpu inference beside a render loop without a schedule. Call `hub.reportFrame(ms)` from the loop and pass `{ frameBudgetMs, minIntervalMs }` to `hub.run`, and catch code `skipped` when you pass `when: \"skip\"`.",
+    "You walk `ortLadder()` with a fresh download per rung. Pair it with `store.once(ref)` from @hackbuild/weights so every rung reads one download, and pass `pinnedSha` as `sha256For` so pinned files are checked.",
+    "You read `LadderError` as a single failure. `failures` lists one kind per rung: `runtime-mismatch` means pin the runtime, `out-of-memory` means a smaller model, `f16` means an f32 rung."
+  ]
+}

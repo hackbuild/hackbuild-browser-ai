@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You fetch `depth-mesh.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: DEPTH_MESH_WASM_BASE64 }` from `@hackbuild/depth-mesh/inline` to `loadDepthMesh`, which fetches nothing; use `{ url }` or `{ bytes }` only where you serve the file.",
+    "You expect this package to run Depth Anything. It loads no model; for `source: \"depth\"` pass `depth` to `photoRelief` as a stored map or a call that makes one, for example through `depth` from @hackbuild/vision, whose weights are Apache-2.0.",
+    "You treat a `photoRelief` result as depth based without reading `notes`. When the depth map is missing or its call throws, it falls back to brightness and says so in a \"warn\" note; check `r.notes` before you tell the user what they got.",
+    "You keep the voxel model from `model(voxel)` forever. Call `dispose` on it when the scan ends, since its memory lives in the wasm heap.",
+    "You pass grids whose length does not match the size you give. Every call checks and throws a `RangeError` such as \"values for a ... grid, which needs ...\"; pass `cols * rows` values, and masks the same length as the heights."
+  ]
+}

@@ -114,7 +114,7 @@ function decodeAudio(
 ): Promise<DecodedAudio>;
 ```
 
-Decode and resample with the browser's decoder (as earlier builds did). Names the failure when the browser refuses the container.
+Decode and resample with the browser's decoder. Names the failure when the browser refuses the container.
 
 #### Parameters
 

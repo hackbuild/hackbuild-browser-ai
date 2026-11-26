@@ -1,5 +1,5 @@
 /**
- * The hysteresis gate from the earlier transcription tool, over frame levels in dB: speech
+ * The hysteresis gate over frame levels in dB: speech
  * turns on after 3 frames above the threshold and off after 25 below,
  * regions are padded, merged across short gaps and dropped when short.
  * Regions come back in samples, end exclusive.
@@ -73,7 +73,7 @@ export function gate(db: ArrayLike<number>, threshold: number, nSamples: number,
   return merged.filter((s) => s[1] - s[0] >= minF).map((s): Region => [s[0] * hop, Math.min(nSamples, s[1] * hop + frame)]);
 }
 
-/** Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8 (as earlier builds did). */
+/** Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8. */
 export function gateThreshold(noiseDb: number, loudDb: number, marginDb = 6): number {
   let thr = noiseDb + marginDb;
   thr = Math.max(thr, noiseDb + 2);

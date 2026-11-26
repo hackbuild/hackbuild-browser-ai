@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "You fetch the wasm by a relative URL and the page breaks on file://. Pass `{ base64: AUDIO_DSP_WASM_BASE64 }` from `@hackbuild/audio-dsp/inline` to `loadDsp`; use `{ url }` or `{ bytes }` only when you host the file yourself, and a failed fetch throws `audio-dsp wasm: http <status> for <url>`.",
+    "You call the kernels before `loadDsp` resolves, or expect them on the module. Await `loadDsp(src)` once and call every kernel on the `Dsp` it returns; each call copies its input into wasm memory and hands back a new `Float32Array`.",
+    "You expect a scalar fallback on an old browser. The core needs WebAssembly with simd128 and there is no build without it, so feature check and tell the person the browser is too old.",
+    "You read `gate` regions as seconds. They come back in samples, end exclusive; divide by the sample rate before you pass them to `toSrt` or `toVtt`, which take seconds.",
+    "You pass `stftMag` a window that is not a power of two, or `frameDb` a fractional hop. Both throw a RangeError naming the bad value; use whole numbers, and a power of two for the window."
+  ]
+}

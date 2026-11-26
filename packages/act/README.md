@@ -64,7 +64,7 @@ Exact name, then alias, then whole word overlap with light stemming (every word 
 
 ### moods, gestures and postures
 
-Moods are sticky and decay with a time constant of 12 s; the same mood again while it still shows (weight over 0.15) is suppressed. Gestures are one shot with a 2.5 s cooldown. Postures persist until another posture and come only from explicit tags. These three numbers are defaults chosen for the package (inferred, not measured); `moodDecayMs`, `moodFloor` and `gestureCooldownMs` change them. The clock is injected (`now`); nothing calls Math.random.
+Moods are sticky and decay with a time constant of 12 s; the same mood again while it still shows (weight over 0.15) is suppressed. Gestures are one shot with a 2.5 s cooldown. Postures persist until another posture and come only from explicit tags. These three numbers are defaults chosen for the package, not measured; `moodDecayMs`, `moodFloor` and `gestureCooldownMs` change them. The clock is injected (`now`); nothing calls Math.random.
 
 ### tag parsing
 
@@ -76,11 +76,19 @@ A sentence with no tag runs through the inferrer. Keywords first, whole words an
 
 ### prompt and grammar
 
-`promptBlock` lists at most 10 moods, 14 gestures and 6 postures, about 60 to 80 tokens (computed at 3.6 characters per token). `grammar(v, "gbnf")` allows only the vocabulary's names inside brackets and requires words, so a reply of bare tags does not pass; `grammar(v, "json-schema")` gives `{ say, mood, gesture, posture }` with enums. `director.json(obj)` places the cues of a JSON reply at offset 0.
+`promptBlock` lists at most 10 moods, 14 gestures and 6 postures. `grammar(v, "gbnf")` allows only the vocabulary's names inside brackets and requires words, so a reply of bare tags does not pass; `grammar(v, "json-schema")` gives `{ say, mood, gesture, posture }` with enums. `director.json(obj)` places the cues of a JSON reply at offset 0.
+
+| quantity | value |
+|---|---|
+| `promptBlock` size | about 60 to 80 tokens (computed at 3.6 characters per token) |
 
 ### replay and history
 
-`director.record()` lists which cue fired at which offset; `replay(record, fire)` fires them again when the reply is spoken again. Keep the raw tagged reply in the chat history. With tags stripped from history, 1B and 2B models stopped tagging by the third turn in the builds this protocol was drawn from (measured there, not here): the model copies its own earlier replies.
+`director.record()` lists which cue fired at which offset; `replay(record, fire)` fires them again when the reply is spoken again. Keep the raw tagged reply in the chat history. With tags stripped from history, 1B and 2B models stop tagging after a few turns: the model copies its own past replies.
+
+| observation | value |
+|---|---|
+| turns until 1B and 2B models stop tagging with tags stripped from history | 3 (measured elsewhere, not in this repository) |
 
 ### binding an avatar's own clips
 
@@ -108,7 +116,12 @@ const talk = talkingLoop(binding.all);
 
 ### word tables
 
-256 words in 38 buckets (computed) feed `DEFAULT_ALIASES` and, for moods and conversational gestures only, `DEFAULT_KEYWORDS`. `hug`, `kiss` and `flirt` are in `OPTIONAL_BUCKETS`, off by default; pass them as `buckets` and as aliases to turn them on. `WEAK_WORDS` (28 single words, computed) are skipped by the keyword step beside `WEAK_PHRASES`.
+The bucketed words feed `DEFAULT_ALIASES` and, for moods and conversational gestures only, `DEFAULT_KEYWORDS`. `hug`, `kiss` and `flirt` are in `OPTIONAL_BUCKETS`, off by default; pass them as `buckets` and as aliases to turn them on. `WEAK_WORDS`, single words, are skipped by the keyword step beside `WEAK_PHRASES`.
+
+| table | size |
+|---|---|
+| word buckets | 256 words in 38 buckets (computed) |
+| `WEAK_WORDS` | 28 single words (computed) |
 
 ## API overview
 
@@ -159,26 +172,22 @@ The package throws no errors of its own; a tag it cannot place is dropped or sup
 - [@hackbuild/speak](../speak/README.md) speaks the visible text and reports the offsets for `reached`.
 - [@hackbuild/memory](../memory/README.md) supplies the `Embedder` type for the embedding steps.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights; an embedder you pass carries its own weight licence.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/act` passes, 22 tests, in Node
-  22.18.0, with fake embedders: streaming placement across chunk
-  boundaries, firing by offset, `[happy, wave]`, keyed tags, stage
-  directions, suppression and cooldown, posture persistence, mood decay,
-  hybrid inference, json style, replay, the grammar text and the JSON
-  Schema.
-
-- 2026-11-24: `npx vitest run packages/act` passes, 32 tests, in Node
-  22.18.0: clip class rule order, binding by name over analysis tags,
-  loops kept out of the vocabulary, the name cap, whole word matching,
-  the named bonus, and the optional buckets left out.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/act` in Node 22.18.0 with fake embedders: streaming placement across chunk boundaries, firing by offset, `[happy, wave]`, keyed tags, stage directions, suppression and cooldown, posture persistence, mood decay, hybrid inference, json style, replay, the grammar text and the JSON Schema | passes, 22 tests |
+| 2026-11-24 | `npx vitest run packages/act` in Node 22.18.0: clip class rule order, binding by name over analysis tags, loops kept out of the vocabulary, the name cap, whole word matching, the named bonus, and the optional buckets left out | passes, 32 tests |
 
 ### Not verified by anything
 
 - The binder on a real clip library: only synthetic names ran.
-
 - The GBNF grammar in wllama or llama.cpp, and the JSON Schema in WebLLM
   XGrammar: not compiled by a runtime.
 - How often 0.5B to 4B models tag with this prompt block, with and without
@@ -199,7 +208,3 @@ The package throws no errors of its own; a tag it cannot place is dropped or sup
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights; an embedder you pass carries its own weight licence.

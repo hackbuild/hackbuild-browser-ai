@@ -1,5 +1,5 @@
 /**
- * ChatPane and Composer in the DOM, after the earlier chat tools: the
+ * ChatPane and Composer in the DOM: the
  * thread as hackbuild-ui messages, the reasoning in a fold that is open
  * while it streams, the memory a reply used in a fold under it, copy and
  * redo on the last reply only, and a composer whose send is the one pink

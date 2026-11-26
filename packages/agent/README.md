@@ -76,7 +76,7 @@ The system message holds the soul, body rules, the tool list and the turn contra
 
 | setting | default |
 |---|---|
-| `budgetTokens` | 1000 tokens at 3.6 characters per token (inferred from earlier builds) |
+| `budgetTokens` | 1000 tokens at 3.6 characters per token (inferred) |
 | `steps` (model calls per heard turn) | 6 |
 | `goalSteps` (model calls per goal turn) | 14 |
 | `maxActions` (steps per model call) | 3 |
@@ -170,28 +170,22 @@ The agent throws no errors of its own; failures come back as step results the mo
 - [@hackbuild/character](../character/README.md) can supply the soul from a character card.
 - [@hackbuild/act](../act/README.md) can turn the say text into timed moods and gestures on an avatar.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package loads no model and no weights; the brain you pass carries its own weight licence (for instance Qwen2.5 Instruct, Apache-2.0; Gemma 3, Gemma terms).
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/agent` passes, 23 tests, in Node
-  22.18.0, with scripted chat engines and fake tools: the contract and
-  drifted shapes, say streaming across chunks with escapes, schema
-  refusal falling back to free text, each escalation rule, the garbage
-  guard, the plan cache and eviction, memory in and out, the context
-  budget, reflex only turns, a tidy goal by planner with a skip list,
-  persistence and a single report, blocking after 7 tries, idle picks.
-
-- 2026-11-24: `npx vitest run packages/agent` passes, 31 tests; the
-  planner chain with scripted engines: a valid model plan, three invalid
-  replies stepping down to scripted, reflexes taking over with the absent
-  tier recorded, an error, loading, no brain, nothing left, and a plan
-  function as a tier.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/agent` in Node 22.18.0 with scripted chat engines and fake tools: the contract and drifted shapes, say streaming across chunks with escapes, schema refusal falling back to free text, each escalation rule, the garbage guard, the plan cache and eviction, memory in and out, the context budget, reflex only turns, a tidy goal by planner with a skip list, persistence and a single report, blocking after 7 tries, idle picks | passes, 23 tests |
+| 2026-11-24 | `npx vitest run packages/agent`; the planner chain with scripted engines: a valid model plan, three invalid replies stepping down to scripted, reflexes taking over with the absent tier recorded, an error, loading, no brain, nothing left, and a plan function as a tier | passes, 31 tests |
 
 ### Not verified by anything
 
 - The planner chain in a room with a real brain.
-
 - Any real model: how often 0.5B to 4B models (Qwen2.5 0.5B and 1.5B
   Instruct, Apache-2.0; Gemma 3 1B, Gemma terms) return a usable plan
   under the schema, the looser schema and free text.
@@ -210,7 +204,3 @@ The agent throws no errors of its own; failures come back as step results the mo
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package loads no model and no weights; the brain you pass carries its own weight licence (for instance Qwen2.5 Instruct, Apache-2.0; Gemma 3, Gemma terms).

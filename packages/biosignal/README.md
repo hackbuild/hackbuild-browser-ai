@@ -28,19 +28,21 @@ import { BIOSIGNAL_WASM_BASE64 } from "@hackbuild/biosignal/inline";
 
 // the wasm core, inlined so nothing is fetched
 const bs = await loadBiosignal({ base64: BIOSIGNAL_WASM_BASE64 });
-
-// continuous EEG at 256 Hz, one Float32Array per channel, and labelled events
-const channels: Float32Array[] = [new Float32Array(256 * 60), new Float32Array(256 * 60)];
-const events = [{ at: 256, label: 0 }, { at: 256 * 10, label: 1 }];
-const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows per trial
-
-// alpha and beta bands; folds hold whole trials, so no window leaks across
-const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
-console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
-
-// train on everything, then save the model as JSON (reload with bs.load)
-const model = bs.train(epochs, bands, 256, { classes: 2 });
-console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  // a CSV at 256 Hz: one row per sample, one column per channel, then a label where a trial starts
+  const rows = (await input.files![0]!.text()).trim().split("\n").map((l) => l.trim().split(","));
+  const n = rows[0]!.length - 1;
+  const channels = Array.from({ length: n }, (_, c) => Float32Array.from(rows, (r) => Number(r[c])));
+  const events = rows.flatMap((r, at) => (r[n] ? [{ at, label: Number(r[n]) }] : []));
+  const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows of 1 s per trial
+  // alpha and beta bands; folds hold whole trials, so no window leaks across
+  const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
+  console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
+  // train on everything, then save the model as JSON (reload with bs.load)
+  const model = bs.train(epochs, bands, 256, { classes: 2 });
+  console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+};
 ```
 
 ## Live example
@@ -59,7 +61,7 @@ The package page runs the core in the tab: [hackbuild-browser-ai/biosignal](http
 
 ### features are covariances on a manifold
 
-Each window is filtered per band and turned into a covariance shrunk toward its mean eigenvalue (0.08 by default). The reference is the log-Euclidean mean per band; tangent vectors take the upper triangle with off diagonals times sqrt 2. A multinomial logistic regression runs on the standardized features with Adam and L2, by default 0.05 L2, 150 epochs and learning rate 0.14 (the earlier biosignal build's settings).
+Each window is filtered per band and turned into a covariance shrunk toward its mean eigenvalue (0.08 by default). The reference is the log-Euclidean mean per band; tangent vectors take the upper triangle with off diagonals times sqrt 2. A multinomial logistic regression runs on the standardized features with Adam and L2, by default 0.05 L2, 150 epochs and learning rate 0.14.
 
 ### cross validation folds by trial
 
@@ -67,7 +69,7 @@ Each window is filtered per band and turned into a covariance shrunk toward its 
 
 ### a slot for a neural model
 
-`EegNetRunner` is the interface a neural model (EEGNet in earlier builds) would fill. No runner is built here.
+`EegNetRunner` is the interface a neural model (such as EEGNet) would fill. No runner is built here.
 
 ## API overview
 
@@ -93,7 +95,7 @@ The full reference is in [docs/api/biosignal](../../docs/api/biosignal/README.md
 | threads | none | not used | not used | not used | not used |
 | WebGPU | none | not used | not used | not used | not used |
 
-The core is single threaded and needs no WebGPU. There is no scalar fallback build; a browser without wasm SIMD128 cannot instantiate it (inferred). It also runs in Node 22, where the tests run it.
+The core is single threaded and needs no WebGPU. There is no scalar fallback build; a browser without wasm SIMD128 should fail to instantiate it, which is inferred and not tried. It also runs in Node 22, where the tests run it.
 
 ## Errors and troubleshooting
 
@@ -113,26 +115,23 @@ The core is single threaded and needs no WebGPU. There is no scalar fallback bui
 - [@hackbuild/audio-dsp](../audio-dsp/README.md) is the Rust wasm core for audio filters; this package keeps its own EEG filters.
 - [@hackbuild/devices](../devices/README.md) probes what the browser can run before you load a core.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package downloads no weights; models are trained in the tab.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `cargo test -p hackbuild-biosignal` passes 4 tests (2 unit,
-  2 integration) under rustc 1.95: deterministic math against the host
-  libm, cross validation over 90 percent on a seeded rhythm fixture and at
-  chance on labels independent of the class, trials never split across
-  folds, log and exp round trip, zero self distance. `cargo clippy -D
-  warnings` passes natively and for wasm32.
-- 2026-11-22: `npx vitest run packages/biosignal` passes 3 tests under
-  Node 22.18.0, including native and wasm parity: the fixture, filter
-  output, covariance, Riemannian distance, trained probabilities and per
-  fold accuracies give the same bits from the wasm build (simd128 on);
-  JSON export and reload; epoching by event.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `cargo test -p hackbuild-biosignal` under rustc 1.95: deterministic math against the host libm, cross validation on a seeded rhythm fixture and on labels independent of the class, trials never split across folds, log and exp round trip, zero self distance; `cargo clippy -D warnings` natively and for wasm32 | passes 4 tests (2 unit, 2 integration); cross validation over 90 percent on the fixture and at chance on independent labels; clippy passes |
+| 2026-11-22 | `npx vitest run packages/biosignal` under Node 22.18.0, including native and wasm parity: the fixture, filter output, covariance, Riemannian distance, trained probabilities and per fold accuracies from the wasm build (simd128 on); JSON export and reload; epoching by event | passes 3 tests; same bits from both builds |
 
 ### Not verified by anything
 
 - Real EEG recordings and headsets; accuracy on any public data set.
-- EEGNet training, tflite export and the TFLite Micro sketch of earlier builds: not built.
+- EEGNet training, tflite export and a TFLite Micro sketch: not built.
 
 ## Size budget
 
@@ -145,7 +144,3 @@ The core is single threaded and needs no WebGPU. There is no scalar fallback bui
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package downloads no weights; models are trained in the tab.

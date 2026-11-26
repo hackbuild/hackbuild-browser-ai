@@ -4,6 +4,8 @@ Stream chat replies from WebLLM, wllama, transformers.js, the Chrome Prompt API 
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/chat)](https://www.npmjs.com/package/@hackbuild/chat) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 5.9 kB measured](https://img.shields.io/badge/gzip-5.9%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: WebLLM 0.2.84 and 0.2.89 with Qwen2.5 0.5B, and transformers.js 4.3.2 with SmolLM2 360M, ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. wllama, the Prompt API and the remote engines have not run in a browser.
+
 ## What it does
 
 - Gives every runtime the same `stream`, `complete`, `prewarm` and `dispose` calls, with the runtime module passed in.
@@ -15,10 +17,10 @@ Stream chat replies from WebLLM, wllama, transformers.js, the Chrome Prompt API 
 ## Install
 
 ```sh
-npm install @hackbuild/chat
+npm install @hackbuild/chat @hackbuild/ai-env @hackbuild/models @hackbuild/weights
 ```
 
-It depends on `@hackbuild/converse`. Each runtime is an optional peer behind its own subpath, and no file imports a runtime: you pass the module in, so a page that uses only the remote engine never loads WebLLM. Install only the peer for the subpath you use.
+It depends on `@hackbuild/converse`. The quick start also uses `@hackbuild/ai-env`, `@hackbuild/models` and `@hackbuild/weights`. Each runtime is an optional peer behind its own subpath, and no file imports a runtime: you pass the module in, so a page that uses only the remote engine never loads WebLLM. Install only the peer for the subpath you use.
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -34,12 +36,13 @@ It depends on `@hackbuild/converse`. Each runtime is an optional peer behind its
 import { importEsm } from "@hackbuild/ai-env";
 import type { ChatMessage } from "@hackbuild/chat";
 import { loadWllama, wllamaUrls, type WllamaModule } from "@hackbuild/chat/wllama";
+import { CATALOG, pinnedBase } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 
-// Qwen2.5 0.5B Instruct q4_k_m GGUF, weights Apache-2.0, cached by the weight store
-const store = await openWeightStore();
-const url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
-const gguf = await store.get({ url, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" });
+// Qwen2.5 0.5B Instruct q4_k_m GGUF; the record names the weight licence, the store caches the file
+const rec = CATALOG.find((r) => r.id === "qwen2.5-0.5b-instruct-gguf")!;
+const url = pinnedBase(rec.source.repo!) + rec.source.file!;
+const gguf = await (await openWeightStore()).get({ url, licence: rec.licence });
 
 // the runtime is passed in, never bundled
 const chat = await loadWllama({ module: await importEsm<WllamaModule>(wllamaUrls().esm), blobs: [gguf] });
@@ -93,7 +96,7 @@ WebLLM gets `{ type: "json_object", schema: "<string>" }` (never json_object wit
 
 ### loading webllm and wllama
 
-`loadWebLLM` walks the context ladder `[want, 8192, 4096, 2048]` (as earlier builds did), with WebLLM's IndexedDB cache on, and names a LinkError or TVMFFI failure as a runtime and model library mismatch. `loadWllama` uses the earlier chat build parameters (n_ctx 6144, top_p .95, top_k 40, min_p .05, penalty_repeat 1.08, cache_prompt) and only counts a load once `getLoadedContextInfo()` returns, naming the last native error otherwise. On file:// import wllama through `importEsm` from `@hackbuild/ai-env`, which swaps its module worker for a classic one.
+`loadWebLLM` walks the context ladder `[want, 8192, 4096, 2048]`, with WebLLM's IndexedDB cache on, and names a LinkError or TVMFFI failure as a runtime and model library mismatch. `loadWllama` uses these defaults (n_ctx 6144, top_p .95, top_k 40, min_p .05, penalty_repeat 1.08, cache_prompt) and only counts a load once `getLoadedContextInfo()` returns, naming the last native error otherwise. On file:// import wllama through `importEsm` from `@hackbuild/ai-env`, which swaps its module worker for a classic one.
 
 ### webllm progress and cache
 
@@ -105,7 +108,7 @@ Every `ChatResult` carries `stats`: `tokens` (from the runtime's usage, "measure
 
 ### prewarm
 
-`engine.prewarm(messages)` evaluates the system text and history into the runtime's prefix cache before the first send. The wllama driver runs a zero token completion with `cache_prompt` on; drivers with no prefix cache return false and call nothing. `PREWARM_DELAY_MS` (1,200 ms, vendor) is the wait after a prompt or model change before prewarming again.
+`engine.prewarm(messages)` evaluates the system text and history into the runtime's prefix cache before the first send. The wllama driver runs a zero token completion with `cache_prompt` on; drivers with no prefix cache return false and call nothing. `PREWARM_DELAY_MS` is the wait after a prompt or model change before prewarming again.
 
 ### sessions moved to converse
 
@@ -155,13 +158,13 @@ No weights ship here; each model keeps its own licence, and you pass it with the
 
 | engine | needs | Chrome | Safari | Firefox | phone |
 |---|---|---|---|---|---|
-| WebLLM | WebGPU | yes (inferred) | unknown | unknown | unknown |
+| WebLLM | WebGPU | yes, Chrome 150 on an Apple M1 (one automated pass) | unknown | unknown | unknown |
 | wllama | WASM; WebGPU when wllama reports it | yes (inferred) | unknown | unknown | unknown |
-| transformers.js | WASM or WebGPU, by `device` | yes (inferred) | unknown | unknown | unknown |
+| transformers.js | WASM or WebGPU, by `device` | yes on WebGPU, Chrome 150 on an Apple M1 (one automated pass); WASM inferred | unknown | unknown | unknown |
 | Prompt API | `LanguageModel` | 148 and later | no | no | unknown |
 | remote | fetch, CORS on the server | yes | yes (inferred) | yes (inferred) | yes (inferred) |
 
-WebLLM is WebGPU only and has no fallback. wllama puts all layers on WebGPU when `isSupportWebGPU()` is true and runs on the CPU otherwise. Whether wllama uses wasm threads is unknown here; it loads from file:// through `importEsm`. No real runtime has run in any browser yet (see below).
+WebLLM is WebGPU only and has no fallback. wllama puts all layers on WebGPU when `isSupportWebGPU()` is true and runs on the CPU otherwise. Whether wllama uses wasm threads is unknown here; it loads from file:// through `importEsm`. WebLLM and transformers.js have run in one automated Chrome pass; the other engines have not run in a browser.
 
 ## Errors and troubleshooting
 
@@ -187,48 +190,34 @@ WebLLM is WebGPU only and has no fallback. wllama puts all layers on WebGPU when
 - [@hackbuild/ai-env](../ai-env/README.md) imports runtime modules with `importEsm`, file:// included.
 - [@hackbuild/models](../models/README.md) picks a chat engine by size through its hub.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here; each model keeps its own licence: Qwen2.5 and SmolLM2 Apache-2.0, Gemma 3 under the Gemma Terms of Use, the Chrome built in model under Chrome's terms and the Google Generative AI Prohibited Use Policy, and remote models under the provider's terms.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/chat` passes 30 tests under Node
-  22.18.0 with fakes for every runtime: role normalization, think
-  splitting one character at a time with no half tag shown, marker
-  stripping, key masking, stop strings across chunks, the loose schema then free text fallback
-  and its memory, abort, OpenAI compatible SSE with reasoning, tool call
-  deltas and usage, retry after a 400, Anthropic SSE with thinking, text,
-  tool input deltas and stop reasons, the WebLLM request shape and context
-  ladder, wllama load parameters and the load check, transformers.js
-  streaming, the Prompt API session shape with both delta and whole text
-  streams.
-- 2026-11-22: the wllama 4.0.0 type files (read from the npm tarball, not
-  run) declare the same `createChatCompletion`, `loadModel`,
-  `getLoadedContextInfo` and `isSupportWebGPU` calls as 3.8.1, and its ESM
-  build still constructs `new Worker(workerURL, { type: "module" })`, the
-  string the file:// patch in `@hackbuild/ai-env` rewrites.
-
-- 2026-11-24: reply stats on a fake clock with and without usage, null
-  first token for an empty reply, prewarm on wllama with the send's
-  normalization and no call on a driver without a cache, session round
-  trip, history hygiene, unversioned import and refusals, markdown,
-  WebLLM phase words, and the WebLLM cache adapter over fake-indexeddb
-  (`test/session.test.ts`).
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/chat` under Node 22.18.0 with fakes for every runtime: role normalization, think splitting one character at a time with no half tag shown, marker stripping, key masking, stop strings across chunks, the loose schema then free text fallback and its memory, abort, OpenAI compatible SSE with reasoning, tool call deltas and usage, retry after a 400, Anthropic SSE with thinking, text, tool input deltas and stop reasons, the WebLLM request shape and context ladder, wllama load parameters and the load check, transformers.js streaming, the Prompt API session shape with both delta and whole text streams | passes 30 tests |
+| 2026-11-22 | the wllama 4.0.0 type files, read from the npm tarball, not run | declare the same `createChatCompletion`, `loadModel`, `getLoadedContextInfo` and `isSupportWebGPU` calls as 3.8.1, and its ESM build still constructs `new Worker(workerURL, { type: "module" })`, the string the file:// patch in `@hackbuild/ai-env` rewrites |
+| 2026-11-23 | WebLLM 0.2.84 and 0.2.89 with Qwen2.5 0.5B Instruct q4f16 in Chrome 150 on an Apple M1, one automated pass nobody looked at | stream, json_object plus schema parsed, ladder settled at 4096; 0.2.84 load 9,355 ms, first token 1,427 ms, 48.2 tokens per s (measured); 0.2.89 from cache load 2,978 ms, first token 1,805 ms, 30 tokens per s (measured) |
+| 2026-11-23 | transformers.js 4.3.2 SmolLM2 360M Instruct q4f16 on webgpu, same pass | stream, and an abort ended the stream 8 ms after the stop (measured); load 9,349 ms, first token 1,163 ms, 37 tokens per s (measured) |
+| 2026-11-24 | `test/session.test.ts`: reply stats on a fake clock with and without usage, null first token for an empty reply, prewarm on wllama with the send's normalization and no call on a driver without a cache, session round trip, history hygiene, unversioned import and refusals, markdown, WebLLM phase words, and the WebLLM cache adapter over fake-indexeddb | passes |
 
 ### Not verified by anything
 
 - Prewarm against a real wllama build: whether `max_tokens: 0` leaves
-  the prompt in the KV prefix and how much it saves (the 0.24 s against
-  5.9 s first token figures are vendor, from a native runtime).
+  the prompt in the KV prefix and how much it saves; the only figures
+  are the vendor's, from a native runtime.
 - `webllmCache` against a real WebLLM 0.2.84 cache; it was checked
   against an entry written in the same layout.
-
-- Any real runtime or model. Not run: WebLLM 0.2.84 or 0.2.89 in Chrome,
-  wllama 4.0.0 or 3.8.1 loading a GGUF from file:// or http, transformers.js
-  4.3.2 text generation, the Prompt API in Chrome 148, a real Ollama or
-  llama.cpp server, the Anthropic API with a real key (including whether
-  `output_config.format` is accepted by the model you name).
-- Whether the WebLLM json_object plus schema request still compiles in
-  XGrammar on 0.2.89.
+- The real runtimes not named in the table. Not run: wllama 4.0.0 or 3.8.1
+  loading a GGUF from file:// or http, the Prompt API in Chrome 148, a real
+  Ollama or llama.cpp server, the Anthropic API with a real key (including
+  whether `output_config.format` is accepted by the model you name).
+- WebLLM and transformers.js in Safari, Firefox or on a phone.
 
 ## Size budget
 
@@ -240,7 +229,3 @@ WebLLM is WebGPU only and has no fallback. wllama puts all layers on WebGPU when
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. No weights ship here; each model keeps its own licence: Qwen2.5 and SmolLM2 Apache-2.0, Gemma 3 under the Gemma Terms of Use, the Chrome built in model under Chrome's terms and the Google Generative AI Prohibited Use Policy, and remote models under the provider's terms.

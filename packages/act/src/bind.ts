@@ -9,7 +9,7 @@
  * gestures; posture clips become postures; idle and talk clips are loops
  * and never enter the vocabulary; locomotion, action and odd clips are
  * left out, so a reply never sets off a walk away or "chop wood" during
- * speech (vendor: earlier builds fixed exactly that with these classes).
+ * speech (vendor).
  *
  * Names. A clip whose name says what it is decides alone; analysis tags
  * only place clips with opaque names (analysis sees the head dip in "sits
@@ -45,7 +45,7 @@ export interface ClipRule {
 
 /**
  * The eight rules, first match wins, narrow rules first. Data: an app adds
- * rules in front for its own library. From earlier builds (vendor).
+ * rules in front for its own library (vendor).
  */
 export const CLIP_RULES: readonly ClipRule[] = [
   // clips that look wrong as everyday motion: stylized walks of life, ones that wander off, fragments of a longer move

@@ -585,7 +585,7 @@ Options for one reply: sampling, stop strings, schema and fallbacks, tools, an a
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-fallbackschemas"></a> `fallbackSchemas?` | [`JsonSchema`](#jsonschema)[] | Looser schemas tried in order when the runtime refuses `schema` (as earlier builds did), before free text. |
+| <a id="property-fallbackschemas"></a> `fallbackSchemas?` | [`JsonSchema`](#jsonschema)[] | Looser schemas tried in order when the runtime refuses `schema` before free text. |
 | <a id="property-maxtokens-3"></a> `maxTokens?` | `number` | - |
 | <a id="property-minp-1"></a> `minP?` | `number` | - |
 | <a id="property-repetitionpenalty-2"></a> `repetitionPenalty?` | `number` | - |

@@ -1,5 +1,5 @@
 /**
- * The state behind ChatPane and Composer, after the earlier chat tools: a
+ * The state behind ChatPane and Composer: a
  * thread of turns, one live reply streamed from a @hackbuild/chat engine
  * with its reasoning kept apart for the think fold, the memory each reply
  * used, stop, regenerate, and a markdown export. Framework free.

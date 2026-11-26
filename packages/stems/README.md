@@ -4,6 +4,8 @@ Split a song into drums, bass, other and vocals with htdemucs, in the tab.
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/stems)](https://www.npmjs.com/package/@hackbuild/stems) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 2.4 kB measured](https://img.shields.io/badge/gzip-2.4%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
+Browser status: no model run of this package has been verified in a real browser yet.
+
 ## What it does
 
 - Registers two htdemucs tiers with the models hub; onnxruntime-web runs them through `@hackbuild/devices`.
@@ -14,7 +16,7 @@ Split a song into drums, bass, other and vocals with htdemucs, in the tab.
 ## Install
 
 ```sh
-npm install @hackbuild/stems
+npm install @hackbuild/stems @hackbuild/media @hackbuild/weights
 ```
 
 It depends on `@hackbuild/models`, `@hackbuild/devices` and `@hackbuild/audio-dsp`. It has no peer dependencies: onnxruntime-web 1.27.0 loads at runtime through `loadOrt` in `@hackbuild/devices`, and you open the weight store with `@hackbuild/weights`.
@@ -23,23 +25,24 @@ It depends on `@hackbuild/models`, `@hackbuild/devices` and `@hackbuild/audio-ds
 
 ```ts
 import { loadOrt, ortProvider } from "@hackbuild/devices";
+import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
 import { attachStems, separate } from "@hackbuild/stems";
 import { openWeightStore } from "@hackbuild/weights";
 
-// a hub with the htdemucs records (weights MIT); onnxruntime-web loads at runtime
+// a hub with the htdemucs records (weights MIT, stated from the record); onnxruntime-web loads at runtime, weights go through the store
 const hub = createHub();
 attachStems(hub);
-const store = await openWeightStore();
-hub.provide("ort", ortProvider({ runtime: loadOrt(), store }).factory);
+hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore() }).factory);
 
-// a 44.1 kHz stereo mix, for example from decodeAudio in @hackbuild/media
-const left = new Float32Array(44100 * 10);
-const right = new Float32Array(44100 * 10);
-
-// separate on the fast tier, with progress per segment
-const { stems, rtf } = await separate(hub, left, right, { model: "htdemucs-fast", onProgress: (p) => console.log(`segment ${p.done} of ${p.total}`) });
-console.log(`vocals ${stems.vocals.left.length} samples, ${rtf.toFixed(2)}x realtime`);
+// a picked song at 44.1 kHz stereo, separated on the fast tier with progress per segment
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const { channels } = await decodeAudio(input.files![0]!, 44100);
+  const left = channels[0]!;
+  const { stems, rtf } = await separate(hub, left, channels[1] ?? left, { model: "htdemucs-fast", onProgress: (p) => console.log(`segment ${p.done} of ${p.total}`) });
+  console.log(`vocals ${stems.vocals.left.length} samples, ${rtf.toFixed(2)}x realtime`);
+};
 ```
 
 ## Live example
@@ -54,7 +57,7 @@ Every tier is the same network. The fast tier is the fp16 weights export at 10 p
 
 ### segments and overlap add
 
-Segments are 343980 samples (7.8 s at 44.1 kHz). Crossfades are linear over min(S minus stride, S / 4), with weights floored at 1e-4. Resample to 44.1 kHz first when the source rate differs. `rtf` is audio seconds per wall second (computed).
+Segments are 343980 samples (7.8 s at 44.1 kHz). Crossfades are linear over min(S minus stride, S / 4), with weights floored at 1e-4. Resample to 44.1 kHz first when the source rate differs. `rtf` is audio seconds per wall second.
 
 ### the ort ladder
 
@@ -114,24 +117,26 @@ Without WebGPU the ladder falls to wasm. A worker path for wasm is not built; ru
 - [@hackbuild/devices](../devices/README.md) provides the ort factory and ladder.
 - [@hackbuild/notes](../notes/README.md) and [@hackbuild/transcribe](../transcribe/README.md) take a stem after separation.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The htdemucs weights are MIT; the StemSplitio export's own terms are not checked. They are not part of this package.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-22: `npx vitest run packages/stems` passes 3 tests under Node
-  22.18.0 with fakes: tiers and licences, stub separation whose stems sum
-  back to the mix across segment seams, an ort record through a fake
-  session picking the time domain output, and the refusal of two input
-  exports.
+| date | check | result |
+|---|---|---|
+| 2026-11-22 | `npx vitest run packages/stems` under Node 22.18.0 with fakes: tiers and licences, stub separation whose stems sum back to the mix across segment seams, an ort record through a fake session picking the time domain output, and the refusal of two input exports | passes 3 tests |
 
 ### Not verified by anything
 
 - htdemucs in a browser on webgpu or wasm; separation quality; realtime
   factors.
-- The earlier stem splitter medium tier (the demucs-web embedded graph with a spectrogram
-  input): not built, since its STFT branch is not written here.
-- A worker path for wasm (an earlier stem splitter ran wasm in a blob module worker): not
-  built; run the call inside a worker with the single file build.
+- A medium tier on the demucs-web embedded graph with a spectrogram
+  input: not built, since its STFT branch is not written here.
+- A worker path for wasm: not built; run the call inside a worker with
+  the single file build.
 
 ## Size budget
 
@@ -143,7 +148,3 @@ Without WebGPU the ladder falls to wasm. A worker path for wasm is not built; ru
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. The htdemucs weights are MIT; the StemSplitio export's own terms are not checked. They are not part of this package.

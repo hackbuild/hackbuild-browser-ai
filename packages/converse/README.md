@@ -15,10 +15,10 @@ Run a conversation over a streaming chat engine with the history rules small mod
 ## Install
 
 ```sh
-npm install @hackbuild/converse
+npm install @hackbuild/converse @hackbuild/chat
 ```
 
-It depends on `@hackbuild/memory`, which installs with it. No peers. The engine, director and speaker are taken by shape, so it imports none of `@hackbuild/chat`, `@hackbuild/act` or `@hackbuild/speak`; install the ones you use.
+It depends on `@hackbuild/memory`, which installs with it. No peers. The engine, director and speaker are taken by shape, so it imports none of `@hackbuild/chat`, `@hackbuild/act` or `@hackbuild/speak`; install the ones you use. The quick start uses the scripted engine of `@hackbuild/chat`.
 
 ## Quick start
 
@@ -63,7 +63,7 @@ The engine, director and speaker are taken by shape (`ConverseEngine`, `Director
 
 - A reply with no letter or digit stays out of the next request: small models copy it.
 - A leading assistant greeting is shown and never sent, so the request starts with a user turn.
-- The raw reply, tags and all, goes back into history; the visible text is the director's output. With tags stripped, small models stop tagging within a few turns (vendor, from an earlier build).
+- The raw reply, tags and all, goes back into history; the visible text is the director's output. With tags stripped, small models stop tagging within a few turns.
 - `historyLimit` keeps the newest messages, never fewer than 2, and reaches back to the user turn a kept reply answers.
 - An empty reply is removed. A failed reply stays with `error` and is left out of the next request. An abort is neither: a partial reply is kept, an empty one removed.
 
@@ -81,7 +81,7 @@ With no speaker, the cues the voice never reached fire when the reply ends. `spe
 
 ### the store
 
-`createChatStore(sink, { debounceMs, timers })` saves nothing until `markRestored()`, waits 600 ms (vendor, from an earlier build) after the last change, and leaves out a reply still waiting for its first word. The conversation drives the store when given a `sink`, and `restore()` marks it restored.
+`createChatStore(sink, { debounceMs, timers })` saves nothing until `markRestored()`, waits `SAVE_DEBOUNCE_MS` after the last change, and leaves out a reply still waiting for its first word. The conversation drives the store when given a `sink`, and `restore()` marks it restored.
 
 ## API overview
 
@@ -130,21 +130,18 @@ All of these are `SessionError` except the last, which is set on the failed repl
 - [@hackbuild/act](../act/README.md) gives the director that takes cue tags out of the visible text.
 - [@hackbuild/speak](../speak/README.md) gives the speaker whose progress calls `reached`.
 
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.
+
 ## What is verified, and what is not
 
 ### Verified on this machine
 
-- 2026-11-24: `npx vitest run packages/converse` passes, 15 tests, in
-  Node 22.18.0, with the scripted engine of `@hackbuild/chat` and fake
-  directors, speakers and sinks: a wordless reply absent from the next
-  request, the greeting left out, the raw tagged reply sent back, the cap
-  with its floor, an empty reply removed and a failed one kept with its
-  flag, an abort with and without a partial reply, redo, edit, stats and
-  tool calls, no save before restore, no save of a pending empty reply,
-  cues fired at the end with no speaker, cues replayed at the same
-  offsets, memory and seen lines under their turn with the system text
-  byte equal, and a session round trip.
-- A `ChatEngine` type checks as a `ConverseEngine` (tsc on the test file).
+| date | check | result |
+|---|---|---|
+| 2026-11-24 | `npx vitest run packages/converse` in Node 22.18.0, with the scripted engine of `@hackbuild/chat` and fake directors, speakers and sinks: a wordless reply absent from the next request, the greeting left out, the raw tagged reply sent back, the cap with its floor, an empty reply removed and a failed one kept with its flag, an abort with and without a partial reply, redo, edit, stats and tool calls, no save before restore, no save of a pending empty reply, cues fired at the end with no speaker, cues replayed at the same offsets, memory and seen lines under their turn with the system text byte equal, and a session round trip | passes, 15 tests |
+| 2026-11-24 | a `ChatEngine` type checks as a `ConverseEngine` (tsc on the test file) | passes |
 
 ### Not verified by anything
 
@@ -162,7 +159,3 @@ All of these are `SessionError` except the last, which is set on the failed repl
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
-
-## Changelog and licences
-
-Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. This package uses no model and no weights.

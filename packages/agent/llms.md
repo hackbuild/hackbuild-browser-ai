@@ -559,10 +559,11 @@ for (const d of chain.lastDrops) inspector.push(dropLine(d), d.raw);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a model runtime into the agent. The agent loads no runtime and no weights; pass a `ChatEngine` from `@hackbuild/chat` as `brain`, or `brain: null` to run the reflex brain and goal planners alone.
+- You throw a plain `Error` from a tool for an expected failure. Throw `ToolError` with a first person sentence such as `i do not see a mug here.`; that text is what the model reads next.
+- You leave `rng` unset and every free tick picks the first `idle` plan. Pass a seeded `rng` to `createAgent` when you give it `idle` plans.
+- You set `mode: "reflex"` without a `reflex`. Give it a `Reflex` with `add(pattern, steps)` rules; with no brain, requests the rules cannot map end the turn as `no-brain`.
+- You read only the spoken text after `handle`. Check `turn.ended` too: `failures`, `repeat`, `steps` and `guard` mean the turn stopped early, and `turn.results` holds each step's text.
 
 ## Errors this package throws
 

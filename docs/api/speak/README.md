@@ -756,7 +756,7 @@ getChannelData(c): Float32Array;
 ### CloneOptions
 
 Voice clone reference preparation: mono in, linear resample to 24 kHz,
-cut to 15 s, peak normalized to 0.9 (earlier builds' settings). The
+cut to 15 s, peak normalized to 0.9. The
 reference audio is always the caller's; this package ships none.
 
 #### Properties
@@ -819,7 +819,7 @@ The kokoro-js loader, model id, device, voice and the GPL phonemizer opt in for 
 | Property | Type | Description |
 | ------ | ------ | ------ |
 | <a id="property-allowgplphonemizer"></a> `allowGplPhonemizer?` | `boolean` | kokoro-js phonemizes through eSpeak NG, which is GPL-3.0-or-later. The engine refuses to load until the caller sets this, after reading KOKORO_GPL_NOTICE. No non-GPL phonemizer for kokoro-js is known on 2026-11-23. |
-| <a id="property-device"></a> `device?` | `"webgpu"` \| `"wasm"` | "webgpu" runs fp32, "wasm" runs q8 (webgpu with q8 gave garbled audio in an earlier build). Default wasm. |
+| <a id="property-device"></a> `device?` | `"webgpu"` \| `"wasm"` | "webgpu" runs fp32, "wasm" runs q8 (webgpu with q8 gives garbled audio). Default wasm. |
 | <a id="property-model"></a> `model?` | `string` | onnx-community/Kokoro-82M-v1.0-ONNX, weights Apache-2.0. |
 | <a id="property-runtime-1"></a> `runtime` | () => `Promise`\<[`KokoroModule`](#kokoromodule)\> | Loads kokoro-js, e.g. runtimeLoader(["https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm"]) from @hackbuild/devices. |
 | <a id="property-voice-3"></a> `voice?` | `string` | - |
@@ -1154,7 +1154,7 @@ Build base, hashes, patch strictness, chunk gap, load timeout, voice and worker 
 | <a id="property-base"></a> `base?` | `string` | - |
 | <a id="property-chunkgapsec"></a> `chunkGapSec?` | `number` | - |
 | <a id="property-cleartimeout"></a> `clearTimeout?` | (`h`) => `void` | - |
-| <a id="property-loadtimeoutms"></a> `loadTimeoutMs?` | `number` | How long to wait for `loaded`. Default 420 s (earlier builds' figure). |
+| <a id="property-loadtimeoutms"></a> `loadTimeoutMs?` | `number` | How long to wait for `loaded`. Default 420 s. |
 | <a id="property-settimeout"></a> `setTimeout?` | (`fn`, `ms`) => `unknown` | Timer for the load timeout. |
 | <a id="property-sha256"></a> `sha256?` | `object` | SHA-256 of inference-worker.js and sentencepiece.js. Default POCKET_SHA256 for the default base. With another base and no hashes the scripts run unchecked, which the load reports. |
 | `sha256.sentencepiece` | `string` | - |

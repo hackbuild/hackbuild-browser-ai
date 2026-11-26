@@ -27,7 +27,7 @@ No dependencies and no peers. It runs no model and fetches nothing.
 function decodeAudio(data: ArrayBuffer | Blob, sampleRate?: number, Ctx?: OfflineCtor): Promise<DecodedAudio>
 ```
 
-Decode and resample with the browser's decoder (as earlier builds did).
+Decode and resample with the browser's decoder.
 
 ```ts
 interface DecodedAudio {
@@ -103,30 +103,36 @@ Sample times for a video of `duration` seconds every `step` seconds, inside the 
 ### quick start
 
 ```ts
-import { decodeAudio, lumaHistogram, pickKeyframes, record } from "@hackbuild/media";
+import { decodeAudio, lumaHistogram, pickKeyframes, sampleTimes } from "@hackbuild/media";
 
-// audio at 16 kHz for speech to text, from a file the user dropped
-const file = new File([], "clip.mp4");
-const { channels, duration } = await decodeAudio(file, 16000);
-console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
-
-// keyframes from frames you sampled off a video into RGBA pixels
-const frames: { t: number; rgba: Uint8ClampedArray }[] = [];
-const keys = pickKeyframes(frames.map((f) => ({ t: f.t, hist: lumaHistogram(f.rgba) })), { threshold: 0.3, maxGap: 10, max: 12 });
-console.log("keyframes at", keys.map((i) => frames[i]?.t));
-
-// record a canvas for five seconds
-const canvas = document.querySelector("canvas")!;
-const rec = record(canvas.captureStream(30));
-setTimeout(async () => console.log("recorded", rec.mimeType, (await rec.stop()).size, "bytes"), 5000);
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const file = input.files![0]!;
+  const { channels, duration } = await decodeAudio(file, 16000); // the audio at 16 kHz for speech to text
+  console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
+  // one small frame a second off a video element, then keyframes by scene change
+  const video = Object.assign(document.createElement("video"), { src: URL.createObjectURL(file), muted: true });
+  await new Promise((r) => (video.onloadeddata = r));
+  const g = new OffscreenCanvas(64, 36).getContext("2d")!;
+  const frames: { t: number; hist: Float32Array }[] = [];
+  for (const t of sampleTimes(video.duration, 1)) {
+    video.currentTime = t;
+    await new Promise((r) => (video.onseeked = r));
+    g.drawImage(video, 0, 0, 64, 36);
+    frames.push({ t, hist: lumaHistogram(g.getImageData(0, 0, 64, 36).data) });
+  }
+  console.log("keyframes at", pickKeyframes(frames, { threshold: 0.3, maxGap: 10, max: 12 }).map((i) => frames[i]!.t));
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You call `decodeAudio` in a worker and get `no OfflineAudioContext here. decode on the page, not in a worker.` Decode on the page and post the channels to the worker, or pass an OfflineAudioContext constructor as the third argument in tests.
+- You decode at the file's own rate and resample later. Pass the rate the model wants as the second argument: `decodeAudio(file, 16000)` for speech models, 44100 for @hackbuild/stems, 22050 for @hackbuild/notes.
+- You mix the channels yourself and lose one. `decodeAudio` keeps every channel in `channels`; pick or mix them where you use them, for example with `toMono` from @hackbuild/transcribe.
+- You expect mkv or avi to decode everywhere. This package adds no demuxer, so a file decodes only when the browser plays it in a video tag; catch `this browser will not decode the audio track (...)` and ask for mp4, webm, mp3 or wav.
+- You pass `pickKeyframes` raw pixels. Give it `{ t, hist }` per frame, where `hist` is `lumaHistogram(rgba)`; it returns indices into your frames, and `sampleTimes(duration, step)` gives the times to seek to.
+- You start `record` without a MediaRecorder check. It throws `no MediaRecorder in this browser. recording is off.`; hide the record control and say why, and read `mimeType` for the type it chose.
 
 ## Errors this package throws
 

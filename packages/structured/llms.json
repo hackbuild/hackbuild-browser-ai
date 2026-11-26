@@ -1,0 +1,9 @@
+{
+  "mistakes": [
+    "This package loads no runtime and no weights. Pass a `ChatEngine` from `@hackbuild/chat` to `call`; the runtime and the weight licence belong to that engine.",
+    "`call` does not throw on a reply it cannot parse. Check `d.tool`, which is `null` when nothing usable came back, and `d.fallback`, which says `loose` or `text` when the strict schema was refused.",
+    "Create one `createGuards()` per run and pass the same object to every `call`. Stop the loop when `d.stop` is set; it names `parse-fails`, `repeat`, `garbage` or `pushbacks`, and `guards.reset()` starts over.",
+    "`mode: \"auto\"` picks native only when you pass `quirks.nativeTools` and the engine has tools, then constrained when the engine takes schemas, then prompt with `quirks.toolCallTags`, else lines. Pass the model's quirks or name the mode.",
+    "A reply with no tool becomes the `respond_to_user` tool with `{ message }`, and its text is in `d.say`. Handle that tool name instead of treating it as a missing tool, or pass `respond: false` to leave it out."
+  ]
+}

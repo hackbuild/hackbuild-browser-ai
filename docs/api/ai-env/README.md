@@ -252,7 +252,7 @@ Options for `probe`: the globals to read, the timeout for adapter and OPFS calls
 | Property | Type | Description |
 | ------ | ------ | ------ |
 | <a id="property-globals"></a> `globals?` | [`ProbeGlobals`](#probeglobals) | - |
-| <a id="property-maxthreads"></a> `maxThreads?` | `number` | Upper bound for threads when isolated. Default 4 (as earlier builds did). |
+| <a id="property-maxthreads"></a> `maxThreads?` | `number` | Upper bound for threads when isolated. Default 4. |
 | <a id="property-timeoutms"></a> `timeoutMs?` | `number` | Give up on requestAdapter or getDirectory after this many ms. Default 3000. |
 
 ***
@@ -659,7 +659,7 @@ function toClassicWorker(src): object;
 ```
 
 Turn module workers into classic workers: Chrome refuses module workers
-from a file:// page (as earlier builds did). Other option keys
+from a file:// page. Other option keys
 are kept. Returns the text and how many constructors changed.
 
 #### Parameters

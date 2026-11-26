@@ -2,8 +2,7 @@
  * WebLLM (MLC) engine. WebGPU only. The caller passes the imported module
  * or an engine it built; this file imports nothing from WebLLM, so the
  * runtime stays an optional peer. Pinned against @mlc-ai/web-llm 0.2.84
- * (the version three builds ran; an earlier chat build warned that a newer
- * release broke it, so recheck 0.2.89 before moving the pin). Model weights
+ * (recheck 0.2.89 before moving the pin). Model weights
  * come from the MLC catalog and keep each model's own licence; name it in
  * the model record.
  */
@@ -40,7 +39,7 @@ const FINISH: Record<string, Finish> = { stop: "stop", length: "length", tool_ca
 export interface WebLLMDriverOptions {
   engine: MLCEngineLike;
   modelId: string;
-  /** Native tools: only the Hermes 2 Pro and Hermes 3 builds (as earlier builds did). tool_choice "required" is not sent. */
+  /** Native tools: only the Hermes 2 Pro and Hermes 3 builds. tool_choice "required" is not sent. */
   nativeTools?: boolean;
 }
 
@@ -108,7 +107,7 @@ export function webllmDriver(o: WebLLMDriverOptions): Driver {
 export interface LoadWebLLMOptions extends EngineOptions {
   module: WebLLMModule;
   modelId: string;
-  /** Wanted context window; the loader walks [want, 8192, 4096, 2048] filtered to at most want (as earlier builds did). */
+  /** Wanted context window; the loader walks [want, 8192, 4096, 2048] filtered to at most want. */
   contextWindow?: number;
   /** Custom catalog entries ({ model, model_id, model_lib }) added before the prebuilt list. */
   customModels?: unknown[];

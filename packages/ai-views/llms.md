@@ -539,7 +539,7 @@ A transcript export format: txt, srt, vtt or json.
 const FACE_API_BASE: "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/"
 ```
 
-face-api weights (MIT) as an earlier face swap tool loaded them, from the package CDN.
+Base URL of the face-api weights (MIT) on the package CDN.
 
 ```ts
 function fitMap(src: { h: number; w: number }, view: { h: number; w: number }, fit?: "cover" | "contain"): { dx: number; dy: number; scale: number }
@@ -1117,10 +1117,11 @@ const thread = chatThread({ engine });
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a model runtime into a view or expect a picker to start one. A pick loads only through the `loader` you pass to `useModelPick`; with none it throws `no loader for <id>: pass one to useModelPick, such as weightsLoader(store)`. Bring the runtime in with `importEsm` from @hackbuild/ai-env and start it inside your loader.
+- You pass `weightsLoader(store)` for a record that loads through its runtime, such as a WebLLM row. It fetches only records with a `source.url` or a repo and files, under `rec.licence`, and throws `<label> loads through its runtime. the page passes a loader for it.` for the rest; write your own loader for those.
+- You expect the elements to exist after import. Nothing registers on import; call `define()` once, or `define("hb")` for `<hb-model-select>`, from `@hackbuild/ai-views/elements`.
+- You style the views locally or leave the stylesheet out. They draw in light DOM with the page's hackbuild-ui stylesheet, so load that stylesheet and install @virgilvox/hackbuild-ui as the required peer.
+- You import `@hackbuild/ai-views/vue` on a page without Vue. Only that entry imports Vue, an optional peer; the main entry is node safe state and `/elements` needs no framework.
 
 ## Errors this package throws
 

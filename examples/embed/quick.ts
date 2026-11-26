@@ -1,10 +1,10 @@
-import { staticEmbedder, VectorIndex } from "@hackbuild/embed";
+import { EMBED_RECORDS, staticEmbedder, VectorIndex } from "@hackbuild/embed";
 import { openWeightStore } from "@hackbuild/weights";
 
-// potion-base-8M, weights MIT, fetched once and cached by the weight store
-const base = "https://huggingface.co/minishlab/potion-base-8M/resolve/main/";
+// potion-base-8M; its record gives the pinned base URL and the weight licence, the weight store caches each file
+const rec = EMBED_RECORDS.find((r) => r.id === "potion-base-8m")!;
 const store = await openWeightStore();
-const get = (file: string) => store.once({ url: base + file, licence: "MIT" });
+const get = (file: string) => store.once({ url: rec.source.url + file, licence: rec.licence });
 const dec = new TextDecoder();
 const e = staticEmbedder({ name: "potion-base-8M", tokenizer: dec.decode(await get("tokenizer.json")), weights: await get("model.safetensors"), config: dec.decode(await get("config.json")) });
 

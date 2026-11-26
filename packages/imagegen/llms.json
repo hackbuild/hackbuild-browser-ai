@@ -1,0 +1,10 @@
+{
+  "mistakes": [
+    "You import `onnxruntime-web` statically. Provide it through the hub with `hub.provide(\"ort\", ortProvider({ runtime: loadOrt(), store }).factory)` from @hackbuild/devices, and onnxruntime-web loads at run time from its pinned URL.",
+    "You fetch the three graphs yourself. Pass `store: await openWeightStore()` to `ortProvider`, call `attachImagegen(hub)`, then `loadImagegen(hub, { id: \"sd-turbo\" })`; the graphs load from the Hugging Face hub and the weight store caches them. Read the weight licence from `gen.record.licence`, since SD-Turbo here bars commercial use.",
+    "You call `generate` without a tokenizer. It takes a `ClipTokenize` you build, for example the CLIP tokenizer from `loadTransformers()` padded to 77 ids, then the request with `prompt` and `seed`.",
+    "You offer image generation where there is no WebGPU adapter. The records have only a WebGPU rung and no wasm fallback, so check the adapter first and disable the load button without one.",
+    "You pass a size the model does not make. `applyForm` refuses it with a `FormError` (\"this model makes 512 pixel images, not ...\") whose message you can show as is; read the sizes from `gen.form.sizes`.",
+    "You keep the model loaded after the user leaves the generator. Call `gen.release()` so the hub can drop the graphs under its memory budget."
+  ]
+}
