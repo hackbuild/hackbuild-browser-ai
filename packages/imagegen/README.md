@@ -2,7 +2,7 @@
 
 Generate an image from a prompt in your tab with SD-Turbo, SD 1.5 or SDXL-Turbo on onnxruntime-web WebGPU, seeded so the same seed gives the same start.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/imagegen)](https://www.npmjs.com/package/@hackbuild/imagegen) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.2 kB measured](https://img.shields.io/badge/gzip-6.2%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/imagegen)](https://www.npmjs.com/package/@hackbuild/imagegen) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 8.3 kB measured](https://img.shields.io/badge/gzip-8.3%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet.
 
@@ -225,8 +225,8 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 6,201 bytes | 6,511 bytes |
-| `dist/single/index.iife.js` (single file build) | 5,842 bytes | 6,134 bytes |
+| `dist/index.js` (main entry, imports external) | 8,273 bytes | 8,686 bytes |
+| `dist/single/index.iife.js` (single file build) | 7,985 bytes | 8,384 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

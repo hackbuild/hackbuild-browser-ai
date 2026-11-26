@@ -4,6 +4,30 @@ Versions follow semver per package. Nothing is published to npm yet.
 
 ## 0.1.0 (unreleased)
 
+### Explorer libraries, 2026-11-25
+
+- models 0.2.1 to 0.2.2: `phi-4-mini-reasoning-gguf`, Phi-4 mini
+  reasoning on five wllama shards (2349 MiB, vendor; MIT), pinned.
+- vision 0.1.3 to 0.2.0: `detectAt(hub, image, "n" | "s" | "m")` over
+  the YOLOv10 records with the end to end decode (`decodeYoloEnd2End`)
+  and NMS; `segmentEverything` and `decodeFastSam` (prototype masks,
+  class agnostic NMS) returning `Instance` rows, `instanceAt`; the
+  `./select` subpath re-exports the hackbuild-ui wand, flood, lasso,
+  polygon, rectangle and ellipse rasterisers as vision masks
+  (hackbuild-ui 0.10 an optional peer); `edgeMask`, `thresholdMask`,
+  `autoThresholdMask`, `colourClusters`, `clusterMask`; `exportInstances`
+  writes cutout and mask PNGs and a JSON of boxes.
+- imagegen 0.1.3 to 0.2.0: `generateXl` runs SDXL-Turbo (two encoders,
+  pooled embeddings, time ids, fp16 edges); the `sdxl-turbo` record
+  names the real `onnx/*_q4f16.onnx` files and loads by id through
+  `loadImagegen`. It stays listed as not run yet.
+- depth-mesh 0.1.2 to 0.2.0: `toThreeMf` writes multi colour 3MF in
+  the Orca and Bambu dialect with an extruder per part; `reliefParts`
+  cuts a relief by height bands or masks; `glbMesh`, `modelDepth` and
+  `depthImage` give the photo path a depth map from a posed GLB.
+- ai-views, devices, embed, listen, notes, speak, stems, transcribe: the
+  models, vision and imagegen pins move with them.
+
 ### Planner no answer, 2026-11-24
 
 - agent 0.1.1 to 0.1.2: the planner chain drops a tier whose every reply

@@ -2,7 +2,7 @@
 
 Turn a depth map, a photo or turntable silhouettes into a closed solid you can print, with a Rust wasm core that runs in your tab.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/depth-mesh)](https://www.npmjs.com/package/@hackbuild/depth-mesh) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 8.5 kB measured](https://img.shields.io/badge/gzip-8.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/depth-mesh)](https://www.npmjs.com/package/@hackbuild/depth-mesh) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 16.5 kB measured](https://img.shields.io/badge/gzip-16.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: no model run of this package has been verified in a real browser yet.
 
@@ -239,9 +239,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 8,508 bytes | 8,933 bytes |
+| `dist/index.js` (main entry, imports external) | 16,507 bytes | 17,332 bytes |
 | `wasm/depth-mesh.wasm` | 23,546 bytes | 24,723 bytes |
-| `dist/single/index.iife.js` (single file build) | 8,394 bytes | 8,813 bytes |
+| `dist/single/index.iife.js` (single file build) | 16,009 bytes | 16,809 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

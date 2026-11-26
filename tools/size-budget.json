@@ -39,9 +39,9 @@
       "dist/single/index.iife.js": 7659
     },
     "@hackbuild/depth-mesh": {
-      "main: dist/index.js bundled": 8508,
+      "main: dist/index.js bundled": 16507,
       "wasm/depth-mesh.wasm": 23546,
-      "dist/single/index.iife.js": 8394
+      "dist/single/index.iife.js": 16009
     },
     "@hackbuild/devices": {
       "main: dist/index.js bundled": 7219,
@@ -52,8 +52,8 @@
       "dist/single/index.iife.js": 33786
     },
     "@hackbuild/imagegen": {
-      "main: dist/index.js bundled": 6201,
-      "dist/single/index.iife.js": 5842
+      "main: dist/index.js bundled": 8273,
+      "dist/single/index.iife.js": 7985
     },
     "@hackbuild/listen": {
       "main: dist/index.js bundled": 7274,
@@ -69,8 +69,8 @@
       "dist/single/index.iife.js": 14272
     },
     "@hackbuild/models": {
-      "main: dist/index.js bundled": 42772,
-      "dist/single/index.iife.js": 42279
+      "main: dist/index.js bundled": 43337,
+      "dist/single/index.iife.js": 42879
     },
     "@hackbuild/notes": {
       "main: dist/index.js bundled": 5572,
@@ -93,8 +93,8 @@
       "dist/single/index.iife.js": 18516
     },
     "@hackbuild/vision": {
-      "main: dist/index.js bundled": 23813,
-      "dist/single/index.iife.js": 54219
+      "main: dist/index.js bundled": 29464,
+      "dist/single/index.iife.js": 59934
     },
     "@hackbuild/weights": {
       "main: dist/index.js bundled": 9327,

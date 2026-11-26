@@ -2,7 +2,7 @@
 
 Describe each model once, with its runtime, device ladder, size and weight licence, and let a hub load the one that fits this machine.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/models)](https://www.npmjs.com/package/@hackbuild/models) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 42.8 kB measured](https://img.shields.io/badge/gzip-42.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/models)](https://www.npmjs.com/package/@hackbuild/models) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 43.3 kB measured](https://img.shields.io/badge/gzip-43.3%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: model runs through this package's hub have been verified in a real browser on the vision and transcribe pages: Depth Anything v2 small on webgpu and wasm, also under the hub's frame budget schedule, LFM2-VL 450M, EfficientDet Lite0, SlimSAM 77, SmolVLM 256M and whisper-base.en. That was one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. The rest has not run, including every `CATALOG` ladder.
 
@@ -236,8 +236,8 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 42,772 bytes | 44,910 bytes |
-| `dist/single/index.iife.js` (single file build) | 42,279 bytes | 44,392 bytes |
+| `dist/index.js` (main entry, imports external) | 43,337 bytes | 45,503 bytes |
+| `dist/single/index.iife.js` (single file build) | 42,879 bytes | 45,022 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than

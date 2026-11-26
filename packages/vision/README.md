@@ -2,7 +2,7 @@
 
 Get depth, objects, masks, landmarks and captions from an image or a webcam in your tab, through one models hub that shares the GPU with your scene.
 
-[![npm](https://img.shields.io/npm/v/@hackbuild/vision)](https://www.npmjs.com/package/@hackbuild/vision) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 23.8 kB measured](https://img.shields.io/badge/gzip-23.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
+[![npm](https://img.shields.io/npm/v/@hackbuild/vision)](https://www.npmjs.com/package/@hackbuild/vision) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 29.5 kB measured](https://img.shields.io/badge/gzip-29.5%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
 Browser status: Depth Anything V2 small on webgpu and wasm, the EfficientDet detector on a still frame, SmolVLM 256M and LFM2-VL 450M captions and SlimSAM point masks ran in one automated pass in Chrome 150 on an Apple M1 that nobody has looked at. The webcam landmarkers, the person segmenter, YOLO, and every other browser and device have not run.
 
@@ -304,8 +304,8 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 23,813 bytes | 25,003 bytes |
-| `dist/single/index.iife.js` (single file build) | 54,219 bytes | 56,929 bytes |
+| `dist/index.js` (main entry, imports external) | 29,464 bytes | 30,937 bytes |
+| `dist/single/index.iife.js` (single file build) | 59,934 bytes | 62,930 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
