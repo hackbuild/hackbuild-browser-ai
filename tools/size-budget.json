@@ -82,7 +82,7 @@
     },
     "@hackbuild/stems": {
       "main: dist/index.js bundled": 2382,
-      "dist/single/index.iife.js": 30187
+      "dist/single/index.iife.js": 30452
     },
     "@hackbuild/structured": {
       "main: dist/index.js bundled": 9352,
