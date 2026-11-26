@@ -64,9 +64,9 @@
       "dist/single/index.iife.js": 2059
     },
     "@hackbuild/memory": {
-      "main: dist/index.js bundled": 14008,
+      "main: dist/index.js bundled": 14002,
       "wasm/memory.wasm": 41134,
-      "dist/single/index.iife.js": 14272
+      "dist/single/index.iife.js": 14266
     },
     "@hackbuild/models": {
       "main: dist/index.js bundled": 43337,
@@ -105,8 +105,8 @@
       "dist/single/index.iife.js": 5988
     },
     "@hackbuild/ai-views": {
-      "main: dist/index.js bundled": 16915,
-      "dist/single/elements.iife.js": 86306
+      "main: dist/index.js bundled": 20078,
+      "dist/single/elements.iife.js": 95538
     }
   }
 }

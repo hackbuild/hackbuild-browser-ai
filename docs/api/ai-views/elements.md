@@ -757,6 +757,175 @@ set(rec): void;
 
 ***
 
+### MemoryLike
+
+What a memory pane needs from a store; a `Memory` from @hackbuild/memory fits.
+
+#### Methods
+
+##### add()
+
+```ts
+add(text, o?): Promise<unknown>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+| `o?` | \{ `kind?`: `"note"` \| `"episode"` \| `"gist"` \| `"lesson"` \| `"fact"` \| `"rule"` \| `"lore"` \| `"doc"`; `meta?`: `Record`\<`string`, `unknown`\>; `section?`: `string`; \} |
+| `o.kind?` | `"note"` \| `"episode"` \| `"gist"` \| `"lesson"` \| `"fact"` \| `"rule"` \| `"lore"` \| `"doc"` |
+| `o.meta?` | `Record`\<`string`, `unknown`\> |
+| `o.section?` | `string` |
+
+###### Returns
+
+`Promise`\<`unknown`\>
+
+##### all()
+
+```ts
+all(): StoredItem[];
+```
+
+###### Returns
+
+`StoredItem`[]
+
+##### edit()
+
+```ts
+edit(id, patch): Promise<unknown>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `id` | `number` |
+| `patch` | `EditPatch` |
+
+###### Returns
+
+`Promise`\<`unknown`\>
+
+##### export()
+
+```ts
+export(): ExportData;
+```
+
+###### Returns
+
+`ExportData`
+
+##### import()
+
+```ts
+import(data, o?): Promise<number>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `data` | `ExportData` |
+| `o?` | \{ `replace?`: `boolean`; \} |
+| `o.replace?` | `boolean` |
+
+###### Returns
+
+`Promise`\<`number`\>
+
+##### recall()
+
+```ts
+recall(q, o?): Promise<Recall>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `q` | `string` |
+| `o?` | \{ `k?`: `number`; \} |
+| `o.k?` | `number` |
+
+###### Returns
+
+`Promise`\<`Recall`\>
+
+##### remove()
+
+```ts
+remove(ids): Promise<void>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `ids` | `number`[] |
+
+###### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### MemoryPaneHandle
+
+A memory pane over a host: `refresh` after the store changes elsewhere, `used` to mark what the last reply used.
+
+#### Extends
+
+- `Mounted`
+
+#### Methods
+
+##### dispose()
+
+```ts
+dispose(): void;
+```
+
+###### Returns
+
+`void`
+
+###### Inherited from
+
+`Mounted.dispose`
+
+##### refresh()
+
+```ts
+refresh(): void;
+```
+
+###### Returns
+
+`void`
+
+##### used()
+
+```ts
+used(labels): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `labels` | readonly `string`[] |
+
+###### Returns
+
+`void`
+
+***
+
 ### ModelSelectElement
 
 The `<model-select>` element: set `pick`, `env`, `loader` or `records` on it before or after it
@@ -787,6 +956,19 @@ Options for `mountModelSelect`: the one line or the chip variant, and whether to
 | ------ | ------ | ------ |
 | <a id="property-go"></a> `go?` | `boolean` | Draw the pink load. Off on a gate, whose own button is the pink action. |
 | <a id="property-variant"></a> `variant?` | `"line"` \| `"chip"` | "line" (default): the one line and the pink load. "chip": the one model chip of the bar. |
+
+***
+
+### SourcesDropOptions
+
+Options for a sources drop: what reads the files into memory, and a line per file.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-accept"></a> `accept?` | `string` | - |
+| <a id="property-ingest"></a> `ingest` | (`files`, `o`) => `Promise`\<\{ `chunks`: `number`; `files`: `number`; \}\> | @hackbuild/memory `ingest(mem, files, o)` bound to a store. |
 
 ***
 
@@ -853,6 +1035,18 @@ Open the file picker: the add files verb.
 
 `void`
 
+##### pickFolder()
+
+```ts
+pickFolder(): void;
+```
+
+Open the folder picker.
+
+###### Returns
+
+`void`
+
 ***
 
 ### TranscribeDropOptions
@@ -868,7 +1062,8 @@ the transcript view options.
 
 | Property | Type | Description | Inherited from |
 | ------ | ------ | ------ | ------ |
-| <a id="property-accept"></a> `accept?` | `string` | - | - |
+| <a id="property-accept-1"></a> `accept?` | `string` | - | - |
+| <a id="property-folders"></a> `folders?` | `boolean` | A "choose a folder" button; a dropped folder is read whole either way. | - |
 | <a id="property-note-1"></a> `note?` | `string` | - | - |
 | <a id="property-onsample-1"></a> `onSample?` | () => `void` | - | - |
 | <a id="property-onseek"></a> `onSeek?` | (`seconds`) => `void` | Times as buttons that seek a player. | [`TranscriptViewOptions`](#transcriptviewoptions).[`onSeek`](#property-onseek-1) |
@@ -977,6 +1172,26 @@ left alone. Returns the tag names.
 
 ***
 
+### droppedFiles()
+
+```ts
+function droppedFiles(dt): Promise<File[]>;
+```
+
+The files of a drop, with dropped folders read through, media only.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `dt` | `DataTransfer` \| `null` \| `undefined` |
+
+#### Returns
+
+`Promise`\<`File`[]\>
+
+***
+
 ### gateWords()
 
 ```ts
@@ -994,6 +1209,48 @@ The words of a gate's one pink button for a pick: "load, 1.7 gb", then "ready".
 #### Returns
 
 `string`
+
+***
+
+### isMedia()
+
+```ts
+function isMedia(f): boolean;
+```
+
+A file a speech run can read: audio or video by type or by name.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `f` | \{ `name`: `string`; `type`: `string`; \} |
+| `f.name` | `string` |
+| `f.type` | `string` |
+
+#### Returns
+
+`boolean`
+
+***
+
+### isProtected()
+
+```ts
+function isProtected(it): boolean;
+```
+
+True when an item is kept out of cleanup: decay never drops it.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `it` | `StoredItem` |
+
+#### Returns
+
+`boolean`
 
 ***
 
@@ -1118,6 +1375,36 @@ The context meter (hackbuild-ui `.hb-ctxmeter`): what the next request carries a
 | `o?` | \{ `budget?`: `number` \| (() => `number`); `system?`: `string` \| (() => `string`); \} |
 | `o.budget?` | `number` \| (() => `number`) |
 | `o.system?` | `string` \| (() => `string`) |
+
+#### Returns
+
+`Mounted`
+
+***
+
+### mountExportMenu()
+
+```ts
+function mountExportMenu(
+   host, 
+   queue, 
+   o?
+): Mounted;
+```
+
+ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and
+every finished transcript as one zip with a manifest, plus undo and redo of
+edits. Nothing shows until there is text; undo shows once there is a change.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `queue` | [`TranscribeQueue`](index.md#transcribequeue) |
+| `o?` | \{ `save?`: (`name`, `data`, `type`) => `void`; `tool?`: `string`; \} |
+| `o.save?` | (`name`, `data`, `type`) => `void` |
+| `o.tool?` | `string` |
 
 #### Returns
 
@@ -1260,6 +1547,34 @@ Shows a recall trace as a table on a host.
 
 ***
 
+### mountMemoryPane()
+
+```ts
+function mountMemoryPane(
+   host, 
+   mem, 
+   o?
+): MemoryPaneHandle;
+```
+
+The memory pane: counts, search, a source filter, add a note, the list with protect and forget, export, import, erase.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `mem` | [`MemoryLike`](#memorylike) |
+| `o?` | \{ `name?`: `string`; `onChange?`: () => `void`; \} |
+| `o.name?` | `string` |
+| `o.onChange?` | () => `void` |
+
+#### Returns
+
+[`MemoryPaneHandle`](#memorypanehandle)
+
+***
+
 ### mountModelJobs()
 
 ```ts
@@ -1306,6 +1621,75 @@ The closed picker over a host; pressing it opens the sheet.
 | `host` | `HTMLElement` |
 | `pick` | [`ModelPick`](index.md#modelpick) |
 | `o?` | [`ModelSelectOptions`](#modelselectoptions) |
+
+#### Returns
+
+`Mounted`
+
+***
+
+### mountPersonaRack()
+
+```ts
+function mountPersonaRack(host, rack): Mounted;
+```
+
+The persona rack: presets one press away, name, the three parts with their cost, the template, save, and the persona as a file.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `rack` | [`PersonaRack`](index.md#personarack) |
+
+#### Returns
+
+`Mounted`
+
+***
+
+### mountSessionMenu()
+
+```ts
+function mountSessionMenu(
+   host, 
+   list, 
+   o?
+): Mounted;
+```
+
+The session menu of a chat list: clear the open chat, export it as markdown, every chat as json, and import.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `list` | [`ChatList`](index.md#chatlist) |
+| `o?` | \{ `onImport?`: (`n`) => `void`; \} |
+| `o.onImport?` | (`n`) => `void` |
+
+#### Returns
+
+`Mounted`
+
+***
+
+### mountSourcesDrop()
+
+```ts
+function mountSourcesDrop(host, o): Mounted;
+```
+
+A drop zone for sources: files or a whole folder of text, pdf, docx, zip and mail go into memory; a line per file says what came in.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `o` | [`SourcesDropOptions`](#sourcesdropoptions) |
 
 #### Returns
 
@@ -1414,6 +1798,33 @@ The selected channel's transcript over a host.
 
 ***
 
+### mountVoiceRow()
+
+```ts
+function mountVoiceRow(
+   host, 
+   row, 
+   o?
+): Mounted;
+```
+
+The voice row: auto speak, voice, rate, pitch, test and stop.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `host` | `HTMLElement` |
+| `row` | [`VoiceRow`](index.md#voicerow) |
+| `o?` | \{ `test?`: `string`; \} |
+| `o.test?` | `string` |
+
+#### Returns
+
+`Mounted`
+
+***
+
 ### pickSheet()
 
 ```ts
@@ -1434,6 +1845,32 @@ The sheet of one pick, in a drawer on the body. Opens on `open()`.
 
 ***
 
+### protect()
+
+```ts
+function protect(
+   mem, 
+   it, 
+   on
+): Promise<void>;
+```
+
+Protect an item from cleanup (it becomes lore, which never decays) or give it back its kind.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `mem` | `Pick`\<[`MemoryLike`](#memorylike), `"edit"`\> |
+| `it` | `StoredItem` |
+| `on` | `boolean` |
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
 ### shortName()
 
 ```ts
@@ -1443,6 +1880,7 @@ function shortName(name): string;
 A model name cut for the bar chip: filler words (instruct, chat, quant tags)
 go, and a name of more than three words keeps its first two and its last,
 which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+A note in brackets goes first: "slimsam 77 uniform (point prompts)" reads "slimsam 77".
 
 #### Parameters
 

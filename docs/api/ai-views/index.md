@@ -20,8 +20,24 @@ error if it failed.
 | <a id="property-model"></a> `model?` | `string` | - |
 | <a id="property-name"></a> `name` | `string` | - |
 | <a id="property-pct"></a> `pct` | `number` | 0 to 100 while running. |
+| <a id="property-rail"></a> `rail?` | `object` | - |
+| `rail.db` | `number`[] | - |
+| `rail.kept` | `number`[] | - |
 | <a id="property-segments"></a> `segments` | `Seg`[] | - |
 | <a id="property-size"></a> `size` | `number` | - |
+| <a id="property-stats"></a> `stats?` | `object` | - |
+| `stats.density` | `number` | - |
+| `stats.dur` | `number` | - |
+| `stats.forced` | `boolean` | - |
+| `stats.gainDb` | `number` | - |
+| `stats.loudDb` | `number` | - |
+| `stats.noiseDb` | `number` | - |
+| `stats.reels` | `number` | - |
+| `stats.rtf` | `number` | - |
+| `stats.snrDb` | `number` | - |
+| `stats.speechDb` | `number` | - |
+| `stats.thrDb` | `number` | - |
+| `stats.wall` | `number` | - |
 | <a id="property-status"></a> `status` | `StripStatus` | - |
 
 ***
@@ -49,6 +65,18 @@ create(): string;
 ###### Returns
 
 `string`
+
+##### dump()
+
+```ts
+dump(): ChatListData;
+```
+
+Every chat as plain data, for storage or an export.
+
+###### Returns
+
+[`ChatListData`](#chatlistdata)
 
 ##### open()
 
@@ -99,6 +127,26 @@ rename(id, title): void;
 
 `void`
 
+##### restore()
+
+```ts
+restore(data, o?): void;
+```
+
+Adds chats from `dump()` data (an import or a reload); `replace` drops the current ones first.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `data` | [`ChatListData`](#chatlistdata) |
+| `o?` | \{ `replace?`: `boolean`; \} |
+| `o.replace?` | `boolean` |
+
+###### Returns
+
+`void`
+
 ##### setEngine()
 
 ```ts
@@ -143,6 +191,21 @@ subscribe(fn): () => void;
 
 ***
 
+### ChatListData
+
+A chat list as plain data: format, version, the open chat and each chat's title and turns.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-chats"></a> `chats` | `object`[] |
+| <a id="property-current"></a> `current?` | `string` |
+| <a id="property-format"></a> `format` | `"hackbuild-chats"` |
+| <a id="property-version"></a> `version` | `1` |
+
+***
+
 ### ChatListItem
 
 One chat in a chat list: id, title, last update and turn count.
@@ -166,7 +229,7 @@ The chats of a list, newest first, and the id of the open one.
 
 | Property | Type |
 | ------ | ------ |
-| <a id="property-current"></a> `current` | `string` |
+| <a id="property-current-1"></a> `current` | `string` |
 | <a id="property-items"></a> `items` | readonly [`ChatListItem`](#chatlistitem)[] |
 
 ***
@@ -182,6 +245,24 @@ A chat thread: send, stop, regenerate, remove and clear turns, set the engine, a
 ```ts
 clear(): void;
 ```
+
+###### Returns
+
+`void`
+
+##### load()
+
+```ts
+load(turns): void;
+```
+
+Replace the turns (a restored or imported chat).
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `turns` | readonly [`Turn`](#turn)[] |
 
 ###### Returns
 
@@ -518,12 +599,13 @@ New machine facts, records or loader for every job.
 
 | Parameter | Type |
 | ------ | ------ |
-| `o` | \{ `env?`: `Env`; `estimate?`: `StorageEstimate` \| `null`; `loader?`: [`Loader`](#loader); `onRemove?`: (`rec`) => `void` \| `Promise`\<`void`\>; `records?`: readonly `ModelRecord`[]; \} |
+| `o` | \{ `env?`: `Env`; `estimate?`: `StorageEstimate` \| `null`; `loader?`: [`Loader`](#loader); `onRemove?`: (`rec`) => `void` \| `Promise`\<`void`\>; `records?`: readonly `ModelRecord`[]; `stored?`: `Iterable`\<`string`, `any`, `any`\>; \} |
 | `o.env?` | `Env` |
 | `o.estimate?` | `StorageEstimate` \| `null` |
 | `o.loader?` | [`Loader`](#loader) |
 | `o.onRemove?` | (`rec`) => `void` \| `Promise`\<`void`\> |
 | `o.records?` | readonly `ModelRecord`[] |
+| `o.stored?` | `Iterable`\<`string`, `any`, `any`\> |
 
 ###### Returns
 
@@ -813,16 +895,177 @@ New machine facts (env, storage) or records.
 
 | Parameter | Type |
 | ------ | ------ |
-| `o` | \{ `env?`: `Env`; `estimate?`: `StorageEstimate` \| `null`; `loader?`: [`Loader`](#loader); `onRemove?`: (`rec`) => `void` \| `Promise`\<`void`\>; `records?`: readonly `ModelRecord`[]; \} |
+| `o` | \{ `env?`: `Env`; `estimate?`: `StorageEstimate` \| `null`; `loader?`: [`Loader`](#loader); `onRemove?`: (`rec`) => `void` \| `Promise`\<`void`\>; `records?`: readonly `ModelRecord`[]; `stored?`: `Iterable`\<`string`, `any`, `any`\>; \} |
 | `o.env?` | `Env` |
 | `o.estimate?` | `StorageEstimate` \| `null` |
 | `o.loader?` | [`Loader`](#loader) |
 | `o.onRemove?` | (`rec`) => `void` \| `Promise`\<`void`\> |
 | `o.records?` | readonly `ModelRecord`[] |
+| `o.stored?` | `Iterable`\<`string`, `any`, `any`\> |
 
 ###### Returns
 
 `void`
+
+***
+
+### Persona
+
+A persona in three parts, highest priority first, with its name and first line.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-first"></a> `first?` | `string` | - |
+| <a id="property-name-1"></a> `name` | `string` | - |
+| <a id="property-notes"></a> `notes` | `string` | Extra notes: dropped before the profile when the request runs out of room. |
+| <a id="property-profile"></a> `profile` | `string` | Who you are and how to answer: always sent. |
+| <a id="property-rules"></a> `rules` | `string` | Extra rules: dropped first. |
+
+***
+
+### PersonaPresetX
+
+A named persona a person can load in one press.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-label-5"></a> `label` | `string` |
+| <a id="property-persona"></a> `persona` | [`Persona`](#persona) |
+
+***
+
+### PersonaRack
+
+The persona state: the current persona, presets, and the system prompt fitted to a budget.
+
+#### Methods
+
+##### load()
+
+```ts
+load(i): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `i` | `number` |
+
+###### Returns
+
+`void`
+
+##### removePreset()
+
+```ts
+removePreset(i): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `i` | `number` |
+
+###### Returns
+
+`void`
+
+##### save()
+
+```ts
+save(label): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `label` | `string` |
+
+###### Returns
+
+`void`
+
+##### set()
+
+```ts
+set(p): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `p` | `Partial`\<[`Persona`](#persona)\> |
+
+###### Returns
+
+`void`
+
+##### snapshot()
+
+```ts
+snapshot(): object;
+```
+
+###### Returns
+
+`object`
+
+| Name | Type |
+| ------ | ------ |
+| `builtIn` | `number` |
+| `on` | `number` |
+| `persona` | [`Persona`](#persona) |
+| `presets` | readonly [`PersonaPresetX`](#personapresetx)[] |
+
+##### subscribe()
+
+```ts
+subscribe(fn): () => void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `fn` | (`s`) => `void` |
+
+###### Returns
+
+() => `void`
+
+##### system()
+
+```ts
+system(mem?, budgetTokens?): object;
+```
+
+The system prompt: profile, memory, notes, rules, in that priority, fitted
+to `budgetTokens` (about 4 characters a token, inferred); the lowest go
+first. Returns the text and the parts dropped.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `mem?` | readonly [`MemoryUsed`](#memoryused)[] |
+| `budgetTokens?` | `number` |
+
+###### Returns
+
+`object`
+
+| Name | Type |
+| ------ | ------ |
+| `dropped` | `string`[] |
+| `text` | `string` |
 
 ***
 
@@ -855,7 +1098,7 @@ A preset for a tool with several jobs: one pick per job.
 | Property | Type |
 | ------ | ------ |
 | <a id="property-id-2"></a> `id` | `string` |
-| <a id="property-label-5"></a> `label` | `string` |
+| <a id="property-label-6"></a> `label` | `string` |
 | <a id="property-picks-1"></a> `picks` | `Partial`\<`Record`\<[`Job`](#job), `string`\>\> |
 
 ***
@@ -894,6 +1137,20 @@ What a transcribe queue shows: channels, the selected one, whether it runs, and 
 
 ***
 
+### RepoCheck
+
+What a hub repo check found: whether it exists, whether it carries onnx files, and the words a row shows.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-note"></a> `note` | `string` |
+| <a id="property-ok"></a> `ok` | `boolean` |
+| <a id="property-onnx"></a> `onnx` | `number` |
+
+***
+
 ### RowContext
 
 What a row needs beyond its record: env, storage estimate, load state and progress, option
@@ -922,6 +1179,7 @@ What a transcriber gets: an abort signal and a progress callback.
 | Property | Type | Description |
 | ------ | ------ | ------ |
 | <a id="property-onprogress-1"></a> `onProgress` | (`fraction`) => `void` | 0 to 1. |
+| <a id="property-options-2"></a> `options?` | [`TranscribeRunOptions`](#transcriberunoptions) | The queue's run settings at the start of this file. |
 | <a id="property-signal-1"></a> `signal` | `AbortSignal` | - |
 
 ***
@@ -938,7 +1196,23 @@ What a transcriber returns: segments, dropped lines, duration, language and mode
 | <a id="property-duration-1"></a> `duration?` | `number` | Seconds of audio. |
 | <a id="property-language-1"></a> `language?` | `string` | - |
 | <a id="property-model-1"></a> `model?` | `string` | - |
+| <a id="property-rail-1"></a> `rail?` | `object` | Loudest level per bin in dBFS and whether the gate kept it, for a level strip. |
+| `rail.db` | `number`[] | - |
+| `rail.kept` | `number`[] | - |
 | <a id="property-segments-1"></a> `segments` | `Seg`[] | - |
+| <a id="property-stats-1"></a> `stats?` | `object` | Levels and speed of the run (computed), for the readout and the zip manifest. |
+| `stats.density` | `number` | - |
+| `stats.dur` | `number` | - |
+| `stats.forced` | `boolean` | - |
+| `stats.gainDb` | `number` | - |
+| `stats.loudDb` | `number` | - |
+| `stats.noiseDb` | `number` | - |
+| `stats.reels` | `number` | - |
+| `stats.rtf` | `number` | - |
+| `stats.snrDb` | `number` | - |
+| `stats.speechDb` | `number` | - |
+| `stats.thrDb` | `number` | - |
+| `stats.wall` | `number` | - |
 
 ***
 
@@ -971,11 +1245,15 @@ reply, clock and reply token cap.
 | Property | Type | Description |
 | ------ | ------ | ------ |
 | <a id="property-engine"></a> `engine?` | `ChatEngine` \| `null` | - |
+| <a id="property-history"></a> `history?` | () => `number` | How many earlier turns go with each request; all when unset. |
 | <a id="property-maxtokens"></a> `maxTokens?` | `number` | Reply token cap. |
 | <a id="property-noengine"></a> `noEngine?` | `string` | What a reply says with no engine. |
 | <a id="property-now"></a> `now?` | () => `number` | - |
+| <a id="property-onreply"></a> `onReply?` | (`turn`, `said`) => `void` | Called when a reply ends with text, with the user's message: speak it, save a note. |
 | <a id="property-recall"></a> `recall?` | (`query`) => `Promise`\<[`MemoryUsed`](#memoryused)[]\> | Memory for a message; its hits ride along in the system prompt and show under the reply. |
-| <a id="property-system"></a> `system?` | `string` | - |
+| <a id="property-stream"></a> `stream?` | () => `Omit`\<`StreamOptions`, `"signal"`\> | Sampling, schema and other reply options, read at each reply. |
+| <a id="property-system"></a> `system?` | `string` \| (() => `string`) | The system prompt, or a function read at each reply (a persona that changes). |
+| <a id="property-systemfor"></a> `systemFor?` | (`mem`) => `string` | Builds the system prompt from the persona and the memory recalled for this reply, in place of the default join; a page fits both to a budget here (priority trimmed sections). |
 
 ***
 
@@ -1219,6 +1497,63 @@ undo(): void;
 
 `void`
 
+##### zip()
+
+```ts
+zip(o?): 
+  | {
+  data: Uint8Array;
+  manifest: Manifest;
+  name: string;
+}
+  | null;
+```
+
+Every finished channel in four formats, with manifest.json first, as one zip; null with none.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `o?` | \{ `date?`: `Date`; `tool?`: `string`; \} |
+| `o.date?` | `Date` |
+| `o.tool?` | `string` |
+
+###### Returns
+
+  \| \{
+  `data`: `Uint8Array`;
+  `manifest`: `Manifest`;
+  `name`: `string`;
+\}
+  \| `null`
+
+***
+
+### TranscribeRunOptions
+
+Run settings a transcriber reads: the capture front end (target level, lift, denoise, gate
+margin, rumble filter, skip silence, re-level), the channel, the language and the phantom filter.
+
+#### Extends
+
+- `FrontEndOptions`
+
+#### Properties
+
+| Property | Type | Description | Inherited from |
+| ------ | ------ | ------ | ------ |
+| <a id="property-channel"></a> `channel?` | `"auto"` \| `"mix"` \| `"L"` \| `"R"` | auto picks the loudest side when one dominates, else mixes. | - |
+| <a id="property-denoise"></a> `denoise?` | `0` \| `1` \| `2` \| `3` | Spectral gate strength 0 to 3. Default 2. | `FrontEndOptions.denoise` |
+| <a id="property-halluc"></a> `halluc?` | `boolean` | The phantom text filter. Default on. | - |
+| <a id="property-hp"></a> `hp?` | `number` | High pass corner in Hz; 0 turns it off. Default 80. | `FrontEndOptions.hp` |
+| <a id="property-language-2"></a> `language?` | `string` | - | - |
+| <a id="property-maxgaindb"></a> `maxGainDb?` | `number` | Largest lift in dB. Default 60. | `FrontEndOptions.maxGainDb` |
+| <a id="property-perreelagc"></a> `perReelAgc?` | `boolean` | Level each reel again. Default true. | `FrontEndOptions.perReelAgc` |
+| <a id="property-skipsilence"></a> `skipSilence?` | `boolean` | Gate the silence out. Default true. | `FrontEndOptions.skipSilence` |
+| <a id="property-targetdb"></a> `targetDb?` | `number` | Target speech level, dBFS. Default -20. | `FrontEndOptions.targetDb` |
+| <a id="property-vadmargin"></a> `vadMargin?` | `number` | Gate margin over the floor in dB. Default 6. | `FrontEndOptions.vadMargin` |
+
 ***
 
 ### Turn
@@ -1233,11 +1568,115 @@ One chat turn: role, text, reasoning, time, whether it is done, memory used, sta
 | <a id="property-done"></a> `done` | `boolean` | - |
 | <a id="property-id-4"></a> `id` | `number` | - |
 | <a id="property-mem"></a> `mem?` | [`MemoryUsed`](#memoryused)[] | Memory recalled for this reply. |
-| <a id="property-note"></a> `note?` | `string` | "stopped", "failed: ...". |
+| <a id="property-note-1"></a> `note?` | `string` | "stopped", "failed: ...". |
 | <a id="property-role"></a> `role` | `"user"` \| `"assistant"` | - |
-| <a id="property-stats"></a> `stats?` | `string` | "31.2 tok/s, first word 0.64 s, 44 tok (measured)". |
+| <a id="property-stats-2"></a> `stats?` | `string` | "31.2 tok/s, first word 0.64 s, 44 tok (measured)". |
 | <a id="property-text-1"></a> `text` | `string` | - |
 | <a id="property-think"></a> `think` | `string` | Reasoning, shown in a fold under the reply. |
+
+***
+
+### VoiceRow
+
+Spoken replies: auto speak, the voice, rate and pitch, speak and stop.
+
+#### Methods
+
+##### reply()
+
+```ts
+reply(text): void;
+```
+
+Speaks `text` when auto speak is on: hand it to a chat thread's onReply.
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+
+###### Returns
+
+`void`
+
+##### set()
+
+```ts
+set(p): void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `p` | `Partial`\<\{ `auto`: `boolean`; `pitch`: `number`; `rate`: `number`; `voice`: `string`; \}\> |
+
+###### Returns
+
+`void`
+
+##### snapshot()
+
+```ts
+snapshot(): object;
+```
+
+###### Returns
+
+`object`
+
+| Name | Type |
+| ------ | ------ |
+| `auto` | `boolean` |
+| `error` | `string` |
+| `pitch` | `number` |
+| `rate` | `number` |
+| `speaking` | `boolean` |
+| `voice` | `string` |
+| `voices` | `string`[] |
+
+##### speak()
+
+```ts
+speak(text): Promise<void>;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+
+###### Returns
+
+`Promise`\<`void`\>
+
+##### stop()
+
+```ts
+stop(): void;
+```
+
+###### Returns
+
+`void`
+
+##### subscribe()
+
+```ts
+subscribe(fn): () => void;
+```
+
+###### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `fn` | (`s`) => `void` |
+
+###### Returns
+
+() => `void`
 
 ## Type Aliases
 
@@ -1929,6 +2368,30 @@ A record for a "your own" form. Its licence is unknown until the person reads th
 
 ***
 
+### personaRack()
+
+```ts
+function personaRack(o?): PersonaRack;
+```
+
+Creates a persona rack with built in presets and any saved ones; `onSave` keeps the saved ones.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `o?` | \{ `onSave?`: (`saved`) => `void`; `persona?`: [`Persona`](#persona); `presets?`: readonly [`PersonaPresetX`](#personapresetx)[]; `saved?`: readonly [`PersonaPresetX`](#personapresetx)[]; \} |
+| `o.onSave?` | (`saved`) => `void` |
+| `o.persona?` | [`Persona`](#persona) |
+| `o.presets?` | readonly [`PersonaPresetX`](#personapresetx)[] |
+| `o.saved?` | readonly [`PersonaPresetX`](#personapresetx)[] |
+
+#### Returns
+
+[`PersonaRack`](#personarack)
+
+***
+
 ### rowOf()
 
 ```ts
@@ -1967,6 +2430,30 @@ Download words: "1.7 gb". Null for a record with no download or an unknown size.
 #### Returns
 
 `string` \| `undefined`
+
+***
+
+### storedIds()
+
+```ts
+function storedIds(store, records): Promise<string[]>;
+```
+
+The ids of records whose files are already in a weight store: the cache
+badge of a picker. A record counts when every file key it names is kept,
+or, for one its runtime fetches by model id, when any kept url sits under
+that id on the hub. Records cached elsewhere (WebLLM's own cache) are not seen.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `store` | `Pick`\<`WeightStore`, `"keys"`\> |
+| `records` | readonly `ModelRecord`[] |
+
+#### Returns
+
+`Promise`\<`string`[]\>
 
 ***
 
@@ -2034,8 +2521,9 @@ Creates a transcribe queue that runs each file through `run`, one at a time.
 
 | Parameter | Type |
 | ------ | ------ |
-| `o` | \{ `autostart?`: `boolean`; `run`: [`Transcriber`](#transcriber); \} |
+| `o` | \{ `autostart?`: `boolean`; `options?`: () => [`TranscribeRunOptions`](#transcriberunoptions); `run`: [`Transcriber`](#transcriber); \} |
 | `o.autostart?` | `boolean` |
+| `o.options?` | () => [`TranscribeRunOptions`](#transcriberunoptions) |
 | `o.run` | [`Transcriber`](#transcriber) |
 
 #### Returns
@@ -2088,6 +2576,57 @@ Creates a model picker for a job, with rows that say whether each model fits thi
 #### Returns
 
 [`ModelPick`](#modelpick)
+
+***
+
+### verifyRepo()
+
+```ts
+function verifyRepo(repo, o?): Promise<RepoCheck>;
+```
+
+Checks a hub repo id before it is used as your own model: it exists, it is
+public, and it carries onnx files transformers.js can run. One request to
+the hub's model api; no weights are fetched.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `repo` | `string` |
+| `o?` | \{ `fetch?`: (`input`, `init?`) => `Promise`\<`Response`\>; `host?`: `string`; \} |
+| `o.fetch?` | (`input`, `init?`) => `Promise`\<`Response`\> |
+| `o.host?` | `string` |
+
+#### Returns
+
+`Promise`\<[`RepoCheck`](#repocheck)\>
+
+***
+
+### voiceRow()
+
+```ts
+function voiceRow(engine, o?): VoiceRow;
+```
+
+Creates the voice state over a native engine (`webSpeechEngine()` of @hackbuild/speak).
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `engine` | `NativeEngine` |
+| `o?` | \{ `auto?`: `boolean`; `onChange?`: (`s`) => `void`; `pitch?`: `number`; `rate?`: `number`; `voice?`: `string`; \} |
+| `o.auto?` | `boolean` |
+| `o.onChange?` | (`s`) => `void` |
+| `o.pitch?` | `number` |
+| `o.rate?` | `number` |
+| `o.voice?` | `string` |
+
+#### Returns
+
+[`VoiceRow`](#voicerow)
 
 ***
 

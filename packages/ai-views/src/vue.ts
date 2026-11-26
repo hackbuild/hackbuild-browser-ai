@@ -15,7 +15,9 @@ import type { TranscribeQueue as Queue } from "./transcribe.js";
 import type { FrameResults } from "./frame.js";
 import { mountModelJobs, mountModelSelect } from "./mount-model.js";
 import { mountChatList, mountChatPane, mountComposer, mountContextMeter } from "./mount-chat.js";
-import { mountTranscribeDrop, mountTranscribeQueue, mountTranscriptExports, mountTranscriptView } from "./mount-transcribe.js";
+import { mountExportMenu, mountTranscribeDrop, mountTranscribeQueue, mountTranscriptExports, mountTranscriptView, type TranscribeDropHandle } from "./mount-transcribe.js";
+import { mountMemoryPane, mountPersonaRack, mountSessionMenu, mountSourcesDrop, mountVoiceRow, type MemoryLike, type MemoryPaneHandle, type SourcesDropOptions } from "./mount-talk.js";
+import type { PersonaRack as PersonaState, VoiceRow as VoiceState } from "./talk.js";
 import { mountMaskRack, mountMaskStudio, mountMaskTools, mountMaskVerbs, type MaskModels, type MaskStudio as Studio } from "./mount-mask.js";
 import { mountMemoryInspector, type RecallLike } from "./memory.js";
 import { mountCameraFeed, mountFrameView, type CameraFeed as Feed, type FrameView as View } from "./mount-frame.js";
@@ -94,19 +96,85 @@ export const Composer = defineComponent({
   setup: hosted<{ thread: ChatThread; placeholder: string }>((host, p) => mountComposer(host, p.thread, { placeholder: p.placeholder }), (p) => [p.thread]),
 });
 
-/** Vue component for the drop zone that becomes the transcript; emits `sample`. */
+/** Vue component for the drop zone that becomes the transcript; emits `sample` and `drop` (the handle, whose `pick` opens the file picker). */
 export const TranscribeDrop = defineComponent({
   name: "TranscribeDrop",
   props: {
     queue: { type: Object as PropType<Queue>, required: true },
     accept: { type: String, default: "audio/*,video/*" },
     sampleLabel: { type: String, default: "" },
+    title: { type: String, default: "" },
+    note: { type: String, default: "" },
+    folders: { type: Boolean, default: false },
+    showDropped: { type: Boolean, default: false },
   },
-  emits: ["sample"],
-  setup: hosted<{ queue: Queue; accept: string; sampleLabel: string }>(
-    (host, p, emit) => mountTranscribeDrop(host, p.queue, { accept: p.accept, ...(p.sampleLabel ? { sampleLabel: p.sampleLabel, onSample: () => emit("sample") } : {}) }),
-    (p) => [p.queue],
+  emits: ["sample", "drop"],
+  setup: hosted<{ queue: Queue; accept: string; sampleLabel: string; title: string; note: string; folders: boolean; showDropped: boolean }>(
+    (host, p, emit) => {
+      const d: TranscribeDropHandle = mountTranscribeDrop(host, p.queue, {
+        accept: p.accept,
+        folders: p.folders,
+        showDropped: p.showDropped,
+        ...(p.title ? { title: p.title } : {}),
+        ...(p.note ? { note: p.note } : {}),
+        ...(p.sampleLabel ? { sampleLabel: p.sampleLabel, onSample: () => emit("sample") } : {}),
+      });
+      emit("drop", d);
+      return d;
+    },
+    (p) => [p.queue, p.showDropped],
   ),
+});
+
+/** Vue component for the export menu of a transcribe queue: four formats, copy, all as zip, undo and redo. */
+export const ExportMenu = defineComponent({
+  name: "ExportMenu",
+  props: { queue: { type: Object as PropType<Queue>, required: true }, tool: { type: String, default: "" } },
+  setup: hosted<{ queue: Queue; tool: string }>((host, p) => mountExportMenu(host, p.queue, p.tool ? { tool: p.tool } : {}), (p) => [p.queue]),
+});
+
+/** Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used). */
+export const MemoryPane = defineComponent({
+  name: "MemoryPane",
+  props: { memory: { type: Object as PropType<MemoryLike>, required: true }, name: { type: String, default: "memory" } },
+  emits: ["pane", "change"],
+  setup: hosted<{ memory: MemoryLike; name: string }>(
+    (host, p, emit) => {
+      const m: MemoryPaneHandle = mountMemoryPane(host, p.memory, { name: p.name, onChange: () => emit("change") });
+      emit("pane", m);
+      return m;
+    },
+    (p) => [p.memory],
+  ),
+});
+
+/** Vue component for a sources drop: files and folders into memory through `ingest`. */
+export const SourcesDrop = defineComponent({
+  name: "SourcesDrop",
+  props: { ingest: { type: Function as PropType<SourcesDropOptions["ingest"]>, required: true }, accept: { type: String, default: "" } },
+  setup: hosted<{ ingest: SourcesDropOptions["ingest"]; accept: string }>((host, p) => mountSourcesDrop(host, { ingest: p.ingest, ...(p.accept ? { accept: p.accept } : {}) }), (p) => [p.ingest]),
+});
+
+/** Vue component for a persona rack. */
+export const PersonaRack = defineComponent({
+  name: "PersonaRack",
+  props: { rack: { type: Object as PropType<PersonaState>, required: true } },
+  setup: hosted<{ rack: PersonaState }>((host, p) => mountPersonaRack(host, p.rack), (p) => [p.rack]),
+});
+
+/** Vue component for a voice row. */
+export const VoiceRow = defineComponent({
+  name: "VoiceRow",
+  props: { row: { type: Object as PropType<VoiceState>, required: true }, test: { type: String, default: "" } },
+  setup: hosted<{ row: VoiceState; test: string }>((host, p) => mountVoiceRow(host, p.row, p.test ? { test: p.test } : {}), (p) => [p.row]),
+});
+
+/** Vue component for the session menu of a chat list; emits `import` with the number of chats. */
+export const SessionMenu = defineComponent({
+  name: "SessionMenu",
+  props: { list: { type: Object as PropType<ChatListState>, required: true } },
+  emits: ["import"],
+  setup: hosted<{ list: ChatListState }>((host, p, emit) => mountSessionMenu(host, p.list, { onImport: (n) => emit("import", n) }), (p) => [p.list]),
 });
 
 /** Vue component for the selected transcript, or its export buttons when `exports` is set. */

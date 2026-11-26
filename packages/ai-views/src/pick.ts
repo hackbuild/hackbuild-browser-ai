@@ -25,6 +25,56 @@ export interface LoadContext {
 export type Loader = (rec: ModelRecord, ctx: LoadContext) => Promise<unknown>;
 
 /**
+ * The ids of records whose files are already in a weight store: the cache
+ * badge of a picker. A record counts when every file key it names is kept,
+ * or, for one its runtime fetches by model id, when any kept url sits under
+ * that id on the hub. Records cached elsewhere (WebLLM's own cache) are not seen.
+ */
+export async function storedIds(store: Pick<WeightStore, "keys">, records: readonly ModelRecord[]): Promise<string[]> {
+  const keys = await store.keys().catch(() => [] as string[]);
+  if (!keys.length) return [];
+  const set = new Set(keys);
+  return records
+    .filter((r) => {
+      const ks = weightKeys(r);
+      if (ks.length) return ks.every((k) => set.has(k));
+      const id = r.source.modelId;
+      return !!id && keys.some((k) => k.includes(`/${id}/resolve/`));
+    })
+    .map((r) => r.id);
+}
+
+/** What a hub repo check found: whether it exists, whether it carries onnx files, and the words a row shows. */
+export interface RepoCheck {
+  ok: boolean;
+  onnx: number;
+  note: string;
+}
+
+/**
+ * Checks a hub repo id before it is used as your own model: it exists, it is
+ * public, and it carries onnx files transformers.js can run. One request to
+ * the hub's model api; no weights are fetched.
+ */
+export async function verifyRepo(repo: string, o: { fetch?: typeof fetch; host?: string } = {}): Promise<RepoCheck> {
+  const id = repo.trim().replace(/^https?:\/\/huggingface\.co\//, "").replace(/\/+$/, "");
+  if (!/^[\w.-]+\/[\w.-]+$/.test(id)) return { ok: false, onnx: 0, note: "write it as owner/name." };
+  const f = o.fetch ?? globalThis.fetch.bind(globalThis);
+  let res: Response;
+  try {
+    res = await f(`${o.host ?? "https://huggingface.co"}/api/models/${id}`);
+  } catch {
+    return { ok: false, onnx: 0, note: "the hub did not answer. check the connection." };
+  }
+  if (res.status === 401 || res.status === 403) return { ok: false, onnx: 0, note: `${id} is gated or private. it cannot load here.` };
+  if (!res.ok) return { ok: false, onnx: 0, note: `${id} was not found on the hub.` };
+  const body = (await res.json().catch(() => ({}))) as { siblings?: { rfilename: string }[]; gated?: unknown };
+  if (body.gated) return { ok: false, onnx: 0, note: `${id} is gated. accept its terms on the hub first.` };
+  const onnx = (body.siblings ?? []).filter((x) => x.rfilename.endsWith(".onnx")).length;
+  return onnx ? { ok: true, onnx, note: `${id} found, ${onnx} onnx files.` } : { ok: false, onnx: 0, note: `${id} has no onnx files. pick an onnx export.` };
+}
+
+/**
  * A loader over a weight store: a record with a url fetches that file, a
  * record with a repo and files fetches each, resuming and checking the
  * SHA-256 when the record has one. Records a runtime fetches itself (WebLLM,
@@ -120,7 +170,7 @@ export interface ModelPick {
   /** Add a model from a "your own" form; returns its id. */
   custom(kind: OwnKind, values: Record<string, string>): string;
   /** New machine facts (env, storage) or records. */
-  update(o: { env?: Env | undefined; estimate?: StorageEstimate | null | undefined; records?: readonly ModelRecord[] | undefined; loader?: Loader | undefined; onRemove?: PickOptions["onRemove"] }): void;
+  update(o: { env?: Env | undefined; estimate?: StorageEstimate | null | undefined; records?: readonly ModelRecord[] | undefined; loader?: Loader | undefined; onRemove?: PickOptions["onRemove"]; stored?: Iterable<string> | undefined }): void;
   /** What the loader returned for a model. */
   result(id: string): unknown;
   record(id: string): ModelRecord | undefined;
@@ -272,6 +322,7 @@ export function useModelPick(job: Job, o: PickOptions = {}): ModelPick {
       if (n.records) records = jobRecords(job, n.records);
       if (n.loader) loader = n.loader;
       if (n.onRemove) onRemove = n.onRemove;
+      for (const id of n.stored ?? []) if (!state.has(id) || state.get(id) === "none") state.set(id, "stored");
       emit();
     },
     result: (id) => results.get(id),

@@ -9,6 +9,9 @@ export {
   weightsLoader,
   weightsRemover,
   weightKeys,
+  storedIds,
+  verifyRepo,
+  type RepoCheck,
   defaultPick,
   ownRecord,
   type ModelPick,
@@ -20,8 +23,9 @@ export {
   type JobLine,
   type PickPreset,
 } from "./pick.js";
-export { chatThread, chatList, contextSegments, NO_ENGINE, type ChatList, type ChatListItem, type ChatListSnapshot, type ChatThread, type ThreadOptions, type ThreadSnapshot, type Turn, type MemoryUsed } from "./chat.js";
-export { transcribeQueue, type TranscribeQueue, type Transcriber, type RunResult, type RunContext, type Channel, type ExportKind, type QueueSnapshot } from "./transcribe.js";
+export { chatThread, chatList, contextSegments, NO_ENGINE, type ChatList, type ChatListData, type ChatListItem, type ChatListSnapshot, type ChatThread, type ThreadOptions, type ThreadSnapshot, type Turn, type MemoryUsed } from "./chat.js";
+export { transcribeQueue, type TranscribeQueue, type Transcriber, type RunResult, type RunContext, type TranscribeRunOptions, type Channel, type ExportKind, type QueueSnapshot } from "./transcribe.js";
 export { fitMap, toView, boxWords, frameTag, labelColour, type FrameBox, type FrameLandmarks, type FrameResults } from "./frame.js";
 export { traceRows, inspectorHtml, type TraceRow, type RecallLike } from "./memory.js";
 export { jobLoader, asImage, RUNTIME_URLS, type JobLoaderOptions, type JobValues, type RuntimeModules, type DetectFn, type DepthFn, type AskFn, type ImageJob } from "./loaders.js";
+export { personaRack, voiceRow, type Persona, type PersonaPresetX, type PersonaRack, type VoiceRow } from "./talk.js";

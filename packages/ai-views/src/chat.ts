@@ -5,7 +5,7 @@
  * used, stop, regenerate, and a markdown export. Framework free.
  */
 
-import type { ChatEngine, ChatMessage } from "@hackbuild/chat";
+import type { ChatEngine, ChatMessage, StreamOptions } from "@hackbuild/chat";
 import { statsText } from "@virgilvox/hackbuild-ui/vanilla";
 
 /** A memory recalled for a reply, with its label and score. */
@@ -46,7 +46,19 @@ export interface ThreadSnapshot {
  */
 export interface ThreadOptions {
   engine?: ChatEngine | null;
-  system?: string;
+  /** The system prompt, or a function read at each reply (a persona that changes). */
+  system?: string | (() => string);
+  /**
+   * Builds the system prompt from the persona and the memory recalled for this reply, in place
+   * of the default join; a page fits both to a budget here (priority trimmed sections).
+   */
+  systemFor?: (mem: MemoryUsed[]) => string;
+  /** Sampling, schema and other reply options, read at each reply. */
+  stream?: () => Omit<StreamOptions, "signal">;
+  /** How many earlier turns go with each request; all when unset. */
+  history?: () => number;
+  /** Called when a reply ends with text, with the user's message: speak it, save a note. */
+  onReply?: (turn: Turn, said: string) => void;
   /** Memory for a message; its hits ride along in the system prompt and show under the reply. */
   recall?: (query: string) => Promise<MemoryUsed[]>;
   /** What a reply says with no engine. */
@@ -69,6 +81,8 @@ export interface ChatThread {
   setEngine(engine: ChatEngine | null): void;
   /** The thread as markdown, for an export. */
   markdown(title?: string): string;
+  /** Replace the turns (a restored or imported chat). */
+  load(turns: readonly Turn[]): void;
 }
 
 /** What a reply says when no chat engine is set. */
@@ -111,20 +125,26 @@ export function chatThread(o: ThreadOptions = {}): ChatThread {
     try {
       if (o.recall && lastUser) mem = await o.recall(lastUser.text);
       if (mem.length) patch(live.id, { mem });
-      const sys = [o.system, mem.length ? `things you remember:\n${mem.map((m) => `- ${m.label}`).join("\n")}` : ""].filter(Boolean).join("\n\n");
+      const base = typeof o.system === "function" ? o.system() : o.system;
+      const sys = o.systemFor ? o.systemFor(mem) : [base, mem.length ? `things you remember:\n${mem.map((m) => `- ${m.label}`).join("\n")}` : ""].filter(Boolean).join("\n\n");
+      const past = turns.filter((t) => t.id !== live.id && t.text);
+      const keep = o.history?.();
+      const sent = keep !== undefined && keep >= 0 ? past.slice(Math.max(0, past.length - 1 - keep)) : past;
       const history: ChatMessage[] = [
         ...(sys ? [{ role: "system" as const, content: sys }] : []),
-        ...turns.filter((t) => t.id !== live.id && t.text).map((t) => ({ role: t.role, content: t.text })),
+        ...sent.map((t) => ({ role: t.role, content: t.text })),
       ];
       let text = "";
       let think = "";
-      const it = engine.stream(history, { signal, ...(o.maxTokens ? { maxTokens: o.maxTokens } : {}) });
+      const it = engine.stream(history, { ...(o.maxTokens ? { maxTokens: o.maxTokens } : {}), ...o.stream?.(), signal });
       for (;;) {
         const step = await it.next();
         if (step.done) {
           const s = step.value?.stats;
           const stats = s ? statsText({ tokPerSec: s.tokensPerSecond, firstMs: s.firstTokenMs, tokens: s.tokens, source: s.tokensSource }) : "";
           patch(live.id, { done: true, ...(stats ? { stats } : {}) });
+          const fin = turns.find((t) => t.id === live.id);
+          if (fin?.text) o.onReply?.(fin, lastUser?.text ?? "");
           break;
         }
         const ev = step.value;
@@ -179,6 +199,11 @@ export function chatThread(o: ThreadOptions = {}): ChatThread {
       engine = e;
       emit();
     },
+    load(next) {
+      ac?.abort();
+      turns = next.map((t) => ({ ...t, id: ++seq, done: true }));
+      emit();
+    },
     markdown(title = "chat") {
       const lines = [`# ${title}`, ""];
       for (const t of turns) lines.push(`## ${t.role === "user" ? "you" : "reply"}`, "", t.text, "");
@@ -215,6 +240,18 @@ export interface ChatList {
   rename(id: string, title: string): void;
   remove(id: string): void;
   setEngine(engine: ChatEngine | null): void;
+  /** Every chat as plain data, for storage or an export. */
+  dump(): ChatListData;
+  /** Adds chats from `dump()` data (an import or a reload); `replace` drops the current ones first. */
+  restore(data: ChatListData, o?: { replace?: boolean }): void;
+}
+
+/** A chat list as plain data: format, version, the open chat and each chat's title and turns. */
+export interface ChatListData {
+  format: "hackbuild-chats";
+  version: 1;
+  current?: string;
+  chats: { id: string; title: string; updated: number; named?: boolean; turns: Turn[] }[];
 }
 
 /**
@@ -264,6 +301,7 @@ export function chatList(o: ThreadOptions = {}): ChatList {
       clear: () => chats.get(current)!.t.clear(),
       setEngine: (e) => list.setEngine(e),
       markdown: (title) => chats.get(current)!.t.markdown(title ?? chats.get(current)!.title),
+      load: (t) => chats.get(current)!.t.load(t),
     },
     snapshot: snap,
     subscribe(fn) {
@@ -303,6 +341,33 @@ export function chatList(o: ThreadOptions = {}): ChatList {
     setEngine(e) {
       engine = e;
       for (const c of chats.values()) c.t.setEngine(e);
+    },
+    dump() {
+      return {
+        format: "hackbuild-chats",
+        version: 1,
+        current,
+        chats: [...chats].map(([id, c]) => ({ id, title: c.title, updated: c.updated, named: c.named, turns: c.t.snapshot().turns.filter((t) => t.done).map((t) => ({ ...t })) })),
+      };
+    },
+    restore(data, ro = {}) {
+      if (data?.format !== "hackbuild-chats" || data.version !== 1 || !Array.isArray(data.chats)) throw new Error("not a hackbuild-chats version 1 file.");
+      const empty = [...chats.values()].every((c) => !c.t.snapshot().turns.length);
+      if (ro.replace || empty) {
+        for (const c of chats.values()) c.t.stop();
+        chats.clear();
+      }
+      let open = "";
+      for (const c of data.chats) {
+        const id = `chat-${++seq}`;
+        const t = chatThread({ ...o, engine });
+        t.load((c.turns ?? []).filter((x) => (x.role === "user" || x.role === "assistant") && typeof x.text === "string").map((x) => ({ ...x, think: x.think ?? "" })));
+        chats.set(id, { t, title: String(c.title || "chat"), updated: +c.updated || now(), named: !!c.named });
+        if (c.id === data.current) open = id;
+      }
+      if (!chats.size) return void list.create();
+      current = open || (chats.has(current) ? current : snap().items[0]!.id);
+      follow();
     },
   };
   list.create();

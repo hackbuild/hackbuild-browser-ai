@@ -228,17 +228,34 @@ export function asImage(img: unknown): unknown {
   return c;
 }
 
-/** A file as 16 kHz mono samples, decoded by the browser. */
-async function pcm16k(file: Blob): Promise<Float32Array> {
+/** A file as 16 kHz samples per channel (at most two), decoded by the browser. */
+async function pcm16k(file: Blob): Promise<Float32Array[]> {
   const bytes = await file.arrayBuffer();
   const probeCtx = new OfflineAudioContext(1, 1, 16000);
   const buf = await probeCtx.decodeAudioData(bytes);
-  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(buf.duration * 16000)), 16000);
+  const ch = Math.min(2, buf.numberOfChannels);
+  const off = new OfflineAudioContext(ch, Math.max(1, Math.ceil(buf.duration * 16000)), 16000);
   const src = off.createBufferSource();
   src.buffer = buf;
   src.connect(off.destination);
   src.start();
-  return (await off.startRendering()).getChannelData(0);
+  const out = await off.startRendering();
+  return Array.from({ length: ch }, (_, i) => out.getChannelData(i));
+}
+
+/** A level rail folded to at most `bins` bins: loudest frame and whether the gate kept most of it. */
+function railOf(rail: { db: ArrayLike<number>; open: ArrayLike<number> }, bins = 400): { db: number[]; kept: number[] } {
+  const n = Math.max(1, Math.min(bins, rail.db.length));
+  const db = new Array<number>(n).fill(-90);
+  const kept = new Array<number>(n).fill(0);
+  const count = new Array<number>(n).fill(0);
+  for (let i = 0; i < rail.db.length; i++) {
+    const b = Math.min(n - 1, Math.floor((i * n) / rail.db.length));
+    db[b] = Math.max(db[b]!, rail.db[i]!);
+    kept[b]! += rail.open[i]!;
+    count[b]!++;
+  }
+  return { db: db.map((x) => Math.round(x * 10) / 10), kept: kept.map((k, b) => (count[b] && k / count[b]! >= 0.5 ? 1 : 0)) };
 }
 
 async function dspOf(rt: Runtime): Promise<Dsp> {
@@ -273,15 +290,17 @@ async function adapt(job: Job, rec: ModelRecord, value: unknown, rt: Runtime, ct
     case "transcribe": {
       const t = await import("@hackbuild/transcribe");
       const run: Transcriber = async (file, c): Promise<RunResult> => {
-        const [dsp, pcm] = await Promise.all([dspOf(rt), pcm16k(file)]);
-        const lang = ctx.options.language;
-        const out = await t.transcribe(hub, dsp, pcm, {
+        const [dsp, chans] = await Promise.all([dspOf(rt), pcm16k(file)]);
+        const { channel, ...run } = c.options ?? {};
+        const lang = run.language ?? ctx.options.language;
+        const out = await t.transcribe(hub, dsp, t.toMono(chans, channel ?? "auto"), {
+          ...run,
           model: rec.id,
           signal: c.signal,
           ...(lang ? { language: lang } : {}),
           onProgress: (p) => c.onProgress(p.total ? p.done / p.total : 0),
         });
-        return { segments: out.segments, dropped: out.dropped, duration: out.stats.dur, language: out.language, model: rec.label ?? rec.id };
+        return { segments: out.segments, dropped: out.dropped, duration: out.stats.dur, language: out.language, model: rec.label ?? rec.id, stats: out.stats, rail: railOf(out.rail) };
       };
       return run;
     }

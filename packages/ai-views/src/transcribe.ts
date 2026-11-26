@@ -5,7 +5,7 @@
  * function the page passes, so a stub runs the view with no weights.
  */
 
-import { asJson, asSrt, asTxt, asVtt, baseName, type Dropped, type Seg } from "@hackbuild/transcribe";
+import { asJson, asSrt, asTxt, asVtt, baseName, bundle, type Dropped, type FrontEndOptions, type Manifest, type Seg, type Transcript } from "@hackbuild/transcribe";
 import { stripMeta, type StripFigure, type StripStatus } from "@virgilvox/hackbuild-ui/vanilla";
 
 /** What a transcriber returns: segments, dropped lines, duration, language and model. */
@@ -16,6 +16,22 @@ export interface RunResult {
   duration?: number;
   language?: string;
   model?: string;
+  /** Levels and speed of the run (computed), for the readout and the zip manifest. */
+  stats?: Transcript["stats"];
+  /** Loudest level per bin in dBFS and whether the gate kept it, for a level strip. */
+  rail?: { db: number[]; kept: number[] };
+}
+
+/**
+ * Run settings a transcriber reads: the capture front end (target level, lift, denoise, gate
+ * margin, rumble filter, skip silence, re-level), the channel, the language and the phantom filter.
+ */
+export interface TranscribeRunOptions extends FrontEndOptions {
+  /** auto picks the loudest side when one dominates, else mixes. */
+  channel?: "auto" | "mix" | "L" | "R";
+  language?: string;
+  /** The phantom text filter. Default on. */
+  halluc?: boolean;
 }
 
 /** What a transcriber gets: an abort signal and a progress callback. */
@@ -23,6 +39,8 @@ export interface RunContext {
   signal: AbortSignal;
   /** 0 to 1. */
   onProgress: (fraction: number) => void;
+  /** The queue's run settings at the start of this file. */
+  options?: TranscribeRunOptions;
 }
 
 /** Turns one file into a transcript. A page wires @hackbuild/transcribe here; a stub needs none. */
@@ -45,6 +63,8 @@ export interface Channel {
   language?: string;
   model?: string;
   error?: string;
+  stats?: Transcript["stats"];
+  rail?: { db: number[]; kept: number[] };
   meta: StripFigure[];
 }
 
@@ -80,13 +100,15 @@ export interface TranscribeQueue {
   redo(): void;
   /** One channel as a file: its name, text and media type. */
   exportAs(kind: ExportKind, id?: number): { name: string; text: string; type: string } | null;
+  /** Every finished channel in four formats, with manifest.json first, as one zip; null with none. */
+  zip(o?: { tool?: string; date?: Date }): { name: string; data: Uint8Array; manifest: Manifest } | null;
   setTranscriber(t: Transcriber): void;
 }
 
 const TYPES: Record<ExportKind, string> = { txt: "text/plain", srt: "application/x-subrip", vtt: "text/vtt", json: "application/json" };
 
 /** Creates a transcribe queue that runs each file through `run`, one at a time. */
-export function transcribeQueue(o: { run: Transcriber; autostart?: boolean }): TranscribeQueue {
+export function transcribeQueue(o: { run: Transcriber; autostart?: boolean; options?: () => TranscribeRunOptions }): TranscribeQueue {
   let run = o.run;
   let channels: Channel[] = [];
   const files = new Map<number, Blob & { name: string }>();
@@ -106,7 +128,10 @@ export function transcribeQueue(o: { run: Transcriber; autostart?: boolean }): T
     channels = channels.map((c) => (c.id === id ? { ...c, ...p } : c));
     emit();
   };
-  const metaOf = (c: Channel) => stripMeta({ size: c.size, ...(c.duration ? { duration: c.duration } : {}), ...(c.status === "done" ? { lines: c.segments.length } : {}) });
+  const metaOf = (c: Channel): StripFigure[] => {
+    const s = c.stats;
+    return stripMeta({ size: c.size, ...(c.duration ? { duration: c.duration } : {}), ...(s ? { snrDb: s.snrDb, gainDb: s.gainDb, density: s.density, rtf: s.rtf } : {}), ...(c.status === "done" ? { lines: c.segments.length } : {}) });
+  };
 
   const q: TranscribeQueue = {
     snapshot: snap,
@@ -138,13 +163,15 @@ export function transcribeQueue(o: { run: Transcriber; autostart?: boolean }): T
         ac = new AbortController();
         patch(next.id, { status: "working", pct: 0 });
         try {
-          const r = await run(file, { signal: ac.signal, onProgress: (f) => patch(next.id, { pct: Math.round(Math.min(1, Math.max(0, f)) * 100) }) });
+          const r = await run(file, { signal: ac.signal, onProgress: (f) => patch(next.id, { pct: Math.round(Math.min(1, Math.max(0, f)) * 100) }), ...(o.options ? { options: o.options() } : {}) });
           const c = channels.find((x) => x.id === next.id);
           if (!c) continue;
           const done: Channel = { ...c, status: r.segments.length ? "done" : "empty", pct: 100, segments: r.segments, dropped: r.dropped ?? [] };
           if (r.duration !== undefined) done.duration = r.duration;
           if (r.language) done.language = r.language;
           if (r.model) done.model = r.model;
+          if (r.stats) done.stats = r.stats;
+          if (r.rail) done.rail = r.rail;
           done.meta = metaOf(done);
           patch(next.id, done);
           if (selected === null || channels.find((x) => x.id === selected)?.status !== "done") selected = next.id;
@@ -224,6 +251,14 @@ export function transcribeQueue(o: { run: Transcriber; autostart?: boolean }): T
               ? asVtt(c.segments)
               : asJson({ source: c.name, segments: c.segments, dropped: c.dropped, model: c.model ?? "unknown", language: c.language ?? "unknown", ...(c.duration !== undefined ? { duration: c.duration } : {}) });
       return { name: `${baseName(c.name)}.${kind}`, text, type: TYPES[kind] };
+    },
+    zip(zo = {}) {
+      const done = channels.filter((c) => c.segments.length);
+      if (!done.length) return null;
+      const docs = done.map((c) => ({ source: c.name, segments: c.segments, dropped: c.dropped, model: c.model ?? "unknown", language: c.language ?? "unknown", ...(c.stats ? { stats: c.stats } : {}), ...(c.duration !== undefined ? { duration: c.duration } : {}) }));
+      const capture = o.options?.() ?? null;
+      const out = bundle(docs, { ...(zo.tool ? { tool: zo.tool } : {}), capture: capture as Record<string, unknown> | null, ...(zo.date ? { date: zo.date } : {}) });
+      return { name: `transcripts-${(zo.date ?? new Date()).toISOString().slice(0, 10)}.zip`, data: out.zip, manifest: out.manifest };
     },
     setTranscriber(t) {
       run = t;

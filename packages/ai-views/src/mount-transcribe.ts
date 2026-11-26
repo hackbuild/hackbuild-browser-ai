@@ -88,6 +88,8 @@ export interface TranscribeDropOptions extends TranscriptViewOptions {
   title?: string;
   note?: string;
   pickLabel?: string;
+  /** A "choose a folder" button; a dropped folder is read whole either way. */
+  folders?: boolean;
   /** A sample a person can try with no file; the page queues it. */
   sampleLabel?: string;
   onSample?: () => void;
@@ -97,6 +99,34 @@ export interface TranscribeDropOptions extends TranscriptViewOptions {
 export interface TranscribeDropHandle extends Mounted {
   /** Open the file picker: the add files verb. */
   pick(): void;
+  /** Open the folder picker. */
+  pickFolder(): void;
+}
+
+const AV = /\.(mp4|m4v|mov|webm|mkv|avi|mpe?g|ogv|m4a|mp3|wav|flac|ogg|opus|aac|wma|3gp)$/i;
+/** A file a speech run can read: audio or video by type or by name. */
+export const isMedia = (f: { name: string; type: string }) => /^(audio|video)\//.test(f.type) || AV.test(f.name);
+
+type Entry = { isFile: boolean; isDirectory: boolean; name: string; file?(ok: (f: File) => void, bad: (e: unknown) => void): void; createReader?(): { readEntries(ok: (es: Entry[]) => void, bad: (e: unknown) => void): void } };
+async function walk(e: Entry, out: File[], depth = 0): Promise<void> {
+  if (e.isFile && e.file) out.push(await new Promise<File>((ok, bad) => e.file!(ok, bad)));
+  else if (e.isDirectory && e.createReader && depth < 8) {
+    const r = e.createReader();
+    for (;;) {
+      const batch = await new Promise<Entry[]>((ok, bad) => r.readEntries(ok, bad));
+      if (!batch.length) break;
+      for (const c of batch) await walk(c, out, depth + 1);
+    }
+  }
+}
+/** The files of a drop, with dropped folders read through, media only. */
+export async function droppedFiles(dt: DataTransfer | null | undefined): Promise<File[]> {
+  if (!dt) return [];
+  const entries = [...(dt.items ?? [])].map((i) => (i.webkitGetAsEntry?.() as unknown as Entry | null)).filter((x): x is Entry => x !== null && x !== undefined);
+  if (!entries.length) return [...dt.files].filter(isMedia);
+  const out: File[] = [];
+  for (const e of entries) await walk(e, out).catch(() => undefined);
+  return out.filter(isMedia);
 }
 
 /** The drop zone that becomes the transcript. */
@@ -107,19 +137,23 @@ export function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o
   input.hidden = true;
   input.multiple = true;
   input.accept = o.accept ?? "audio/*,video/*";
+  const dir = document.createElement("input");
+  dir.type = "file";
+  dir.hidden = true;
+  dir.setAttribute("webkitdirectory", "");
   const zone = document.createElement("div");
   const result = document.createElement("div");
-  host.replaceChildren(zone, result, input);
+  host.replaceChildren(zone, result, input, dir);
   zone.className = "hb-lay-drop";
   // the result scrolls inside the subject, as the drop first layout's transcript does
   result.className = "hb-lay-scroll";
   zone.innerHTML =
     `<div class="hb-lay-empty"><span class="hb-lay-empty-name">${esc(o.title ?? "drop audio or video")}</span>` +
     `<p class="hb-lay-empty-note">${esc(o.note ?? "any length. the words are worked out on this machine and the file never leaves it.")}</p>` +
-    `<div class="hb-lay-empty-acts"><button type="button" class="hb-btn hb-btn-go" data-pick>${esc(o.pickLabel ?? "choose a file")}</button>${o.sampleLabel ? `<button type="button" class="hb-btn" data-sample>${esc(o.sampleLabel)}</button>` : ""}</div></div>`;
+    `<div class="hb-lay-empty-acts"><button type="button" class="hb-btn hb-btn-go" data-pick>${esc(o.pickLabel ?? "choose a file")}</button>${o.folders ? `<button type="button" class="hb-btn" data-folder>a folder</button>` : ""}${o.sampleLabel ? `<button type="button" class="hb-btn" data-sample>${esc(o.sampleLabel)}</button>` : ""}</div></div>`;
   const view = mountTranscriptView(result, queue, o);
   const take = (list: FileList | null | undefined) => {
-    const files = list ? [...list] : [];
+    const files = list ? [...list].filter(isMedia) : [];
     if (files.length) queue.add(files);
   };
   l.on(host, "dragover", (e) => {
@@ -130,7 +164,11 @@ export function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o
   l.on(host, "drop", (e) => {
     e.preventDefault();
     zone.classList.remove("is-hot");
-    take((e as DragEvent).dataTransfer?.files);
+    void droppedFiles((e as DragEvent).dataTransfer).then((fs) => fs.length && queue.add(fs));
+  });
+  l.on(dir, "change", () => {
+    take(dir.files);
+    dir.value = "";
   });
   l.on(input, "change", () => {
     take(input.files);
@@ -139,6 +177,7 @@ export function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o
   l.on(zone, "click", (e) => {
     const t = e.target as Element;
     if (t.closest("[data-pick]")) input.click();
+    else if (t.closest("[data-folder]")) dir.click();
     else if (t.closest("[data-sample]")) o.onSample?.();
   });
   l.add(
@@ -150,6 +189,7 @@ export function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o
   );
   return {
     pick: () => input.click(),
+    pickFolder: () => dir.click(),
     dispose() {
       l.off();
       view.dispose();
@@ -212,6 +252,47 @@ export function mountTranscriptExports(host: HTMLElement, queue: TranscribeQueue
     if (ex) {
       const f = queue.exportAs(ex.dataset.ex as ExportKind);
       if (f) (o.save ?? download)(f.name, f.text, f.type);
+      return;
+    }
+    const cp = t.closest<HTMLElement>("[data-copy]");
+    if (cp) {
+      const f = queue.exportAs("txt");
+      if (f) void navigator.clipboard?.writeText(f.text).then(() => (cp.lastChild!.textContent = "copied")).catch(() => (cp.lastChild!.textContent = "copy blocked"));
+      return;
+    }
+    if (t.closest("[data-undo]")) queue.undo();
+    else if (t.closest("[data-redo]")) queue.redo();
+  });
+  l.add(queue.subscribe(draw));
+  return { dispose: () => l.off() };
+}
+
+/**
+ * ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and
+ * every finished transcript as one zip with a manifest, plus undo and redo of
+ * edits. Nothing shows until there is text; undo shows once there is a change.
+ */
+export function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o: { save?: (name: string, data: string | Uint8Array, type: string) => void; tool?: string } = {}): Mounted {
+  const l = listeners();
+  const save = o.save ?? ((name: string, data: string | Uint8Array, type: string) => download(name, typeof data === "string" ? data : new Blob([data as BlobPart], { type }), type));
+  const draw = (s: QueueSnapshot) => {
+    const c = pickedOf(s);
+    const done = s.channels.filter((x) => x.segments.length).length;
+    host.innerHTML = c?.segments.length
+      ? `<div class="hb-toolbar" role="group" aria-label="export">${(["txt", "srt", "vtt", "json"] as const).map((k) => `<button type="button" class="hb-btn" data-ex="${k}">${k}</button>`).join("")}<button type="button" class="hb-btn" data-copy>${ICON.copy}copy</button>${done ? `<button type="button" class="hb-btn" data-zip>all ${done} as zip</button>` : ""}${s.canUndo ? `<button type="button" class="hb-iconbtn" data-undo aria-label="undo the last edit" title="undo">${ICON.undo}</button>` : ""}${s.canRedo ? `<button type="button" class="hb-iconbtn" data-redo aria-label="redo" title="redo">${ICON.redo}</button>` : ""}</div>`
+      : "";
+  };
+  l.on(host, "click", (e) => {
+    const t = e.target as Element;
+    const ex = t.closest<HTMLElement>("[data-ex]");
+    if (ex) {
+      const f = queue.exportAs(ex.dataset.ex as ExportKind);
+      if (f) save(f.name, f.text, f.type);
+      return;
+    }
+    if (t.closest("[data-zip]")) {
+      const z = queue.zip(o.tool ? { tool: o.tool } : {});
+      if (z) save(z.name, z.data, "application/zip");
       return;
     }
     const cp = t.closest<HTMLElement>("[data-copy]");

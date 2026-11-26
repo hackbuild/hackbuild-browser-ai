@@ -97,6 +97,12 @@ interface DefineTarget {
 The part of a custom element registry `define` uses; `customElements` satisfies it.
 
 ```ts
+function droppedFiles(dt: DataTransfer | null | undefined): Promise<File[]>
+```
+
+The files of a drop, with dropped folders read through, media only.
+
+```ts
 const ELEMENT_NAMES: readonly ["model-select", "model-jobs", "chat-pane", "chat-composer", "chat-list", "chat-context", "transcribe-drop", "transcript-view", "transcribe-queue", "transcript-exports", "mask-studio", "mask-tools", "mask-verbs", "mask-rack", "frame-view", "camera-feed", "memory-inspector"]
 ```
 
@@ -145,6 +151,18 @@ function gateWords(row: ModelRow | undefined): string
 ```
 
 The words of a gate's one pink button for a pick: "load, 1.7 gb", then "ready".
+
+```ts
+function isMedia(f: { name: string; type: string }): boolean
+```
+
+A file a speech run can read: audio or video by type or by name.
+
+```ts
+function isProtected(it: StoredItem): boolean
+```
+
+True when an item is kept out of cleanup: decay never drops it.
 
 ```ts
 interface MaskModels {
@@ -213,6 +231,30 @@ interface MemoryInspector extends Mounted {
 A mounted memory inspector whose `set` shows a new recall.
 
 ```ts
+interface MemoryLike {
+  add(text: string, o?: { kind?: "note" | "episode" | "gist" | "lesson" | "fact" | "rule" | "lore" | "doc"; meta?: Record<string, unknown>; section?: string }): Promise<unknown>;
+  all(): StoredItem[];
+  edit(id: number, patch: EditPatch): Promise<unknown>;
+  export(): ExportData;
+  import(data: ExportData, o?: { replace?: boolean }): Promise<number>;
+  recall(q: string, o?: { k?: number }): Promise<Recall>;
+  remove(ids: number[]): Promise<void>;
+}
+```
+
+What a memory pane needs from a store; a `Memory` from @hackbuild/memory fits.
+
+```ts
+interface MemoryPaneHandle extends Mounted {
+  dispose(): void;
+  refresh(): void;
+  used(labels: readonly string[]): void;
+}
+```
+
+A memory pane over a host: `refresh` after the store changes elsewhere, `used` to mark what the last reply used.
+
+```ts
 interface ModelSelectElement extends HTMLElement {
   env: Env | undefined;
   loader: Loader | undefined;
@@ -263,6 +305,12 @@ function mountContextMeter(host: HTMLElement, thread: ChatThread, o?: { budget?:
 The context meter (hackbuild-ui `.hb-ctxmeter`): what the next request carries against the model's context.
 
 ```ts
+function mountExportMenu(host: HTMLElement, queue: TranscribeQueue, o?: { save?: (name: string, data: string | Uint8Array<ArrayBufferLike>, type: string) => void; tool?: string }): Mounted
+```
+
+ExportMenu: the selected transcript as txt, srt, vtt or json, a copy, and every finished transcript as one zip with a manifest, plus undo and redo of edits.
+
+```ts
 function mountFrameView(host: HTMLElement, o?: FrameViewOptions): FrameView
 ```
 
@@ -299,6 +347,12 @@ function mountMemoryInspector(host: HTMLElement, rec?: RecallLike | null): Memor
 Shows a recall trace as a table on a host.
 
 ```ts
+function mountMemoryPane(host: HTMLElement, mem: MemoryLike, o?: { name?: string; onChange?: () => void }): MemoryPaneHandle
+```
+
+The memory pane: counts, search, a source filter, add a note, the list with protect and forget, export, import, erase.
+
+```ts
 function mountModelJobs(host: HTMLElement, jobs: JobsPick, o?: { go?: boolean }): Mounted
 ```
 
@@ -309,6 +363,24 @@ function mountModelSelect(host: HTMLElement, pick: ModelPick, o?: ModelSelectOpt
 ```
 
 The closed picker over a host; pressing it opens the sheet.
+
+```ts
+function mountPersonaRack(host: HTMLElement, rack: PersonaRack): Mounted
+```
+
+The persona rack: presets one press away, name, the three parts with their cost, the template, save, and the persona as a file.
+
+```ts
+function mountSessionMenu(host: HTMLElement, list: ChatList, o?: { onImport?: (n: number) => void }): Mounted
+```
+
+The session menu of a chat list: clear the open chat, export it as markdown, every chat as json, and import.
+
+```ts
+function mountSourcesDrop(host: HTMLElement, o: SourcesDropOptions): Mounted
+```
+
+A drop zone for sources: files or a whole folder of text, pdf, docx, zip and mail go into memory; a line per file says what came in.
 
 ```ts
 function mountTranscribeDrop(host: HTMLElement, queue: TranscribeQueue, o?: TranscribeDropOptions): TranscribeDropHandle
@@ -335,16 +407,37 @@ function mountTranscriptView(host: HTMLElement, queue: TranscribeQueue, o?: Tran
 The selected channel's transcript over a host.
 
 ```ts
+function mountVoiceRow(host: HTMLElement, row: VoiceRow, o?: { test?: string }): Mounted
+```
+
+The voice row: auto speak, voice, rate, pitch, test and stop.
+
+```ts
 function pickSheet(pick: ModelPick): Mounted & { open(): void }
 ```
 
 The sheet of one pick, in a drawer on the body.
 
 ```ts
+function protect(mem: Pick<MemoryLike, "edit">, it: StoredItem, on: boolean): Promise<void>
+```
+
+Protect an item from cleanup (it becomes lore, which never decays) or give it back its kind.
+
+```ts
 function shortName(name: string): string
 ```
 
 A model name cut for the bar chip: filler words (instruct, chat, quant tags) go, and a name of more than three words keeps its first two and its last, which is usually the size: "hermes 3 llama 3.2 3b" reads "hermes 3 3b".
+
+```ts
+interface SourcesDropOptions {
+  accept?: string;
+  ingest: (files: File[], o: { onFile: (e: { chunks: number; name: string; note?: string }) => void }) => Promise<{ chunks: number; files: number }>;
+}
+```
+
+Options for a sources drop: what reads the files into memory, and a line per file.
 
 ```ts
 interface StudioState {
@@ -378,6 +471,7 @@ A mask studio tool: the click segment point or one of the hackbuild-ui mask tool
 interface TranscribeDropHandle extends Mounted {
   dispose(): void;
   pick(): void;
+  pickFolder(): void;
 }
 ```
 
@@ -386,6 +480,7 @@ A mounted drop zone whose `pick` opens the file picker.
 ```ts
 interface TranscribeDropOptions extends TranscriptViewOptions {
   accept?: string;
+  folders?: boolean;
   note?: string;
   onSample?: () => void;
   onSeek?: (seconds: number) => void;
@@ -464,8 +559,10 @@ interface Channel {
   model?: string;
   name: string;
   pct: number;
+  rail?: { db: number[]; kept: number[] };
   segments: Seg[];
   size: number;
+  stats?: { density: number; dur: number; forced: boolean; gainDb: number; loudDb: number; noiseDb: number; reels: number; rtf: number; snrDb: number; speechDb: number; thrDb: number; wall: number };
   status: StripStatus;
 }
 ```
@@ -482,9 +579,11 @@ Creates a list of chat threads, newest first, with one open; its `thread` always
 interface ChatList {
   readonly thread: ChatThread;
   create(): string;
+  dump(): ChatListData;
   open(id: string): void;
   remove(id: string): void;
   rename(id: string, title: string): void;
+  restore(data: ChatListData, o?: { replace?: boolean }): void;
   setEngine(engine: ChatEngine | null): void;
   snapshot(): ChatListSnapshot;
   subscribe(fn: (s: ChatListSnapshot) => void): () => void;
@@ -492,6 +591,17 @@ interface ChatList {
 ```
 
 Several chats: a list with the newest first, one open.
+
+```ts
+interface ChatListData {
+  chats: { id: string; named?: boolean; title: string; turns: Turn[]; updated: number }[];
+  current?: string;
+  format: "hackbuild-chats";
+  version: 1;
+}
+```
+
+A chat list as plain data: format, version, the open chat and each chat's title and turns.
 
 ```ts
 interface ChatListItem {
@@ -522,6 +632,7 @@ Creates a chat thread that streams replies from an engine, with optional memory 
 ```ts
 interface ChatThread {
   clear(): void;
+  load(turns: readonly Turn[]): void;
   markdown(title?: string): string;
   regenerate(): Promise<void>;
   remove(id: number): void;
@@ -734,7 +845,7 @@ interface JobsPick {
   presets(): { id: string; label: string; total: string }[];
   setPresets(p: readonly PickPreset[]): void;
   subscribe(fn: () => void): () => void;
-  update(o: { env?: Env; estimate?: StorageEstimate | null; loader?: Loader; onRemove?: (rec: ModelRecord) => void | Promise<void>; records?: readonly ModelRecord[] }): void;
+  update(o: { env?: Env; estimate?: StorageEstimate | null; loader?: Loader; onRemove?: (rec: ModelRecord) => void | Promise<void>; records?: readonly ModelRecord[]; stored?: Iterable<string, any, any> }): void;
 }
 ```
 
@@ -804,7 +915,7 @@ interface ModelPick {
   result(id: string): unknown;
   snapshot(): PickSnapshot;
   subscribe(fn: (s: PickSnapshot) => void): () => void;
-  update(o: { env?: Env; estimate?: StorageEstimate | null; loader?: Loader; onRemove?: (rec: ModelRecord) => void | Promise<void>; records?: readonly ModelRecord[] }): void;
+  update(o: { env?: Env; estimate?: StorageEstimate | null; loader?: Loader; onRemove?: (rec: ModelRecord) => void | Promise<void>; records?: readonly ModelRecord[]; stored?: Iterable<string, any, any> }): void;
 }
 ```
 
@@ -827,6 +938,47 @@ function ownRecord(job: Job, kind: OwnKind, v: Record<string, string>): ModelRec
 ```
 
 A record for a "your own" form.
+
+```ts
+interface Persona {
+  first?: string;
+  name: string;
+  notes: string;
+  profile: string;
+  rules: string;
+}
+```
+
+A persona in three parts, highest priority first, with its name and first line.
+
+```ts
+interface PersonaPresetX {
+  label: string;
+  persona: Persona;
+}
+```
+
+A named persona a person can load in one press.
+
+```ts
+function personaRack(o?: { onSave?: (saved: PersonaPresetX[]) => void; persona?: Persona; presets?: readonly PersonaPresetX[]; saved?: readonly PersonaPresetX[] }): PersonaRack
+```
+
+Creates a persona rack with built in presets and any saved ones; `onSave` keeps the saved ones.
+
+```ts
+interface PersonaRack {
+  load(i: number): void;
+  removePreset(i: number): void;
+  save(label: string): void;
+  set(p: Partial<Persona>): void;
+  snapshot(): { builtIn: number; on: number; persona: Persona; presets: readonly PersonaPresetX[] };
+  subscribe(fn: (s: { builtIn: number; on: number; persona: Persona; presets: readonly PersonaPresetX[] }) => void): () => void;
+  system(mem?: readonly MemoryUsed[], budgetTokens?: number): { dropped: string[]; text: string };
+}
+```
+
+The persona state: the current persona, presets, and the system prompt fitted to a budget.
 
 ```ts
 interface PickOptions {
@@ -886,6 +1038,16 @@ type RecallLike = Pick<Recall, "trace" | "hits" | "query" | "mode">
 The parts of a memory recall the inspector shows: trace, hits, query and mode.
 
 ```ts
+interface RepoCheck {
+  note: string;
+  ok: boolean;
+  onnx: number;
+}
+```
+
+What a hub repo check found: whether it exists, whether it carries onnx files, and the words a row shows.
+
+```ts
 interface RowContext {
   env?: Env;
   estimate?: StorageEstimate | null;
@@ -908,6 +1070,7 @@ One record as one picker row.
 ```ts
 interface RunContext {
   onProgress: (fraction: number) => void;
+  options?: TranscribeRunOptions;
   signal: AbortSignal;
 }
 ```
@@ -920,7 +1083,9 @@ interface RunResult {
   duration?: number;
   language?: string;
   model?: string;
+  rail?: { db: number[]; kept: number[] };
   segments: Seg[];
+  stats?: { density: number; dur: number; forced: boolean; gainDb: number; loudDb: number; noiseDb: number; reels: number; rtf: number; snrDb: number; speechDb: number; thrDb: number; wall: number };
 }
 ```
 
@@ -954,13 +1119,23 @@ function sizeWords(r: ModelRecord): string | undefined
 Download words: "1.7 gb".
 
 ```ts
+function storedIds(store: Pick<WeightStore, "keys">, records: readonly ModelRecord[]): Promise<string[]>
+```
+
+The ids of records whose files are already in a weight store: the cache badge of a picker.
+
+```ts
 interface ThreadOptions {
   engine?: ChatEngine | null;
+  history?: () => number;
   maxTokens?: number;
   noEngine?: string;
   now?: () => number;
+  onReply?: (turn: Turn, said: string) => void;
   recall?: (query: string) => Promise<MemoryUsed[]>;
-  system?: string;
+  stream?: () => Omit<StreamOptions, "signal">;
+  system?: string | () => string;
+  systemFor?: (mem: MemoryUsed[]) => string;
 }
 ```
 
@@ -1005,7 +1180,7 @@ function traceRows(r: Pick<Recall, "trace" | "hits">, maxText?: number): TraceRo
 The rows of a recall trace as text, marking the hits handed to the model.
 
 ```ts
-function transcribeQueue(o: { autostart?: boolean; run: Transcriber }): TranscribeQueue
+function transcribeQueue(o: { autostart?: boolean; options?: () => TranscribeRunOptions; run: Transcriber }): TranscribeQueue
 ```
 
 Creates a transcribe queue that runs each file through `run`, one at a time.
@@ -1025,6 +1200,7 @@ interface TranscribeQueue {
   stop(): void;
   subscribe(fn: (s: QueueSnapshot) => void): () => void;
   undo(): void;
+  zip(o?: { date?: Date; tool?: string }): { data: Uint8Array; manifest: Manifest; name: string } | null;
 }
 ```
 
@@ -1035,6 +1211,23 @@ type Transcriber = (file: Blob & { name: string }, ctx: RunContext) => Promise<R
 ```
 
 Turns one file into a transcript.
+
+```ts
+interface TranscribeRunOptions extends FrontEndOptions {
+  channel?: "auto" | "mix" | "L" | "R";
+  denoise?: 0 | 1 | 2 | 3;
+  halluc?: boolean;
+  hp?: number;
+  language?: string;
+  maxGainDb?: number;
+  perReelAgc?: boolean;
+  skipSilence?: boolean;
+  targetDb?: number;
+  vadMargin?: number;
+}
+```
+
+Run settings a transcriber reads: the capture front end (target level, lift, denoise, gate margin, rumble filter, skip silence, re-level), the channel, the language and the phantom filter.
 
 ```ts
 interface Turn {
@@ -1063,6 +1256,31 @@ function useModelPick(job: Job, o?: PickOptions): ModelPick
 ```
 
 Creates a model picker for a job, with rows that say whether each model fits this machine.
+
+```ts
+function verifyRepo(repo: string, o?: { fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>; host?: string }): Promise<RepoCheck>
+```
+
+Checks a hub repo id before it is used as your own model: it exists, it is public, and it carries onnx files transformers.js can run.
+
+```ts
+function voiceRow(engine: NativeEngine, o?: { auto?: boolean; onChange?: (s: { auto: boolean; pitch: number; rate: number; voice: string }) => void; pitch?: number; rate?: number; voice?: string }): VoiceRow
+```
+
+Creates the voice state over a native engine (`webSpeechEngine()` of @hackbuild/speak).
+
+```ts
+interface VoiceRow {
+  reply(text: string): void;
+  set(p: Partial<{ auto: boolean; pitch: number; rate: number; voice: string }>): void;
+  snapshot(): { auto: boolean; error: string; pitch: number; rate: number; speaking: boolean; voice: string; voices: string[] };
+  speak(text: string): Promise<void>;
+  stop(): void;
+  subscribe(fn: (s: { auto: boolean; error: string; pitch: number; rate: number; speaking: boolean; voice: string; voices: string[] }) => void): () => void;
+}
+```
+
+Spoken replies: auto speak, the voice, rate and pitch, speak and stop.
 
 ```ts
 function weightKeys(rec: ModelRecord): string[]
@@ -1115,6 +1333,12 @@ const ContextMeter: DefineComponent<{ budget: number; system: string; thread: Ch
 Vue component that shows what the next request carries against the context budget.
 
 ```ts
+const ExportMenu: DefineComponent<{ queue: TranscribeQueue; tool: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ queue: TranscribeQueue; tool: string }, {}>, { tool: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for the export menu of a transcribe queue: four formats, copy, all as zip, undo and redo.
+
+```ts
 const FrameView: DefineComponent<ExtractPropTypes<{ mirror: { default: boolean; type: BooleanConstructor }; results: { default: () => {}; type: PropType<FrameResults> }; source: { default: null; type: PropType<string | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | null> } }>, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, "view"[], "view", PublicProps, ToResolvedProps<ExtractPropTypes<{ mirror: { default: boolean; type: BooleanConstructor }; results: { default: () => {}; type: PropType<FrameResults> }; source: { default: null; type: PropType<string | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | null> } }>, "view"[]>, { mirror: boolean; results: FrameResults; source: string | HTMLImageElement | HTMLVideoElement | HTMLCanvasElement | null }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
@@ -1151,6 +1375,12 @@ const MemoryInspector: DefineComponent<ExtractPropTypes<{ recall: { default: nul
 Vue component that shows a recall trace as a table.
 
 ```ts
+const MemoryPane: DefineComponent<{ memory: MemoryLike; name: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane")[], "change" | "pane", PublicProps, ToResolvedProps<{ memory: MemoryLike; name: string }, ("change" | "pane")[]>, { name: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used).
+
+```ts
 const ModelJobs: DefineComponent<{ go: boolean; jobs: JobsPick }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ go: boolean; jobs: JobsPick }, {}>, { go: boolean }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
@@ -1163,10 +1393,28 @@ const ModelSelect: DefineComponent<{ env?: Env; go: boolean; job: Job; loader?: 
 Vue component for a model picker of one job; emits `pick`, `choose`, `loaded` and `failed`.
 
 ```ts
-const TranscribeDrop: DefineComponent<{ accept: string; queue: TranscribeQueue; sampleLabel: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, "sample"[], "sample", PublicProps, ToResolvedProps<{ accept: string; queue: TranscribeQueue; sampleLabel: string }, "sample"[]>, { accept: string; sampleLabel: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+const PersonaRack: DefineComponent<{ rack: PersonaRack }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ rack: PersonaRack }, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
 ```
 
-Vue component for the drop zone that becomes the transcript; emits `sample`.
+Vue component for a persona rack.
+
+```ts
+const SessionMenu: DefineComponent<{ list: ChatList }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, "import"[], "import", PublicProps, ToResolvedProps<{ list: ChatList }, "import"[]>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for the session menu of a chat list; emits `import` with the number of chats.
+
+```ts
+const SourcesDrop: DefineComponent<{ accept: string; ingest: (files: File[], o: { onFile: (e: { chunks: number; name: string; note?: string }) => void }) => Promise<{ chunks: number; files: number }> }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ accept: string; ingest: (files: File[], o: { onFile: (e: { chunks: number; name: string; note?: string }) => void }) => Promise<{ chunks: number; files: number }> }, {}>, { accept: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for a sources drop: files and folders into memory through `ingest`.
+
+```ts
+const TranscribeDrop: DefineComponent<{ accept: string; folders: boolean; note: string; queue: TranscribeQueue; sampleLabel: string; showDropped: boolean; title: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, ("drop" | "sample")[], "drop" | "sample", PublicProps, ToResolvedProps<{ accept: string; folders: boolean; note: string; queue: TranscribeQueue; sampleLabel: string; showDropped: boolean; title: string }, ("drop" | "sample")[]>, { accept: string; folders: boolean; note: string; sampleLabel: string; showDropped: boolean; title: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for the drop zone that becomes the transcript; emits `sample` and `drop` (the handle, whose `pick` opens the file picker).
 
 ```ts
 const TranscribeQueue: DefineComponent<{ queue: TranscribeQueue }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ queue: TranscribeQueue }, {}>, {}, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
@@ -1179,6 +1427,12 @@ const TranscriptView: DefineComponent<{ exports: boolean; queue: TranscribeQueue
 ```
 
 Vue component for the selected transcript, or its export buttons when `exports` is set.
+
+```ts
+const VoiceRow: DefineComponent<{ row: VoiceRow; test: string }, () => VNode<RendererNode, RendererElement, { [key: string]: any }>, {}, {}, {}, ComponentOptionsMixin, ComponentOptionsMixin, {}, string, PublicProps, ToResolvedProps<{ row: VoiceRow; test: string }, {}>, { test: string }, {}, {}, {}, string, ComponentProvideOptions, true, {}, any>
+```
+
+Vue component for a voice row.
 
 ## Examples
 

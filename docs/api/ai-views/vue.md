@@ -152,6 +152,35 @@ Vue component that shows what the next request carries against the context budge
 
 ***
 
+### ExportMenu
+
+```ts
+const ExportMenu: DefineComponent<{
+  queue: TranscribeQueue;
+  tool: string;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, {
+}, string, PublicProps, ToResolvedProps<{
+  queue: TranscribeQueue;
+  tool: string;
+}, {
+}>, {
+  tool: string;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for the export menu of a transcribe queue: four formats, copy, all as zip, undo and redo.
+
+***
+
 ### FrameView
 
 ```ts
@@ -360,6 +389,33 @@ Vue component that shows a recall trace as a table.
 
 ***
 
+### MemoryPane
+
+```ts
+const MemoryPane: DefineComponent<{
+  memory: MemoryLike;
+  name: string;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, ("change" | "pane")[], "change" | "pane", PublicProps, ToResolvedProps<{
+  memory: MemoryLike;
+  name: string;
+}, ("change" | "pane")[]>, {
+  name: string;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for a memory pane over a store; emits `pane` with the handle (refresh, used).
+
+***
+
 ### ModelJobs
 
 ```ts
@@ -429,25 +485,21 @@ Vue component for a model picker of one job; emits `pick`, `choose`, `loaded` an
 
 ***
 
-### TranscribeDrop
+### PersonaRack
 
 ```ts
-const TranscribeDrop: DefineComponent<{
-  accept: string;
-  queue: TranscribeQueue;
-  sampleLabel: string;
+const PersonaRack: DefineComponent<{
+  rack: PersonaRack;
 }, () => VNode<RendererNode, RendererElement, {
 [key: string]: any;
 }>, {
 }, {
 }, {
-}, ComponentOptionsMixin, ComponentOptionsMixin, "sample"[], "sample", PublicProps, ToResolvedProps<{
-  accept: string;
-  queue: TranscribeQueue;
-  sampleLabel: string;
-}, "sample"[]>, {
-  accept: string;
-  sampleLabel: string;
+}, ComponentOptionsMixin, ComponentOptionsMixin, {
+}, string, PublicProps, ToResolvedProps<{
+  rack: PersonaRack;
+}, {
+}>, {
 }, {
 }, {
 }, {
@@ -455,7 +507,108 @@ const TranscribeDrop: DefineComponent<{
 }, any>;
 ```
 
-Vue component for the drop zone that becomes the transcript; emits `sample`.
+Vue component for a persona rack.
+
+***
+
+### SessionMenu
+
+```ts
+const SessionMenu: DefineComponent<{
+  list: ChatList;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, "import"[], "import", PublicProps, ToResolvedProps<{
+  list: ChatList;
+}, "import"[]>, {
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for the session menu of a chat list; emits `import` with the number of chats.
+
+***
+
+### SourcesDrop
+
+```ts
+const SourcesDrop: DefineComponent<{
+  accept: string;
+  ingest: (files, o) => Promise<{
+     chunks: number;
+     files: number;
+  }>;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, {
+}, string, PublicProps, ToResolvedProps<{
+  accept: string;
+  ingest: (files, o) => Promise<{
+     chunks: number;
+     files: number;
+  }>;
+}, {
+}>, {
+  accept: string;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for a sources drop: files and folders into memory through `ingest`.
+
+***
+
+### TranscribeDrop
+
+```ts
+const TranscribeDrop: DefineComponent<{
+  accept: string;
+  folders: boolean;
+  note: string;
+  queue: TranscribeQueue;
+  sampleLabel: string;
+  showDropped: boolean;
+  title: string;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, ("drop" | "sample")[], "drop" | "sample", PublicProps, ToResolvedProps<{
+  accept: string;
+  folders: boolean;
+  note: string;
+  queue: TranscribeQueue;
+  sampleLabel: string;
+  showDropped: boolean;
+  title: string;
+}, ("drop" | "sample")[]>, {
+  accept: string;
+  folders: boolean;
+  note: string;
+  sampleLabel: string;
+  showDropped: boolean;
+  title: string;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for the drop zone that becomes the transcript; emits `sample` and `drop` (the handle, whose `pick` opens the file picker).
 
 ***
 
@@ -511,3 +664,32 @@ const TranscriptView: DefineComponent<{
 ```
 
 Vue component for the selected transcript, or its export buttons when `exports` is set.
+
+***
+
+### VoiceRow
+
+```ts
+const VoiceRow: DefineComponent<{
+  row: VoiceRow;
+  test: string;
+}, () => VNode<RendererNode, RendererElement, {
+[key: string]: any;
+}>, {
+}, {
+}, {
+}, ComponentOptionsMixin, ComponentOptionsMixin, {
+}, string, PublicProps, ToResolvedProps<{
+  row: VoiceRow;
+  test: string;
+}, {
+}>, {
+  test: string;
+}, {
+}, {
+}, {
+}, string, ComponentProvideOptions, true, {
+}, any>;
+```
+
+Vue component for a voice row.
