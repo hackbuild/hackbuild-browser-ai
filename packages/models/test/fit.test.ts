@@ -97,7 +97,8 @@ describe("catalogue facts", () => {
       expect(rec.source.revision, r.id).toMatch(/^[0-9a-f]{40}$/);
       const url = `https://huggingface.co/${rec.source.repo}/resolve/${rec.source.revision}/${rec.source.file}`;
       expect(pinnedSha(url), r.id).toMatch(/^[0-9a-f]{64}$/);
-      expect(ggufFacts(r.source.file!).quant).toBe(r.quant);
+      // sharded repos name the quant in the repo, not the shard file
+      expect(ggufFacts(r.source.file!).quant ?? ggufFacts(r.source.repo!).quant).toBe(r.quant);
     }
   });
 

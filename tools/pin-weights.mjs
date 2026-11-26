@@ -51,6 +51,7 @@ export const REPOS = [
   ["mradermacher/Llama-3.2-3B-Instruct-uncensored-GGUF", /\.Q4_K_M\.gguf$/],
   ["mradermacher/Huihui-Qwen3.5-2B-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
   ["mradermacher/Huihui-Qwen3.5-0.8B-abliterated-GGUF", /\.Q4_K_M\.gguf$/],
+  ["Felladrin/gguf-sharded-UD-Q4_K_XL-Phi-4-mini-reasoning", /\.gguf$/],
 ];
 
 const KEEP = /(\.onnx|\.onnx_data|_data|\.json|\.gguf|\.safetensors|\.bin|\.txt|\.model)$/;

@@ -2864,5 +2864,35 @@ export const PINS: Readonly<Record<string, RepoPin>> = {
         "vendor"
       ]
     }
+  },
+  "Felladrin/gguf-sharded-UD-Q4_K_XL-Phi-4-mini-reasoning": {
+    "revision": "bc6bac3a27893ab006486992e46a7662ef4790a9",
+    "files": {
+      "model.shard-00001-of-00005.gguf": [
+        "e730254967e049ab3bd5e2311cedd200155b9d0835fb05a9218de82b324cac3f",
+        512426912,
+        "vendor"
+      ],
+      "model.shard-00002-of-00005.gguf": [
+        "812f190b06a786ec7ed22378bb5a136476f5c040a434140916cceb5563ab7f4d",
+        481483520,
+        "vendor"
+      ],
+      "model.shard-00003-of-00005.gguf": [
+        "f5b575dc8a4fd7d75dc4616261a050a224a2e81783e5616e74d2cd022b89d658",
+        499301472,
+        "vendor"
+      ],
+      "model.shard-00004-of-00005.gguf": [
+        "edba060f8bf871dc4953ff633a0b1e0de7d312cd05ef3a5a449b69c9d2e53765",
+        495664224,
+        "vendor"
+      ],
+      "model.shard-00005-of-00005.gguf": [
+        "da2110debf2334e102413017e3ad9285f6a5475aeb5a2d3b85b03e5865df5cab",
+        473803392,
+        "vendor"
+      ]
+    }
   }
 };

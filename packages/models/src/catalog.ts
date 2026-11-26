@@ -18,6 +18,11 @@
  * Every row carries a speed word and a verdict of one to four words: what
  * a person picks by, in the owner's voice.
  *
+ * Repos of the rows named in the vision lab and generate gaps (Qwen3
+ * 1.7B, Phi-4 mini, SmolLM2 1.7B, Phi-4 mini reasoning) were checked on
+ * 2026-11-25 with an HTTP HEAD of the repo's config.json or
+ * mlc-chat-config.json (200, no weight fetched).
+ *
  * Catalogue facts (params, quant, VRAM, censorship, tags, note) are copied
  * from the owner's model labels and the WebLLM catalogue; VRAM figures are the catalogue's own (vendor). Licence
  * strings are shown as recorded and were not verified for these facts.
@@ -811,6 +816,41 @@ export const CATALOG: readonly ModelRecord[] = [
     licence: "MIT (the base model card; the mlc repo has no card)",
     commercial: true,
     runtime: "@mlc-ai/web-llm@0.2.84",
+  },
+  {
+    id: "phi-4-mini-reasoning-gguf",
+    label: "Phi-4 mini reasoning",
+    params: "3.8B",
+    quant: "Q4_K_XL",
+    censorship: "stock",
+    tier: "medium",
+    family: "phi",
+    tags: ["think", "reasoning"],
+    note: "phi-4 mini tuned for maths with a think trace, unsloth dynamic q4. five 500 MB shards, so it loads past the 2 GB file cap.",
+    group: "reasoning",
+    badge: "maths, thinks first",
+    speed: "slow",
+    verdict: "maths, thinks first",
+    provides: ["chat"],
+    provider: "wllama",
+    // five shards; wllama reads the rest from the first shard's -00001-of-00005 name
+    source: { repo: "Felladrin/gguf-sharded-UD-Q4_K_XL-Phi-4-mini-reasoning", file: "model.shard-00001-of-00005.gguf" },
+    // the five shards sum to 2462679520 bytes in the hub listing (vendor, 2026-11-25,
+    // https://huggingface.co/Felladrin/gguf-sharded-UD-Q4_K_XL-Phi-4-mini-reasoning/tree/main), in MiB
+    sizeMB: 2349,
+    sizeSource: "vendor",
+    ctx: 4096,
+    ladder: [
+      { device: "webgpu", dtype: "q4_k_m" },
+      { device: "wasm", dtype: "q4_k_m" },
+    ],
+    quirks: { think: "tags" },
+    licence: "MIT (the base model card microsoft/Phi-4-mini-reasoning; the shard repo has no licence field)",
+    commercial: true,
+    runtime: "@wllama/wllama@3.8.1",
+    notes: [
+      "no webllm or transformers.js build on the hub as of 2026-11-25: the microsoft onnx export is an onnxruntime-genai layout, so the gguf shards are the browser path",
+    ],
   },
   {
     id: "smollm2-1.7b-instruct-mlc",
