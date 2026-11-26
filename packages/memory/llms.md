@@ -617,7 +617,7 @@ interface TermWeight {
 One query term: in how many admitted memories it occurs and its idf.
 
 ```ts
-function termWeights(query: string, docs: readonly Pick<StoredItem, "id" | "text">[]): { byId: Map<number, { term: string; tf: number; weight: number }[]>; terms: TermWeight[] }
+function termWeights(query: string, docs: readonly Pick<StoredItem, "text" | "id">[]): { byId: Map<number, { term: string; tf: number; weight: number }[]>; terms: TermWeight[] }
 ```
 
 Per term idf over the admitted memories, and each memory's per term BM25 contribution.
@@ -671,6 +671,113 @@ function withRecall(text: string, recalled: string[], tag?: string): string
 ```
 
 A user message with recalled lines under it, one tagged line each.
+
+### @hackbuild/memory/ingest
+
+```ts
+function chunkText(text: string, size?: number, overlap?: number): string[]
+```
+
+Splits text into chunks of about `size` characters on paragraph, then sentence, then word bounds, with `overlap` shared.
+
+```ts
+function htmlText(html: string): string
+```
+
+Visible text of an html page: scripts and styles dropped, tags to spaces, entities decoded.
+
+```ts
+function ingest(mem: IngestTarget, files: Iterable<SourceFile>, o?: IngestOptions & { scope?: string }): Promise<{ chunks: number; files: number }>
+```
+
+Reads files and adds each chunk to memory as a "doc" item (docs never decay), with the file name as its section and `meta.source`.
+
+```ts
+const INGEST_URLS: { readonly jszip: "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm"; readonly mammoth: "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/+esm"; readonly pdfjs: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs"; readonly pdfjsWorker: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs" }
+```
+
+Pinned CDN builds the readers import on first use.
+
+```ts
+interface IngestOptions {
+  chunk?: number;
+  importer?: (url: string) => Promise<unknown>;
+  maxBytes?: number;
+  modules?: { jszip?: () => Promise<ZipLike>; mammoth?: () => Promise<MammothLike>; pdfjs?: () => Promise<PdfLike> };
+  onFile?: (e: { chunks: number; name: string; note?: string }) => void;
+  overlap?: number;
+  signal?: AbortSignal;
+}
+```
+
+Options for readSources and ingest.
+
+```ts
+interface IngestTarget {
+  add(text: string, o?: AddOptions): Promise<{ id: number; merged: boolean }>;
+}
+```
+
+What a store needs to take sources: add, with options.
+
+```ts
+function mailText(raw: string): string
+```
+
+The readable body of a mail message (.eml): subject, from and date, then the plain text part, or the html part as text when there is no plain one.
+
+```ts
+interface MammothLike {
+  extractRawText(o: { arrayBuffer: ArrayBuffer }): Promise<{ value: string }>;
+}
+```
+
+The part of mammoth the reader uses.
+
+```ts
+interface PdfLike {
+  GlobalWorkerOptions?: { workerSrc: string };
+  getDocument(src: { data: Uint8Array }): { promise: Promise<{ numPages: number; getPage(n: number): Promise<{ getTextContent(): Promise<{ items: { hasEOL?: boolean; str?: string }[] }> }> }> };
+}
+```
+
+The part of pdf.js the reader uses; tests pass a fake.
+
+```ts
+function readSources(files: Iterable<SourceFile>, o?: IngestOptions): Promise<SourceText[]>
+```
+
+Reads files into text, one entry per readable file; a zip yields one per readable file inside it.
+
+```ts
+type SourceFile = Blob & { name: string; webkitRelativePath?: string }
+```
+
+A file as the readers take it: a Blob with a name, and the folder path when it came from one.
+
+```ts
+interface SourceText {
+  name: string;
+  text: string;
+  type: string;
+}
+```
+
+One readable piece of a source: its name (a zip keeps the inner path) and its text.
+
+```ts
+function sourceType(f: { name: string; type?: string }): "pdf" | "docx" | "zip" | "mail" | "html" | "text" | null
+```
+
+What a file is, by name and type: pdf, docx, zip, mail, html, text, or null for one the readers skip.
+
+```ts
+interface ZipLike {
+  loadAsync(data: ArrayBuffer | Uint8Array<ArrayBufferLike>): Promise<{ files: Record<string, { dir: boolean; name: string; async(t: "blob"): Promise<Blob> }> }>;
+}
+```
+
+The part of JSZip the reader uses.
 
 ### @hackbuild/memory/seal
 

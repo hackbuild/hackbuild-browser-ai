@@ -2259,7 +2259,7 @@ Per term idf over the admitted memories, and each memory's per term BM25 contrib
 | Parameter | Type |
 | ------ | ------ |
 | `query` | `string` |
-| `docs` | readonly `Pick`\<[`StoredItem`](#storeditem), `"id"` \| `"text"`\>[] |
+| `docs` | readonly `Pick`\<[`StoredItem`](#storeditem), `"text"` \| `"id"`\>[] |
 
 #### Returns
 

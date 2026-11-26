@@ -243,9 +243,9 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 14,008 bytes | 14,708 bytes |
+| `dist/index.js` (main entry, imports external) | 14,002 bytes | 14,702 bytes |
 | `wasm/memory.wasm` | 41,134 bytes | 43,190 bytes |
-| `dist/single/index.iife.js` (single file build) | 14,272 bytes | 14,985 bytes |
+| `dist/single/index.iife.js` (single file build) | 14,266 bytes | 14,979 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
