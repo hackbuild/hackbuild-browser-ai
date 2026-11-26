@@ -12,6 +12,7 @@ import type { Factory } from "@hackbuild/models";
 import type { WeightStore } from "@hackbuild/weights";
 import type { Detector, Landmarker, Landmarks, Segmenter } from "./types.js";
 
+/** The pinned @mediapipe/tasks-vision version, 1.2.3. */
 export const TASKS_VISION = "1.2.3";
 
 interface TaskClass {
@@ -29,14 +30,17 @@ export interface TasksVision {
   GestureRecognizer?: TaskClass;
 }
 
+/** The URL @mediapipe/tasks-vision is imported from, on jsDelivr. */
 export function tasksVisionUrls(version = TASKS_VISION): string[] {
   return [`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/vision_bundle.mjs`];
 }
 
+/** The directory of the tasks-vision wasm fileset, on jsDelivr. */
 export function tasksVisionWasm(version = TASKS_VISION): string {
   return `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${version}/wasm`;
 }
 
+/** A loader that imports the pinned @mediapipe/tasks-vision at run time; pass it as `runtime` to {@link mediapipeProvider}. */
 export const loadTasksVision = (version = TASKS_VISION) => () => importEsm<TasksVision>(tasksVisionUrls(version));
 
 const CLASS: Record<string, keyof TasksVision> = {
@@ -48,6 +52,7 @@ const CLASS: Record<string, keyof TasksVision> = {
   "landmarks.gesture": "GestureRecognizer",
 };
 
+/** Options for {@link mediapipeProvider}: the runtime loader, the wasm fileset directory, and a weight store to read model files through. */
 export interface MediapipeProviderOptions {
   runtime: () => Promise<TasksVision>;
   wasmBase?: string;
@@ -129,6 +134,7 @@ function landmarker(t: Task, kind: string, video: boolean, source: string): Land
   };
 }
 
+/** The MediaPipe tasks-vision provider for the models hub: one task per record, the GPU delegate on a webgl rung and the CPU delegate on a wasm rung. */
 export function mediapipeProvider(opts: MediapipeProviderOptions): Factory {
   let fileset: Promise<unknown> | null = null;
   return async ({ record, rung, signal }) => {

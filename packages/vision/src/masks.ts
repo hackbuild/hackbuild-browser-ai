@@ -35,11 +35,13 @@ export function maskThreshold(m: Mask, t = ON): Mask {
   return make(m, m.data.map((v) => (v >= t ? 255 : 0)));
 }
 
+/** Pixels inside either mask, the larger value of each. Throws when the sizes differ. */
 export function maskUnion(a: Mask, b: Mask): Mask {
   same("maskUnion", a, b);
   return make(a, a.data.map((v, i) => Math.max(v, b.data[i]!)));
 }
 
+/** Pixels inside both masks, the smaller value of each. Throws when the sizes differ. */
 export function maskIntersect(a: Mask, b: Mask): Mask {
   same("maskIntersect", a, b);
   return make(a, a.data.map((v, i) => Math.min(v, b.data[i]!)));
@@ -51,6 +53,7 @@ export function maskSubtract(a: Mask, b: Mask): Mask {
   return make(a, a.data.map((v, i) => Math.min(v, 255 - b.data[i]!)));
 }
 
+/** The mask with inside and outside swapped, 255 minus each value. */
 export function maskInvert(m: Mask): Mask {
   return make(m, m.data.map((v) => 255 - v));
 }
@@ -372,6 +375,7 @@ export interface MaskRle {
   counts: number[];
 }
 
+/** The mask as COCO style uncompressed run length, column major, 128 and up inside. */
 export function maskToRle(m: Mask): MaskRle {
   const { width: w, height: h } = m;
   const counts: number[] = [];
@@ -391,6 +395,7 @@ export function maskToRle(m: Mask): MaskRle {
   return { size: [h, w], counts };
 }
 
+/** A mask from COCO style run length, inside 255. Throws when the counts do not cover the image. */
 export function maskFromRle(r: MaskRle): Mask {
   const [h, w] = r.size;
   const data = new Uint8Array(w * h);

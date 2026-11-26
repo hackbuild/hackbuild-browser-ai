@@ -20,6 +20,7 @@ export interface LoopOptions<T> {
   onBusy?: () => void;
 }
 
+/** A running loop: `stop`, whether it runs or is busy, the last step's latency and the step count. */
 export interface Loop {
   stop(): void;
   readonly running: boolean;
@@ -28,6 +29,7 @@ export interface Loop {
   readonly steps: number;
 }
 
+/** Run a perception step beside a render loop, one at a time, each started no sooner than `interval(lastLatency)` after the previous one began. */
 export function perceptionLoop<T>(o: LoopOptions<T>): Loop {
   const now = o.now ?? (() => (globalThis.performance ? performance.now() : Date.now()));
   const g = globalThis as { requestAnimationFrame?: (f: () => void) => unknown };
@@ -83,6 +85,7 @@ export function perceptionLoop<T>(o: LoopOptions<T>): Loop {
   };
 }
 
+/** Options for {@link readbackLoop}: the async read, the frame consumer, a rate cap (10 Hz), and an abort signal. */
 export interface ReadbackOptions<T> {
   /** An async readback, e.g. three.js readRenderTargetPixelsAsync or a canvas createImageBitmap. */
   read: () => Promise<T>;

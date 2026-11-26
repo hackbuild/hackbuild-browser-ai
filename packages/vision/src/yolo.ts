@@ -9,6 +9,7 @@
 import type { OrtModel } from "@hackbuild/devices";
 import type { Box, Detection, Detector, Pixels } from "./types.js";
 
+/** The 80 COCO class names, in YOLO class index order. */
 export const COCO_LABELS = (
   "person,bicycle,car,motorcycle,airplane,bus,train,truck,boat,traffic light,fire hydrant,stop sign,parking meter,bench,bird,cat,dog,horse,sheep,cow," +
   "elephant,bear,zebra,giraffe,backpack,umbrella,handbag,tie,suitcase,frisbee,skis,snowboard,sports ball,kite,baseball bat,baseball glove,skateboard," +
@@ -17,6 +18,7 @@ export const COCO_LABELS = (
   "teddy bear,hair drier,toothbrush"
 ).split(",");
 
+/** How an image was fitted into the square input: scale, left and top padding, and the square side. */
 export interface Letterbox {
   scale: number;
   padX: number;
@@ -24,6 +26,7 @@ export interface Letterbox {
   size: number;
 }
 
+/** The scale and padding that fit a `w` by `h` image into a `size` square (640 by default), centred. */
 export function letterboxParams(w: number, h: number, size = 640): Letterbox {
   const scale = Math.min(size / w, size / h);
   return { scale, padX: Math.floor((size - Math.round(w * scale)) / 2), padY: Math.floor((size - Math.round(h * scale)) / 2), size };
@@ -50,6 +53,7 @@ export function letterboxTensor(px: Pixels, size = 640): { data: Float32Array; l
   return { data, lb };
 }
 
+/** Intersection over union of two boxes, 0 to 1. */
 export function iou(a: Box, b: Box): number {
   const x1 = Math.max(a.x, b.x);
   const y1 = Math.max(a.y, b.y);

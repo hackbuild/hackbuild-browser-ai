@@ -20,8 +20,10 @@
 
 import type { Landmarks } from "./types.js";
 
+/** The hand gestures the tracker reports: a wave from wrist motion, and the canned recognizer gestures by name. */
 export type HandGesture = "wave" | "thumbs_up" | "thumbs_down" | "open_palm" | "victory" | "pointing_up" | "fist" | "love";
 
+/** Steady signals for one moment: present, where the face is, facing, smile, surprise and frown strengths, and the held gesture. */
 export interface Perception {
   present: boolean;
   /** The face in the viewer's frame, -1 to 1 on both axes: +x the character's left (the person's right), +y up. Null when no face is seen. */
@@ -35,6 +37,7 @@ export interface Perception {
   gesture: HandGesture | null;
 }
 
+/** A discrete perception event: someone arrived, left, smiled, or made a gesture. */
 export type PerceptionEvent = { type: "arrived" } | { type: "left" } | { type: "smiled" } | { type: "gesture"; gesture: HandGesture };
 
 /** One face reading before smoothing. Image coordinates are 0 to 1 in the raw (unmirrored) camera frame. */
@@ -49,6 +52,7 @@ export interface RawFace {
   frown: number;
 }
 
+/** One hand reading before smoothing: wrist position, the recognizer's canned label and its score. */
 export interface RawHand {
   /** Wrist position. */
   x: number;
@@ -58,6 +62,7 @@ export interface RawHand {
   score: number;
 }
 
+/** One frame's readings for {@link SignalTracker}: the face, and the hands when they were checked. */
 export interface RawFrame {
   face: RawFace | null;
   /** Null on frames where hands were not checked. */
@@ -95,6 +100,7 @@ export const CANNED_GESTURES: Readonly<Record<string, HandGesture>> = {
 
 const absent = (): Perception => ({ present: false, face: null, facing: false, smile: 0, surprise: 0, frown: 0, gesture: null });
 
+/** Turns raw face and hand frames into steady signals and discrete events, smoothed or held so one noisy frame never fires a reaction. */
 export class SignalTracker {
   private p: Perception = absent();
   private lastSeen = -Infinity;
@@ -323,6 +329,7 @@ export class SeenNotes {
 /** Questions that call for an on demand look rather than the steady signals. Replace it to suit a persona. */
 export const LOOK_PATTERN = /\b(what (am i|is this|'?s this|do you see|can you see)|can you see|do you see|look at (this|me|my)|what('?s| is) in my hand|holding|wearing|show(ing)? you)\b/i;
 
+/** True when a message asks the character to look, by {@link LOOK_PATTERN} or the pattern you pass. */
 export const wantsLook = (text: string, pattern: RegExp = LOOK_PATTERN): boolean => pattern.test(text);
 
 /** One reaction to a perception event: a mood or a gesture by common name, after a delay, with a chance. */

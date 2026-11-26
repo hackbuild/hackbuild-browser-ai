@@ -6,11 +6,13 @@
 
 import type { Cloud, Mesh } from "./core.js";
 
+/** The smallest and largest x, y and z of a set of positions. */
 export interface Bounds {
   min: [number, number, number];
   max: [number, number, number];
 }
 
+/** The axis aligned bounds of xyz positions. */
 export function bounds(pos: Float32Array): Bounds {
   const min: [number, number, number] = [Infinity, Infinity, Infinity];
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
@@ -34,6 +36,7 @@ export function fitToPrint(m: Mesh, sizeMM: number): Mesh {
   return { positions: p, indices: m.indices };
 }
 
+/** A binary STL of the mesh, with a face normal per triangle, in the mesh's own units. */
 export function toStl(m: Mesh): Uint8Array {
   const nT = m.indices.length / 3;
   const buf = new ArrayBuffer(84 + nT * 50);
@@ -65,6 +68,7 @@ export function toStl(m: Mesh): Uint8Array {
   return new Uint8Array(buf);
 }
 
+/** A Wavefront OBJ text of the mesh: one object named `name`, vertices and faces. */
 export function toObj(m: Mesh, name = "mesh"): string {
   const lines = [`o ${name}`];
   for (let i = 0; i < m.positions.length; i += 3) lines.push(`v ${m.positions[i]} ${m.positions[i + 1]} ${m.positions[i + 2]}`);
@@ -99,6 +103,7 @@ export function toPly(p: { positions: Float32Array; normals?: Float32Array; colo
   return out;
 }
 
+/** A binary PLY of a point cloud with its normals and, when given, 0 to 1 colours. */
 export function cloudToPly(c: Cloud, colors?: Float32Array): Uint8Array {
   return toPly({ positions: c.positions, normals: c.normals, ...(colors ? { colors } : {}) });
 }

@@ -10,6 +10,7 @@ import { importEsm, type ImportEsmOptions } from "@hackbuild/ai-env";
 import type { OrtModule } from "./ort.js";
 import type { TjsModule } from "./tjs.js";
 
+/** The pinned runtime versions: transformers.js 4.3.2 and onnxruntime-web 1.27.0. */
 export const PINS = { transformers: "4.3.2", ort: "1.27.0" } as const;
 
 /**
@@ -27,10 +28,12 @@ export const RUNTIME_SHA256: Readonly<Record<string, string>> = {
   "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/index.js": "e5506753e41a59c11f61f2c52422045be9fc76e32a7e47f037aaad5df4ec723e",
 };
 
+/** The URLs transformers.js is imported from, jsDelivr first, then esm.sh. */
 export function transformersUrls(version: string = PINS.transformers): string[] {
   return [`https://cdn.jsdelivr.net/npm/@huggingface/transformers@${version}`, `https://esm.sh/@huggingface/transformers@${version}`];
 }
 
+/** The URLs onnxruntime-web is imported from: the jsDelivr WebGPU build, the jsDelivr plain build, then esm.sh. */
 export function ortUrls(version: string = PINS.ort): string[] {
   return [
     `https://cdn.jsdelivr.net/npm/onnxruntime-web@${version}/dist/ort.webgpu.min.mjs`,
@@ -58,8 +61,10 @@ export function runtimeLoader<T>(urls: readonly string[], opts: ImportEsmOptions
   };
 }
 
+/** A memoized loader of the pinned transformers.js; call the returned function to import it. */
 export const loadTransformers = (opts: ImportEsmOptions & { version?: string } = {}): (() => Promise<TjsModule>) =>
   runtimeLoader<TjsModule>(transformersUrls(opts.version), opts);
 
+/** A memoized loader of the pinned onnxruntime-web; call the returned function to import it. */
 export const loadOrt = (opts: ImportEsmOptions & { version?: string } = {}): (() => Promise<OrtModule>) =>
   runtimeLoader<OrtModule>(ortUrls(opts.version), opts);

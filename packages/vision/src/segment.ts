@@ -57,6 +57,7 @@ export class EmbeddingCache<E = unknown> {
   }
 }
 
+/** The parts of a prompted segmenter: an image encoder run once per image, a prompt decoder, and the embedding cache. */
 export interface PromptSegmenterOptions<E> {
   /** The image encoder: runs once per image. */
   encode(image: ImageInput): Promise<E>;

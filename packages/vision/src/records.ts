@@ -11,6 +11,7 @@
 import { LADDERS, tjsLadder } from "@hackbuild/devices";
 import type { ModelRecord, Rung, Speed } from "@hackbuild/models";
 
+/** The MediaPipe model storage base URL the MediaPipe records load from. */
 export const MP_MODELS = "https://storage.googleapis.com/mediapipe-models/";
 
 /** MediaPipe ladder: GPU delegate (webgl), then the CPU delegate (wasm). */
@@ -34,6 +35,7 @@ const mp = (id: string, provides: string, path: string, sizeMB: number, label: s
   runtime: "@mediapipe/tasks-vision@1.2.3",
 });
 
+/** The vision records registered by `attachVision`: Depth Anything V2 small, MediaPipe detection, segmentation and landmarks, SlimSAM, SmolVLM 256M and LFM2-VL 450M. */
 export const VISION_RECORDS: ModelRecord[] = [
   {
     id: "depth-anything-v2-small",
@@ -155,6 +157,7 @@ const yolo10 = (size: "n" | "s" | "m", mb: number, speed: Speed, verdict: string
   notes: ["output [1, 300, 6] after the model's own selection, so no nms pass (vendor, the yolov10 paper)", "an earlier room offered nano, small and medium"],
 });
 
+/** Records listed for pickers and never registered by default: larger alternates, and records under licences that limit use (YOLOv10, FastSAM, the face swap set). */
 export const PICKER_RECORDS: ModelRecord[] = [
   {
     id: "smolvlm-500m-instruct",

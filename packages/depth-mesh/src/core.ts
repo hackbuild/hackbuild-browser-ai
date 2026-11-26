@@ -1,6 +1,7 @@
 // Loads the hackbuild-depth-mesh wasm core and wraps its extern "C"
 // surface. Inputs are copied into wasm memory, results copied out.
 
+/** Where {@link loadDepthMesh} gets the wasm core: a URL, the bytes, or base64 text such as `DEPTH_MESH_WASM_BASE64`. */
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
 type Ptr = number;
@@ -33,11 +34,13 @@ interface Exports {
   dm_synth_box(theta: number, ex: number, ey: number, ez: number, w: number, h: number, focal: number, dist: number): void;
 }
 
+/** A triangle mesh: xyz positions and three indices per triangle. */
 export interface Mesh {
   positions: Float32Array;
   indices: Uint32Array;
 }
 
+/** A point cloud: `count` xyz positions with a normal each. */
 export interface Cloud {
   positions: Float32Array;
   normals: Float32Array;
@@ -50,8 +53,10 @@ export interface Pose {
   t: number[];
 }
 
+/** The pose with no rotation and no translation. */
 export const IDENTITY: Pose = { r: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0] };
 
+/** How {@link DepthMesh.cloud} maps depth to distance: near and far, focal length, and the pixel stride and depth range kept. */
 export interface CloudOptions {
   /** Distance of depth 1, scene units. */
   near: number;
@@ -64,6 +69,7 @@ export interface CloudOptions {
   dmax?: number;
 }
 
+/** How {@link DepthMesh.relief} turns 0 to 1 values into heights in mm: range, gamma, background cut, invert and mask. */
 export interface ReliefOptions {
   /** Lowest relief height, mm. */
   base: number;
@@ -77,6 +83,7 @@ export interface ReliefOptions {
   mask?: Uint8Array;
 }
 
+/** The turntable camera for {@link DepthMesh.carve}: image size, focal length, distance to the axis and the carved cube's half size. */
 export interface Turntable {
   width: number;
   height: number;
@@ -110,6 +117,7 @@ function grid(what: string, have: number, ...dims: number[]): void {
   if (have < need) throw new RangeError(`${what}: ${have} values for a ${dims.join(" x ")} grid, which needs ${need}`);
 }
 
+/** The loaded wasm core: depth to cloud, relief heights and solids, surface nets, silhouette carving and voxel models for ICP. Make one with {@link loadDepthMesh}. */
 export class DepthMesh {
   readonly simd: boolean;
   constructor(private readonly x: Exports) {
@@ -227,6 +235,7 @@ export class DepthMesh {
 
 const poseArr = (p: Pose) => Float64Array.from([...p.r, ...p.t]);
 
+/** A voxel model a scan builds up: refine a frame's pose with `icp`, fold the frame in with `integrate`, read the points back, and `dispose` when done. */
 export class VoxelModel {
   constructor(
     private readonly x: Exports,
@@ -263,6 +272,7 @@ export function trackGood(r: { inliers: number; error: number; pose: Pose }, pre
   return r.inliers / Math.max(1, sampled) > 0.3 && r.error < maxDist * 0.8 && ang < 0.35 && dt < maxDist * 3;
 }
 
+/** Instantiate the depth-mesh wasm core from a URL, bytes or base64 and return a {@link DepthMesh}. Throws on an HTTP error when fetching. */
 export async function loadDepthMesh(src: CoreSource): Promise<DepthMesh> {
   let bytes: Uint8Array;
   if ("bytes" in src) bytes = src.bytes instanceof Uint8Array ? src.bytes : new Uint8Array(src.bytes);

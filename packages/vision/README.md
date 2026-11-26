@@ -1,144 +1,244 @@
 # @hackbuild/vision
 
-Perception through the `@hackbuild/models` hub: depth, detection,
-segmentation, face, hand and pose landmarks with a fallback chain, and
-captions and questions through small VLMs, plus a webcam loop helper and
-a result cache. Code MIT; this README CC-BY-4.0 with the code samples
-also MIT. No weights ship here.
+Get depth, objects, masks, landmarks and captions from an image or a webcam in your tab, through one models hub that shares the GPU with your scene.
 
-    # not on npm yet: the @hackbuild scope is unpublished; build from this repository
-    npm install @hackbuild/vision
+[![npm](https://img.shields.io/npm/v/@hackbuild/vision)](https://www.npmjs.com/package/@hackbuild/vision) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 23.8 kB measured](https://img.shields.io/badge/gzip-23.8%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
-## Wire it once
+## What it does
 
-    import { createHub, stubFactory } from "@hackbuild/models";
-    import { tjsProvider, loadTransformers } from "@hackbuild/devices";
-    import { attachVision, mediapipeProvider, loadTasksVision, visionStubs, depth, detect, landmarks, caption } from "@hackbuild/vision";
+- Runs depth, detection, segmentation, face, hand and pose landmarks, captions and questions through the `@hackbuild/models` hub.
+- Falls through a chain of landmark models when one fails, and says which failed.
+- Keeps image embeddings so later point and box prompts on the same image skip the encoder, and gives mask operations and PNG, SVG and run length export.
+- Runs depth in a worker and schedules calls around your render loop so the scene keeps its frames.
+- Turns face and hand landmarks into steady presence, expression and gesture signals for a character.
 
-    const tjs = tjsProvider({ runtime: loadTransformers() });
-    const hub = createHub({ env, stub: new URLSearchParams(location.search).has("stub") });
-    attachVision(hub, tjs);                    // records plus transformers.js loaders
-    hub.provide("tjs", tjs.factory);
-    hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
-    hub.provide("stub", stubFactory(visionStubs()));
+## Install
 
-    const map = await depth(hub, imageOrCanvas);           // 0 to 1, larger is nearer, plus the raw range
-    const boxes = await detect(hub, video, { scoreThreshold: 0.4 });
-    const face = await landmarks(hub, "face", video);      // falls through the chain, face.failures says what failed
-    const line = await caption(hub, frame);                // serialized on the vlm chain
+```sh
+npm install @hackbuild/vision
+```
 
-## Models
+It depends on [@hackbuild/ai-env](../ai-env/README.md), [@hackbuild/models](../models/README.md), [@hackbuild/devices](../devices/README.md) and [@hackbuild/weights](../weights/README.md). The model runtimes are not bundled; they load at run time from pinned URLs, and each is optional:
 
-| capability | record | runtime | weight licence |
-|---|---|---|---|
-| depth | depth-anything-v2-small | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm (as earlier builds did) | Apache-2.0 |
-| detect | efficientdet-lite0 (default) | MediaPipe, GPU then CPU delegate | Apache-2.0 |
-| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes (as earlier builds did) | AGPL-3.0 (Ultralytics), supplied by the app |
-| segment (points) | slimsam-77-uniform | transformers.js, one embedding per image | Apache-2.0 |
-| segment.person | selfie-segmenter | MediaPipe | Apache-2.0 |
-| landmarks.face | face-landmarker, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | Apache-2.0; MIT |
-| landmarks.hand, landmarks.pose | hand-landmarker, pose-landmarker-lite | MediaPipe | Apache-2.0 |
+| subpath | runtime | pin |
+|---|---|---|
+| `.` (depth, segment, caption, ask) | @huggingface/transformers, through `loadTransformers` from @hackbuild/devices | 4.3.2 |
+| `.` (detect, segment.person, landmarks) | @mediapipe/tasks-vision, through `loadTasksVision` | 1.2.3 |
+| `.` (YOLO, optional) | onnxruntime-web, through `loadOrt` from @hackbuild/devices | 1.27.0 |
+| `.` (face fallback, optional) | face-api.js, a runtime you pass to `faceApiProvider` | unknown |
 
-`PICKER_RECORDS` lists models for pickers that no hub registers by
-default, so routing by capability keeps the small defaults above: SmolVLM
-500M and SmolVLM2 256M video, Gemma 4 E2B, depth anything v2 base
-(CC-BY-NC-4.0) and v1 small, YOLOv10 nano, small and medium and FastSAM-s
-(AGPL-3.0 upstream), and the face swap set (scrfd 10g, ArcFace r50,
-inswapper 128; InsightFace, non-commercial). Sizes are the Hugging Face
-file listings (vendor, no download). A hub that runs one adds the record.
-| landmarks.gesture (optional) | gesture-recognizer | MediaPipe, hand points plus 7 canned gestures | unknown, model card not checked |
-| vision.caption, vision.ask | smolvlm-256m-instruct | transformers.js, per sub graph dtypes, repetition penalty 1.3 | Apache-2.0 |
-| vision.caption, vision.ask | lfm2-vl-450m | transformers.js, q4f16 on webgpu only (as earlier builds did) | LFM Open License v1.0, commercial use limited by revenue |
+## Quick start
 
-The YOLO decoder is written from the published output layout
-([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by
-default.
+```ts
+import { probe } from "@hackbuild/ai-env";
+import { loadTransformers, tjsProvider } from "@hackbuild/devices";
+import { createHub } from "@hackbuild/models";
+import { attachVision, caption, depth, detect, loadTasksVision, mediapipeProvider } from "@hackbuild/vision";
 
-## Sharing the GPU with a scene
+// one hub; transformers.js and MediaPipe tasks-vision load at run time from pinned urls
+const tjs = tjsProvider({ runtime: loadTransformers() });
+const hub = createHub({ env: await probe() });
+attachVision(hub, tjs); // the vision records plus the transformers.js loaders
+hub.provide("tjs", tjs.factory);
+hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
 
-Every call takes `schedule` (passed to `hub.run`: `minIntervalMs`,
-`idleOnly`, `frameBudgetMs`, `when: "skip"`) and `size` or `maxMB` to
-route to a smaller model. Report frame times with `hub.reportFrame(ms)`
-and show `hub.onBusy` in the UI:
+// each call loads its model on first use, runs it under the gpu lock, and releases it
+const video = document.querySelector("video")!;
+const map = await depth(hub, video); // Depth Anything V2 small, weights Apache-2.0
+const boxes = await detect(hub, video, { scoreThreshold: 0.4 }); // MediaPipe EfficientDet lite0, Apache-2.0
+const line = await caption(hub, video); // SmolVLM 256M, Apache-2.0
+console.log(map.width, map.height, boxes.map((b) => b.label), line);
+```
 
-    hub.onBusy((n) => (pill.textContent = n ? "model busy" : ""));
-    await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBudgetMs: 20, when: "skip" } });
+## Live example
 
-The schedule alone did not hold the scene's frames on an Apple M1: with
-`frameBudgetMs` 20 and `minIntervalMs` 200 the frame p95 stayed at 49.8
-ms with no main thread task over 50 ms (measured, Chrome 150). Running
-the model in a worker did: `depthWorker({ urls: transformersUrls(),
-device })` loads transformers.js and Depth Anything V2 small (Apache-2.0)
-in a dedicated worker and takes RGBA pixels, so pre and post processing,
-the readback and the normalization leave the page's thread:
+The vision tool in the suite runs this package: [hackbuild-suite vision](https://hackbuild.github.io/hackbuild-suite/#/image/vision). The demo page runs Depth Anything, MediaPipe detection, SlimSAM masks and SmolVLM captions on a scene built in code, with the frame cost of each: [hackbuild-browser-ai/vision](https://hackbuild.github.io/hackbuild-browser-ai/vision/).
 
-    const w = await depthWorker({ urls: transformersUrls(), device: "webgpu" });
-    paint(await w.estimate(ctx2d.getImageData(0, 0, 512, 288)));
+## Concepts
 
-`readbackLoop({ read, onFrame, maxHz })` is the agent eye pattern: an
-async readback (`readRenderTargetPixelsAsync`), a busy flag that skips
-frames instead of queueing them, and a rate cap (default 10 Hz).
+### wire it once
 
-## Loop and cache
+Make one hub, attach the vision records, and provide the runtimes you use. In stub mode every capability answers from `visionStubs()` with no weights.
 
-`perceptionLoop({ step, interval })` runs one step at a time beside the
-render loop; `detectCadenceMs(latency)` is the earlier scene app's max(0.45 s, 4 times
-the last latency). `ResultCache` keeps results by key so a depth map is
-computed once per image (as earlier builds did). `depthToRgba` and `fitSize` (as earlier builds did) help with canvases.
+```ts
+import { createHub, stubFactory } from "@hackbuild/models";
+import { tjsProvider, loadTransformers } from "@hackbuild/devices";
+import { attachVision, mediapipeProvider, loadTasksVision, visionStubs, depth, detect, landmarks, caption } from "@hackbuild/vision";
 
-## Prompts, the embedding cache, mask operations and export
+const tjs = tjsProvider({ runtime: loadTransformers() });
+const hub = createHub({ env, stub: new URLSearchParams(location.search).has("stub") });
+attachVision(hub, tjs);                    // records plus transformers.js loaders
+hub.provide("tjs", tjs.factory);
+hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
+hub.provide("stub", stubFactory(visionStubs()));
 
-`segment` takes points (label 1 object, 0 background), a box, or both.
-The image is encoded once and every later prompt on it decodes from the
-cached embedding. Pass a stable `key` (an image hash) and your own
-`EmbeddingCache` to see and drop what is kept:
+const map = await depth(hub, imageOrCanvas);           // 0 to 1, larger is nearer, plus the raw range
+const boxes = await detect(hub, video, { scoreThreshold: 0.4 });
+const face = await landmarks(hub, "face", video);      // falls through the chain, face.failures says what failed
+const line = await caption(hub, frame);                // serialized on the vlm chain
+```
 
-    const cache = new EmbeddingCache(4);                 // four images, least recently used out
-    const opts = { key: imageHash, cache };
-    const [m] = await segment(hub, img, { box: { x: 40, y: 30, w: 200, h: 160 } }, opts);
-    const [n] = await segment(hub, img, { points: [{ x: 90, y: 80 }, { x: 120, y: 90, label: 0 }] }, opts);
-    cache.hits;                                          // 1, the second prompt did not encode
-    cache.delete(imageHash);
+Each call routes through the hub (`use`, `run`, `release`), so WebGPU models take the gpu lock and idle models fall out under the budget. VLM calls also go through one serial chain, as earlier builds did. Landmarks walk a fallback chain of records: MediaPipe GPU, MediaPipe CPU (both rungs of one record), then any other record for the same capability, such as face-api.js. The MediaPipe provider loads one wasm fileset per page and creates one task per record, with the GPU delegate on a webgl rung and the CPU delegate on a wasm rung.
 
-`promptSegmenter({ encode, decode })` builds the same cached segmenter
-around any encoder and decoder; scores come back clamped to 0 to 1.
+### sharing the GPU with a scene
 
-Mask operations are functions on `Mask` (128 and up is inside):
-`maskUnion`, `maskIntersect`, `maskSubtract`, `maskInvert`,
-`maskThreshold`, `maskFeather(m, r)` (gaussian, sigma r / 2, soft edges),
-`maskDilate(m, r)` and `maskErode(m, r)` (a disc of radius r through an
-exact distance transform; the image border is not treated as outside),
-`maskLargestComponent(m, 8 | 4)` and `maskArea`.
+Every call takes `schedule` (passed to `hub.run`: `minIntervalMs`, `idleOnly`, `frameBudgetMs`, `when: "skip"`) and `size` or `maxMB` to route to a smaller model. Report frame times with `hub.reportFrame(ms)` and show `hub.onBusy` in the UI:
 
-Export: `maskToPng` (grey), `cutoutPng(pixels, mask)` (the image with
-the mask as alpha), `maskToSvg` (one even odd path along pixel edges,
-loops from `maskOutline`), `maskToRle` and `maskFromRle` (COCO style
-uncompressed run length, column major). `encodePng` deflates through
-CompressionStream where the runtime has it and writes stored blocks
-otherwise.
+```ts
+hub.onBusy((n) => (pill.textContent = n ? "model busy" : ""));
+await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBudgetMs: 20, when: "skip" } });
+```
 
-## Perception signals and seen notes
+The schedule alone did not hold the scene's frames on an Apple M1: with `frameBudgetMs` 20 and `minIntervalMs` 200 the frame p95 stayed at 49.8 ms with no main thread task over 50 ms (measured, Chrome 150). Running the model in a worker did: `depthWorker({ urls: transformersUrls(), device })` loads transformers.js and Depth Anything V2 small (Apache-2.0) in a dedicated worker and takes RGBA pixels, so pre and post processing, the readback and the normalization leave the page's thread. Only models of the registered depth records load in the worker, at their pinned commit, since Depth Anything base and large carry CC-BY-NC-4.0 weights; pass `record` for another model with its licence named.
 
-`SignalTracker` turns per frame face and hand readings into steady
-signals and a few events: `arrived`, `left`, `smiled`, `gesture`. The
-clock comes in with each frame. Hands are optional; it runs on faces
-alone.
+```ts
+const w = await depthWorker({ urls: transformersUrls(), device: "webgpu" });
+paint(await w.estimate(ctx2d.getImageData(0, 0, 512, 288)));
+```
 
-    const tracker = new SignalTracker();
-    const notes = new SeenNotes();
-    const f = await landmarks(hub, "face", video, { timestamp: now });
-    const h = everyOther ? await landmarks(hub, "gesture", video, { timestamp: now }) : null;
-    for (const e of tracker.feed(rawFromLandmarks(f, h), now)) for (const r of reactionsFor(e, rng)) play(r);
-    const seen = notes.next(tracker.perception, wantsLook(text) ? await caption(hub, still) : null); // null when nothing changed
+`readbackLoop({ read, onFrame, maxHz })` is the agent eye pattern: an async readback (`readRenderTargetPixelsAsync`), a busy flag that skips frames instead of queueing them, and a rate cap (default 10 Hz).
+
+### loop and cache
+
+`perceptionLoop({ step, interval })` runs one step at a time beside the render loop; `detectCadenceMs(latency)` is the earlier scene app's max(0.45 s, 4 times the last latency). `ResultCache` keeps results by key so a depth map is computed once per image, as earlier builds did. `depthToRgba` and `fitSize` help with canvases.
+
+### prompts and the embedding cache
+
+`segment` takes points (label 1 object, 0 background), a box, or both; with no prompt it routes to the person segmenter. The image is encoded once and every later prompt on it decodes from the cached embedding. Pass a stable `key` (an image hash) and your own `EmbeddingCache` to see and drop what is kept:
+
+```ts
+const cache = new EmbeddingCache(4);                 // four images, least recently used out
+const opts = { key: imageHash, cache };
+const [m] = await segment(hub, img, { box: { x: 40, y: 30, w: 200, h: 160 } }, opts);
+const [n] = await segment(hub, img, { points: [{ x: 90, y: 80 }, { x: 120, y: 90, label: 0 }] }, opts);
+cache.hits;                                          // 1, the second prompt did not encode
+cache.delete(imageHash);
+```
+
+`promptSegmenter({ encode, decode })` builds the same cached segmenter around any encoder and decoder; scores come back clamped to 0 to 1.
+
+### mask operations and export
+
+Mask operations are functions on `Mask` (128 and up is inside): `maskUnion`, `maskIntersect`, `maskSubtract`, `maskInvert`, `maskThreshold`, `maskFeather(m, r)` (gaussian, sigma r / 2, soft edges), `maskDilate(m, r)` and `maskErode(m, r)` (a disc of radius r through an exact distance transform; the image border is not treated as outside), `maskLargestComponent(m, 8 | 4)` and `maskArea`.
+
+Export: `maskToPng` (grey), `cutoutPng(pixels, mask)` (the image with the mask as alpha), `maskToSvg` (one even odd path along pixel edges, loops from `maskOutline`), `maskToRle` and `maskFromRle` (COCO style uncompressed run length, column major). `encodePng` deflates through CompressionStream where the runtime has it and writes stored blocks otherwise.
+
+### perception signals and seen notes
+
+`SignalTracker` turns per frame face and hand readings into steady signals and a few events: `arrived`, `left`, `smiled`, `gesture`. The clock comes in with each frame. Hands are optional; it runs on faces alone.
+
+```ts
+const tracker = new SignalTracker();
+const notes = new SeenNotes();
+const f = await landmarks(hub, "face", video, { timestamp: now });
+const h = everyOther ? await landmarks(hub, "gesture", video, { timestamp: now }) : null;
+for (const e of tracker.feed(rawFromLandmarks(f, h), now)) for (const r of reactionsFor(e, rng)) play(r);
+const seen = notes.next(tracker.perception, wantsLook(text) ? await caption(hub, still) : null); // null when nothing changed
+```
 
 Thresholds are vendor figures from earlier builds, none measured here:
-presence grace 2.5 s, "left" after 8 s, "arrived" after 20 s away, smile
-on at 0.55 and off at 0.3 held 500 ms with a 10 s cooldown, gestures held
-350 ms with a 4 s cooldown and a 0.6 score floor, a wave as 2 wrist
-reversals inside 1.5 s above face level. `DEFAULT_REACTIONS` is data
-(smile back after 600 ms at 0.7 chance, drawn from the injected rng);
-`gazeTarget` applies a gain of 1.3. Frames never leave the tab; only the
-signals and the lowercase note do.
+
+| threshold | value |
+|---|---|
+| presence grace | 2.5 s (vendor) |
+| "left" after | 8 s (vendor) |
+| "arrived" after time away | 20 s (vendor) |
+| smile on, off, hold, cooldown | 0.55, 0.3, 500 ms, 10 s (vendor) |
+| gesture hold, cooldown, score floor | 350 ms, 4 s, 0.6 (vendor) |
+| wave | 2 wrist reversals inside 1.5 s above face level (vendor) |
+| smile back reaction | after 600 ms at 0.7 chance (vendor) |
+| `gazeTarget` gain | 1.3 (vendor) |
+
+`DEFAULT_REACTIONS` is data, drawn from the injected rng. Frames never leave the tab; only the signals and the lowercase note do.
+
+### yolo stays external
+
+The YOLO decoder is written from the published output layout ([1, 84, 8400]); no Ultralytics code is used. YOLO is never registered by default: `yoloRecord({ url })` builds a record for a URL the app supplies, with a 640 letterbox and per class NMS at 0.45 keeping 13 boxes, as earlier builds did.
+
+## API overview
+
+| export | what it does |
+|---|---|
+| [`attachVision`](../../docs/api/vision/README.md#attachvision) | register the vision records and transformers.js loaders on a hub |
+| [`depth`](../../docs/api/vision/README.md#depth) | a depth map, 0 to 1 with larger nearer |
+| [`detect`](../../docs/api/vision/README.md#detect) | boxes with labels and scores |
+| [`segment`](../../docs/api/vision/README.md#segment) | masks from points and a box, or a person mask |
+| [`landmarks`](../../docs/api/vision/README.md#landmarks) | face, hand, pose or gesture landmarks through a fallback chain |
+| [`caption`](../../docs/api/vision/README.md#caption) | a one sentence caption from a small VLM |
+| [`ask`](../../docs/api/vision/README.md#ask) | a VLM's answer to a question about an image |
+| [`mediapipeProvider`](../../docs/api/vision/README.md#mediapipeprovider) | the MediaPipe tasks-vision provider for the hub |
+| [`depthWorker`](../../docs/api/vision/README.md#depthworker) | Depth Anything in a dedicated worker |
+| [`perceptionLoop`](../../docs/api/vision/README.md#perceptionloop) | one perception step at a time beside a render loop |
+| [`readbackLoop`](../../docs/api/vision/README.md#readbackloop) | rate capped async readback that skips frames while busy |
+| [`ResultCache`](../../docs/api/vision/README.md#resultcache) | a small LRU of results by key |
+| [`EmbeddingCache`](../../docs/api/vision/README.md#embeddingcache) | image embeddings kept for later prompts |
+| [`maskUnion`](../../docs/api/vision/README.md#maskunion) | one of the mask operations; the rest sit beside it |
+| [`cutoutPng`](../../docs/api/vision/README.md#cutoutpng) | the image with the mask as alpha, as a PNG |
+| [`maskToSvg`](../../docs/api/vision/README.md#masktosvg) | the mask outline as an SVG path |
+| [`maskToRle`](../../docs/api/vision/README.md#masktorle) | COCO style run length |
+| [`SignalTracker`](../../docs/api/vision/README.md#signaltracker) | steady perception signals and events from face and hand frames |
+| [`SeenNotes`](../../docs/api/vision/README.md#seennotes) | one lowercase line for a language model when the signals change |
+| [`VISION_RECORDS`](../../docs/api/vision/README.md#vision_records) | the records `attachVision` registers |
+| [`PICKER_RECORDS`](../../docs/api/vision/README.md#picker_records) | records for pickers, never registered by default |
+| [`yoloRecord`](../../docs/api/vision/README.md#yolorecord) | an external YOLOv8n record for a URL you supply |
+| [`visionStubs`](../../docs/api/vision/README.md#visionstubs) | weightless models for stub pages and tests |
+
+The full reference is in [docs/api/vision](../../docs/api/vision/README.md).
+
+## Models and weights
+
+| capability | record | runtime | size | weight licence |
+|---|---|---|---|---|
+| depth | `depth-anything-v2-small` (`onnx-community/depth-anything-v2-small`) | transformers.js, fp16 then fp32 on webgpu, q8 then fp32 on wasm (as earlier builds did) | 100 MB (inferred) | Apache-2.0 |
+| detect | `efficientdet-lite0` (default) | MediaPipe, GPU then CPU delegate | 7 MB (inferred) | Apache-2.0 |
+| detect | `yoloRecord({ url })`, optional and external | onnxruntime-web, 640 letterbox, per class NMS at 0.45, 13 boxes (as earlier builds did) | unknown | AGPL-3.0 (Ultralytics), supplied by the app |
+| segment (points) | `slimsam-77-uniform` (`Xenova/slimsam-77-uniform`) | transformers.js, one embedding per image | 38 MiB (vendor) | Apache-2.0 |
+| segment.person | `selfie-segmenter` | MediaPipe | 1 MB (inferred) | Apache-2.0 |
+| landmarks.face | `face-landmarker`, then `faceApiRecord(url)` | MediaPipe with blendshapes, then face-api.js tiny 68 points | 4 MB, 1 MB (inferred) | Apache-2.0; MIT |
+| landmarks.hand, landmarks.pose | `hand-landmarker`, `pose-landmarker-lite` | MediaPipe | 8 MB, 6 MB (inferred) | Apache-2.0 |
+| landmarks.gesture (optional) | `gesture-recognizer` | MediaPipe, hand points plus 7 canned gestures | 8 MB (inferred) | unknown, model card not checked |
+| vision.caption, vision.ask | `smolvlm-256m-instruct` (`HuggingFaceTB/SmolVLM-256M-Instruct`) | transformers.js, per sub graph dtypes, repetition penalty 1.3 | 260 MB (inferred) | Apache-2.0 |
+| vision.caption, vision.ask | `lfm2-vl-450m` (`onnx-community/LFM2-VL-450M-ONNX`) | transformers.js, q4f16 on webgpu only (as earlier builds did) | 320 MB (inferred) | LFM Open License v1.0, commercial use limited by revenue |
+
+MediaPipe models load from `MP_MODELS` (Google's MediaPipe model storage); transformers.js models load from the Hugging Face hub. Weights are never bundled; @hackbuild/weights caches the files read through it. `PICKER_RECORDS` lists models for pickers that no hub registers by default, so routing by capability keeps the small defaults above: SmolVLM 500M and SmolVLM2 256M video, Gemma 4 E2B, depth anything v2 base (CC-BY-NC-4.0) and v1 small, YOLOv10 nano, small and medium and FastSAM-s (AGPL-3.0 upstream), and the face swap set (scrfd 10g, ArcFace r50, inswapper 128; InsightFace, non-commercial). Their sizes are the Hugging Face file listings (vendor, no download). A hub that runs one adds the record.
+
+## Browser support
+
+| feature | needs | Chrome | Safari | Firefox | phone |
+|---|---|---|---|---|---|
+| transformers.js models on WebGPU | a WebGPU adapter | yes, Chrome 150 on an Apple M1 (measured) | unknown | unknown | unknown |
+| transformers.js models on WASM | WebAssembly | yes (inferred) | unknown | unknown | unknown |
+| MediaPipe tasks | WebGL for the GPU delegate, wasm for the CPU one | yes (inferred) | unknown | unknown | unknown |
+| LFM2-VL 450M | WebGPU, no wasm rung | yes, Chrome 150 on an Apple M1 (measured) | unknown | unknown | unknown |
+| depth worker | a module or classic Worker | yes, Chrome 150 (measured) | unknown | unknown | unknown |
+| threads | the probe's safe wasm thread count | from the probe | from the probe | from the probe | from the probe |
+
+Without WebGPU the transformers.js ladders fall to wasm, and MediaPipe falls from the GPU delegate to the CPU one. LFM2-VL has no fallback. Depth in the worker on wasm took 4,664 ms per run on the M1 (measured).
+
+## Errors and troubleshooting
+
+| message | cause | what to do |
+|---|---|---|
+| `no face landmark model loaded: ID (ERROR); ...` | every record in the landmark chain failed; `failures` lists each | read `failures`; add `faceApiRecord(url)` as a fallback, or check the provider is registered |
+| `maskUnion: masks are W x H and W2 x H2` (and the other two mask operations) | masks of different sizes | resize one mask to the other first |
+| `cutoutRgba: image is W x H, mask W2 x H2` | image and mask differ in size | pass the mask made from this image |
+| `encodePng: N bytes for W x H x C` | data shorter than width times height times channels | pass the full buffer |
+| `maskFromRle: counts cover N pixels of M` | the run length does not match its size | check `size` is `[height, width]` |
+| `a prompt needs at least one point or a box` | a prompted segmenter got an empty prompt | pass points or a box, or call `segment` with no prompt for a person mask |
+| `ID: no mediapipe task for CAPABILITY` | the record's capability has no MediaPipe task | use detect, segment.person or a landmarks capability |
+| `ID: a mediapipe record needs source.url` | the record names no model file | set `source.url` |
+| `the transformers.js module has none of NAMES` | the runtime lacks the model class | use the pinned transformers.js 4.3.2 |
+| `depth pipeline returned neither predicted_depth nor depth` | the pipeline gave another output | use a depth-estimation model |
+| `depth worker: ID is not a registered depth record; pass record with its licence named` | `modelId` is not one of the depth records | pass `record` with its licence |
+| `depth worker is not loaded` / `no transformers.js url loaded` | the worker could not import transformers.js | check the `urls`; use `transformersUrls()` |
+
+## Works with
+
+- [@hackbuild/models](../models/README.md) is the hub every call routes through.
+- [@hackbuild/devices](../devices/README.md) gives the transformers.js and ort providers and the pinned runtime loaders.
+- [@hackbuild/weights](../weights/README.md) caches the weights the providers read.
+- [@hackbuild/depth-mesh](../depth-mesh/README.md) turns a depth map or a mask into a relief solid you can print.
+- [@hackbuild/media](../media/README.md) picks keyframes from a video for `caption`.
 
 ## What is verified, and what is not
 
@@ -199,9 +299,13 @@ signals and the lowercase note do.
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 23,015 bytes | 24,165 bytes |
-| `dist/single/index.iife.js` (single file build) | 53,082 bytes | 55,736 bytes |
+| `dist/index.js` (main entry, imports external) | 23,813 bytes | 25,003 bytes |
+| `dist/single/index.iife.js` (single file build) | 54,219 bytes | 56,929 bytes |
 
 Measured 2026-11-25 by `node tools/lint-packages.mjs` (gzip level 9) from the packed
 tarball. Generated from `tools/size-budget.json`; CI fails when a file moves more than
 5 percent from its row.
+
+## Changelog and licences
+
+Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LICENSE](../../LICENSE)); this README is CC-BY-4.0 with its code samples also MIT. Weight licences: Depth Anything V2 small, MediaPipe models, SlimSAM and SmolVLM, Apache-2.0; face-api.js tiny nets, MIT; LFM2-VL, LFM Open License v1.0; YOLO, AGPL-3.0 (external, supplied by the app); the gesture recognizer, unknown.

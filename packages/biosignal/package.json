@@ -30,6 +30,7 @@
     "wasm/biosignal.wasm",
     "how.ts",
     "README.md",
+    "llms.md",
     "LICENSE"
   ],
   "unpkg": "./dist/single/index.iife.js",

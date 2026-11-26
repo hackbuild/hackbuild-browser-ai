@@ -2,6 +2,7 @@
 // filtering, epoching, covariances per band, training, cross validation
 // folded by trial, and a JSON model export. From an earlier biosignal build.
 
+/** Where {@link loadBiosignal} gets the wasm core: a URL, the bytes, or base64 text such as `BIOSIGNAL_WASM_BASE64`. */
 export type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string };
 
 type Ptr = number;
@@ -36,11 +37,13 @@ export interface Epoch {
   trial: number;
 }
 
+/** A frequency band in Hz; each band gets its own band pass and covariance. */
 export interface Band {
   lo: number;
   hi: number;
 }
 
+/** Classifier settings: the class count, and L2 weight (0.05), training epochs (150) and learning rate (0.14) by default. */
 export interface TrainOptions {
   classes: number;
   l2?: number;
@@ -85,6 +88,7 @@ function checkEpochs(what: string, epochs: readonly Epoch[], bands: readonly Ban
   }
 }
 
+/** The loaded wasm core: filtering, covariances, Riemannian distance, training, cross validation and model reload. Make one with {@link loadBiosignal}. */
 export class Biosignal {
   readonly simd: boolean;
   constructor(private readonly x: Exports) {
@@ -186,6 +190,7 @@ export class Biosignal {
   }
 }
 
+/** A trained tangent space classifier: class probabilities and the predicted class for one epoch, JSON export, and `dispose` to free it in the core. */
 export class Classifier {
   constructor(
     private readonly bs: Biosignal,
@@ -241,6 +246,7 @@ export function epochsFromEvents(data: readonly Float32Array[], events: readonly
   return out;
 }
 
+/** Instantiate the biosignal wasm core from a URL, bytes or base64 and return a {@link Biosignal}. Throws on an HTTP error when fetching. */
 export async function loadBiosignal(src: CoreSource): Promise<Biosignal> {
   let bytes: Uint8Array;
   if ("bytes" in src) bytes = src.bytes instanceof Uint8Array ? src.bytes : new Uint8Array(src.bytes);

@@ -18,8 +18,10 @@ export interface ImagegenModel {
   sessions: Record<string, SessionLike>;
 }
 
+/** A request to {@link ImageGenerator.generate}: the generate options without `run` and `spacing`, plus hub run options. */
 export type FormOptions = Omit<GenerateOptions, "run" | "spacing"> & { runOptions?: RunOptions };
 
+/** An image model loaded through the hub: its record, form and sessions, `generate` with the form applied, and `release`. */
 export interface ImageGenerator {
   readonly loaded: Loaded<ImagegenModel>;
   readonly record: ModelRecord;

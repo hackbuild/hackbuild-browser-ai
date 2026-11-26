@@ -14,6 +14,7 @@ import type { DepthMap } from "./types.js";
 import { withPin, type ModelRecord } from "@hackbuild/models";
 import { VISION_RECORDS } from "./records.js";
 
+/** Options for {@link depthWorker}: the transformers.js URLs, the depth model or record, the licence callback, device, dtype and worker rungs. */
 export interface DepthWorkerOptions {
   /** transformers.js ESM URLs tried in order (transformersUrls() from @hackbuild/devices). */
   urls: readonly string[];
@@ -36,12 +37,14 @@ export interface DepthWorkerOptions {
   spawn?: Pick<SpawnOptions, "prefer" | "Worker" | "createObjectURL" | "readyMs" | "prelude">;
 }
 
+/** RGBA pixels the page sends to the depth worker: ImageData, or anything with width, height and data. */
 export interface Pixels {
   width: number;
   height: number;
   data: Uint8ClampedArray | Uint8Array;
 }
 
+/** A depth model in a worker: the worker rung that started, the device, `estimate` and `dispose`. */
 export interface DepthWorker {
   /** The worker rung that started (module-blob, classic-blob or inline). */
   readonly rung: Spawned["rung"];

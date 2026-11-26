@@ -12,6 +12,7 @@ export interface Pixels {
   data: Uint8ClampedArray | Uint8Array;
 }
 
+/** A depth map: width, height, 0 to 1 per pixel with larger nearer, and the raw output range. */
 export interface DepthMap {
   width: number;
   height: number;
@@ -21,11 +22,13 @@ export interface DepthMap {
   range: [min: number, max: number];
 }
 
+/** A loaded depth model: `estimate` returns a {@link DepthMap} for an image. */
 export interface DepthModel {
   estimate(image: ImageInput): Promise<DepthMap>;
   dispose?(): unknown;
 }
 
+/** A rectangle in image pixels: left, top, width and height. */
 export interface Box {
   x: number;
   y: number;
@@ -33,6 +36,7 @@ export interface Box {
   h: number;
 }
 
+/** One detected object: its label, score and box. */
 export interface Detection {
   label: string;
   score: number;
@@ -40,11 +44,13 @@ export interface Detection {
   box: Box;
 }
 
+/** A loaded detector: `detect` returns the objects in an image. */
 export interface Detector {
   detect(image: ImageInput, opts?: { scoreThreshold?: number; maxResults?: number; timestamp?: number }): Promise<Detection[]>;
   dispose?(): unknown;
 }
 
+/** A mask the size of its image: 0 or 255 per pixel, or a confidence 0 to 255, with an optional score. */
 export interface Mask {
   width: number;
   height: number;
@@ -53,6 +59,7 @@ export interface Mask {
   score?: number;
 }
 
+/** What to cut out: points (object or background) and a box, in image pixels. */
 export interface SegmentPrompt {
   /** Points in image pixels; label 1 for object, 0 for background (a negative point). */
   points?: { x: number; y: number; label?: 0 | 1 }[];
@@ -60,6 +67,7 @@ export interface SegmentPrompt {
   box?: Box;
 }
 
+/** How a segmenter keeps image embeddings: a stable key for the image and the cache to keep them in. */
 export interface SegmentOptions {
   /** A stable key for the image, such as a hash; the image object itself when omitted. */
   key?: string;
@@ -67,6 +75,7 @@ export interface SegmentOptions {
   cache?: EmbeddingCache<unknown>;
 }
 
+/** A loaded segmenter: `segment` returns masks for an image and prompt, best first. */
 export interface Segmenter {
   segment(image: ImageInput, prompt?: SegmentPrompt, o?: SegmentOptions): Promise<Mask[]>;
   dispose?(): unknown;
@@ -75,6 +84,7 @@ export interface Segmenter {
 /** "gesture" is hand landmarks plus a canned gesture label per hand (MediaPipe gesture recognizer). */
 export type LandmarkKind = "face" | "hand" | "pose" | "gesture";
 
+/** Landmarks for each face, hand or body, with blendshapes, handedness and gestures where the model gives them, and the record that answered. */
 export interface Landmarks {
   /** One list per face, hand or body; x and y normalized 0 to 1, z relative. */
   points: [number, number, number][][];
@@ -88,11 +98,13 @@ export interface Landmarks {
   source: string;
 }
 
+/** A loaded landmark model: `detect` returns {@link Landmarks} for an image. */
 export interface Landmarker {
   detect(image: ImageInput, opts?: { timestamp?: number }): Promise<Landmarks>;
   dispose?(): unknown;
 }
 
+/** A loaded vision language model: `ask` answers a question about an image, or captions it. */
 export interface Vlm {
   /** Answer a question about an image; caption when the question is omitted. */
   ask(image: ImageInput, question?: string, opts?: { maxTokens?: number; signal?: AbortSignal }): Promise<string>;

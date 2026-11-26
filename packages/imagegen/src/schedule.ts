@@ -52,6 +52,7 @@ export function gaussian(rng: Rng): Rng {
   };
 }
 
+/** The timesteps of a run and their sigmas, from {@link eulerPlan}. */
 export interface EulerPlan {
   timesteps: number[];
   /** One more than timesteps; the last is 0. */
@@ -70,8 +71,10 @@ export function leadingTimesteps(steps: number, train = 1000, offset = 1): numbe
   return out;
 }
 
+/** Timestep spacing: `trailing` for SD-Turbo, `leading` for SD 1.5. */
 export type Spacing = "trailing" | "leading";
 
+/** The timesteps and sigmas for `steps` steps with the given spacing (trailing by default). */
 export function eulerPlan(steps: number, spacing: Spacing = "trailing"): EulerPlan {
   const all = sigmas();
   const timesteps = spacing === "leading" ? leadingTimesteps(steps) : trailingTimesteps(steps);

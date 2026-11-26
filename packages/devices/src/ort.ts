@@ -13,6 +13,7 @@ import { classifyError, pinnedSha } from "@hackbuild/models";
 import { hfResolve, type WeightRef, type WeightStore } from "@hackbuild/weights";
 import { wasmThreads } from "./ladders.js";
 
+/** The parts of an onnxruntime-web tensor the provider reads: data, dims, type and `dispose`. */
 export interface OrtTensorLike {
   readonly data: ArrayLike<number> | ArrayLike<bigint>;
   readonly dims: readonly number[];
@@ -20,6 +21,7 @@ export interface OrtTensorLike {
   dispose?(): void;
 }
 
+/** The parts of an onnxruntime-web InferenceSession the provider uses: input and output names, `run` and `release`. */
 export interface OrtSession {
   readonly inputNames: readonly string[];
   readonly outputNames: readonly string[];
@@ -34,6 +36,7 @@ export interface OrtModule {
   env?: { wasm?: { numThreads?: number; proxy?: boolean; wasmPaths?: unknown; simd?: boolean } };
 }
 
+/** What {@link ortProvider} loads: the runtime module, sessions by graph name, the first session, the rung that worked, and `dispose`. */
 export interface OrtModel {
   readonly ort: OrtModule;
   /** Sessions by graph name (file name without `.onnx`). */
@@ -44,6 +47,7 @@ export interface OrtModel {
   dispose(): Promise<void>;
 }
 
+/** Options for {@link ortProvider}: the runtime loader, the weight store, the wasm file directory and a per file progress callback. */
 export interface OrtProviderOptions {
   runtime: () => Promise<OrtModule>;
   store: WeightStore;
@@ -51,6 +55,7 @@ export interface OrtProviderOptions {
   onProgress?: (recordId: string, file: string, fraction: number | null) => void;
 }
 
+/** One file of an ort record: its session key, file name, label, weight reference, and whether it is external data. */
 export interface GraphFile {
   /** Session key: the file name without `.onnx`, or its folder when two graphs share a file name (`text_encoder/model.onnx` is `text_encoder`). */
   name: string;
@@ -89,6 +94,7 @@ export function graphFiles(rec: ModelRecord): GraphFile[] {
   });
 }
 
+/** Set onnxruntime-web's wasm thread count from the probe, turn the proxy worker off, and set `wasmPaths` when given. */
 export function configureOrt(ort: OrtModule, env: Env | undefined, wasmPaths?: string): void {
   const w = ort.env?.wasm;
   if (!w) return;
@@ -107,12 +113,14 @@ export function sessionOptions(rung: Rung, external: { path: string; data: Uint8
   return { ...o, ...(rung.options ?? {}) };
 }
 
+/** The onnxruntime-web provider: the hub factory, and `forget` to release a record's bytes. */
 export interface OrtProvider {
   factory: Factory<OrtModel>;
   /** Release bytes held for a record whose every rung failed. */
   forget(rec: ModelRecord): void;
 }
 
+/** The onnxruntime-web provider for the models hub: fetches each graph once through the weight store and builds a session per rung from the same bytes. */
 export function ortProvider(opts: OrtProviderOptions): OrtProvider {
   const configured = new WeakSet<object>();
   const release = (files: GraphFile[]) => {

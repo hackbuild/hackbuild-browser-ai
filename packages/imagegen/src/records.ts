@@ -12,6 +12,7 @@
 import type { ModelRecord } from "@hackbuild/models";
 import type { Spacing } from "./schedule.js";
 
+/** What the generate form shows for a model: step range, guidance, negative prompt, sizes, spacing, a note, the tokenizer and the graph names. */
 export interface ImageForm {
   steps: { min: number; max: number; default: number };
   /** Classifier free guidance; null when the model takes none and the field is hidden. */
@@ -29,6 +30,7 @@ export interface ImageForm {
   graphs: { textEncoder: string; unet: string; vaeDecoder: string };
 }
 
+/** A models hub record with the {@link ImageForm} for its model. */
 export type ImagegenRecord = ModelRecord & { form: ImageForm };
 
 const graphs = { textEncoder: "text_encoder", unet: "unet", vaeDecoder: "vae_decoder" };
@@ -38,6 +40,7 @@ const free512 = {
   freeDimensionOverrides: { batch_size: 1, num_channels: 4, height: 64, width: 64, sequence_length: 77, num_channels_latent: 4, height_latent: 64, width_latent: 64 },
 };
 
+/** The image models {@link attachImagegen} registers: SD-Turbo and SD 1.5, each with its licence, size and form. */
 export const IMAGEGEN_RECORDS: ImagegenRecord[] = [
   {
     id: "sd-turbo",

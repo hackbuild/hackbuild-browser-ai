@@ -13,6 +13,7 @@ const dims = (img: unknown): { width: number; height: number } => {
   return { width: o?.width ?? 64, height: o?.height ?? 48 };
 };
 
+/** A stub depth model with no weights: a left to right ramp at the image's size. */
 export function rampDepth(): DepthModel {
   return {
     async estimate(img) {
@@ -24,6 +25,7 @@ export function rampDepth(): DepthModel {
   };
 }
 
+/** A stub detector with no weights: one centred box with the given label. */
 export function centreDetector(label = "person"): Detector {
   return {
     async detect(img) {
@@ -75,6 +77,7 @@ const centreBox = (img: unknown) => {
   return { x: width / 2 - r, y: height / 2 - r, w: 2 * r, h: 2 * r };
 };
 
+/** A stub landmarker with no weights: one list of `count` fixed points. */
 export function fixedLandmarker(count: number, source = "stub"): Landmarker {
   return {
     async detect() {
@@ -83,6 +86,7 @@ export function fixedLandmarker(count: number, source = "stub"): Landmarker {
   };
 }
 
+/** A stub vision language model with no weights: a fixed caption, or a fixed answer that repeats the question. */
 export function fixedVlm(text = "a stub caption."): Vlm {
   return { ask: async (_img, q) => (q ? `stub answer to: ${q}` : text) };
 }

@@ -9,13 +9,16 @@
 
 import { euler, eulerPlan, gaussian, mulberry32, type Rng, type Spacing } from "./schedule.js";
 
+/** The part of the onnxruntime-web module {@link generate} calls: the Tensor constructor. */
 export interface OrtLike {
   Tensor: new (type: string, data: Float32Array | Int32Array | BigInt64Array, dims: number[]) => unknown;
 }
+/** The part of an onnxruntime-web InferenceSession {@link generate} calls: `run` with named feeds. */
 export interface SessionLike {
   run(feeds: Record<string, unknown>): Promise<Record<string, { data: ArrayLike<number>; dims?: readonly number[] }>>;
 }
 
+/** The three graphs of a Stable Diffusion export: text encoder, UNet and VAE decoder. */
 export interface Sessions {
   textEncoder: SessionLike;
   unet: SessionLike;
@@ -25,6 +28,7 @@ export interface Sessions {
 /** Prompt to CLIP ids, padded or cut to 77 (transformers.js AutoTokenizer for Xenova/clip-vit-base-patch16 fits). */
 export type ClipTokenize = (prompt: string) => Promise<ArrayLike<number>> | ArrayLike<number>;
 
+/** A {@link generate} request: prompt, steps, seed, size, guidance, spacing, abort signal, the graph call wrapper and a step callback. */
 export interface GenerateOptions {
   prompt: string;
   /** Used only when guidance is above 1; the empty prompt when absent. */
@@ -51,6 +55,7 @@ export interface GenerateOptions {
   now?: () => number;
 }
 
+/** A generated image: RGBA pixels, its size, the seed used and the milliseconds spent in each stage. */
 export interface Generated {
   width: number;
   height: number;
@@ -60,6 +65,7 @@ export interface Generated {
   ms: { text: number; unet: number; vae: number };
 }
 
+/** The latent scale of the Stable Diffusion VAE; the final latent is divided by it before decoding. */
 export const VAE_SCALE = 0.18215;
 
 /** NCHW floats in [-1, 1] to RGBA bytes. */
@@ -73,6 +79,7 @@ export function toRgba(nchw: ArrayLike<number>, w: number, h: number): Uint8Clam
   return out;
 }
 
+/** CLIP token ids padded or cut to `n` (77), padded with `pad` or the last id. */
 export function padIds(ids: ArrayLike<number>, n = 77, pad?: number): Int32Array {
   const out = new Int32Array(n);
   const last = ids.length ? ids[ids.length - 1]! : 0;
@@ -81,6 +88,7 @@ export function padIds(ids: ArrayLike<number>, n = 77, pad?: number): Int32Array
   return out;
 }
 
+/** Text to image: encode the prompt, run the seeded Euler loop over the UNet, decode the latent with the VAE and return RGBA. Throws when `size` is not a multiple of 8. */
 export async function generate(ort: OrtLike, s: Sessions, tokenize: ClipTokenize, o: GenerateOptions): Promise<Generated> {
   const now = o.now ?? (() => (globalThis.performance ? performance.now() : Date.now()));
   const run = o.run ?? (<T>(fn: () => Promise<T>) => fn());

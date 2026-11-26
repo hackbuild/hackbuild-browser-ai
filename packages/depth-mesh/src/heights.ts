@@ -32,8 +32,10 @@ export interface MaskGrid {
   data: ArrayLike<number>;
 }
 
+/** The three height sources: Depth Anything depth, brightness, or an inflated silhouette. */
 export type HeightSourceName = "depth" | "brightness" | "inflate";
 
+/** One entry of {@link HEIGHT_SOURCES}: the name, the label to show, whether it needs a depth model, and the options it reads. */
 export interface HeightSource {
   name: HeightSourceName;
   /** The bench's label in the height from select. */
@@ -51,6 +53,7 @@ export const HEIGHT_SOURCES: readonly HeightSource[] = [
   { name: "inflate", label: "inflate silhouette", needsModel: false, params: ["width", "base", "height", "gamma", "smooth", "invert", "threshold"] },
 ];
 
+/** The relief settings in mm and 0 to 1 units; {@link RELIEF_DEFAULTS} holds the defaults. */
 export interface ReliefParams {
   /** Relief width on the print, mm. Default 30 (the bench's default layer). */
   width: number;
@@ -70,8 +73,10 @@ export interface ReliefParams {
   threshold: number;
 }
 
+/** The default relief settings: 30 mm wide, 0.24 to 2.4 mm high, gamma 1, background cut 0.25, smoothing 0.3 mm, threshold 0.5. */
 export const RELIEF_DEFAULTS: Readonly<ReliefParams> = { width: 30, base: 0.24, height: 2.4, gamma: 1, bgcut: 0.25, smooth: 0.3, invert: false, threshold: 0.5 };
 
+/** Options for {@link photoRelief}: the height source, a depth map or a call that makes one, the masks and brushes, and any relief settings to change. */
 export interface PhotoReliefOptions extends Partial<ReliefParams> {
   source: HeightSourceName;
   /** A depth map for the photo (stored with the design), or a call that makes one. */
@@ -90,6 +95,7 @@ export interface PhotoReliefOptions extends Partial<ReliefParams> {
   heal?: boolean;
 }
 
+/** What {@link photoRelief} returns: the closed solid, the heights per cell, the cell size, the source used and status notes. */
 export interface PhotoRelief {
   /** The closed solid in mm, centred on x and y, sitting on z = 0, image up is +y. */
   mesh: Mesh;

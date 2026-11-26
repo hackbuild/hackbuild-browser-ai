@@ -26,6 +26,7 @@ export function attachVision(hub: Hub, tjs?: TjsProvider): void {
   }
 }
 
+/** Options for each vision call: a record id, a size class or MB cap to route to a smaller model, an abort signal and the hub's scheduling. */
 export interface CallOptions {
   /** A record id instead of routing by capability. */
   model?: string;
@@ -54,6 +55,7 @@ async function withModel<T, R>(hub: Hub, what: string | { id: string }, fn: (v: 
 
 const target = (cap: string, o: CallOptions) => (o.model ? { id: o.model } : cap);
 
+/** A depth map of an image from the routed depth model (Depth Anything V2 small by default), loaded and released through the hub. */
 export function depth(hub: Hub, image: ImageInput, o: CallOptions = {}): Promise<DepthMap> {
   return withModel<{ estimate(i: ImageInput): Promise<DepthMap> }, DepthMap>(hub, target("depth", o), (m) => m.estimate(image), o);
 }
@@ -63,6 +65,7 @@ function asDetector(v: unknown, toPixels?: (img: unknown) => Pixels): Detector {
   return v as Detector;
 }
 
+/** Objects in an image from the routed detector (MediaPipe EfficientDet by default, or a YOLO ort model), loaded and released through the hub. */
 export function detect(
   hub: Hub,
   image: ImageInput,
@@ -125,6 +128,7 @@ export function caption(hub: Hub, image: ImageInput, o: CallOptions & { maxToken
   return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.caption", o), (m) => m.ask(image, undefined, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o));
 }
 
+/** Answer a question about an image with the routed vision language model. VLM calls are serialized on one chain. */
 export function ask(hub: Hub, image: ImageInput, question: string, o: CallOptions & { maxTokens?: number } = {}): Promise<string> {
   return hub.chain("vlm")(() => withModel<Vlm, string>(hub, target("vision.ask", o), (m) => m.ask(image, question, o.maxTokens ? { maxTokens: o.maxTokens } : {}), o));
 }

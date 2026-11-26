@@ -12,8 +12,10 @@
 import type { Env } from "@hackbuild/ai-env";
 import { ortLadder, type Rung } from "@hackbuild/models";
 
+/** A transformers.js dtype: one for the whole model, or one per sub graph. */
 export type Dtype = string | Record<string, string>;
 
+/** The dtypes to try on WebGPU and on wasm, their order, a fresh heap retry, and options copied onto every rung. */
 export interface TjsLadderSpec {
   /** dtypes tried on webgpu, in order. */
   webgpu?: readonly Dtype[];

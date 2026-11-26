@@ -17,6 +17,7 @@ export interface FaceApi {
   };
 }
 
+/** The face-api.js provider for the models hub: the tiny face detector and 68 point tiny landmark net, as a face {@link Landmarker}. */
 export function faceApiProvider(opts: { runtime: () => Promise<FaceApi> }): Factory<Landmarker> {
   return async ({ record }) => {
     const fa = await opts.runtime();

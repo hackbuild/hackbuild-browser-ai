@@ -12,6 +12,7 @@ import type { Factory, FactoryContext, ModelRecord, Rung } from "@hackbuild/mode
 import { progressMerger, type FileProgressEvent, type MergedProgress } from "./progress.js";
 import { wasmThreads } from "./ladders.js";
 
+/** The parts of transformers.js `env` the provider sets: local and remote models, caches and the onnx wasm backend. */
 export interface TjsEnv {
   allowLocalModels?: boolean;
   allowRemoteModels?: boolean;
@@ -29,12 +30,14 @@ export interface TjsModule {
   [name: string]: unknown;
 }
 
+/** What a custom {@link TjsLoader} receives: the hub's factory context, the transformers.js module and the pipeline options for the rung. */
 export interface TjsLoadContext extends FactoryContext {
   tjs: TjsModule;
   /** Pipeline options for this rung: device, dtype, progress_callback. */
   options: Record<string, unknown>;
 }
 
+/** A custom loader for one capability on the transformers.js provider; it returns the loaded model. */
 export type TjsLoader<T = unknown> = (ctx: TjsLoadContext) => Promise<T>;
 
 /** transformers.js pipeline task per capability, for the default loader. */
@@ -47,6 +50,7 @@ export const TJS_TASKS: Record<string, string> = {
   segment: "image-segmentation",
 };
 
+/** Options for {@link tjsProvider}: the runtime loader, a custom cache from @hackbuild/weights, and a progress callback. */
 export interface TjsProviderOptions {
   runtime: () => Promise<TjsModule>;
   /** A `transformersCache(store, ...)` from @hackbuild/weights, set as env.customCache. */
@@ -54,6 +58,7 @@ export interface TjsProviderOptions {
   onProgress?: (recordId: string, p: MergedProgress) => void;
 }
 
+/** The transformers.js provider: the hub factory, `loader` to register a capability's loader, and `configure`. */
 export interface TjsProvider {
   factory: Factory;
   /** Register the loader for a capability. The first capability of a record with a loader wins. */
@@ -61,6 +66,7 @@ export interface TjsProvider {
   configure(tjs: TjsModule, env: Env | undefined): void;
 }
 
+/** Configure transformers.js once: no local models, the browser or a custom cache, the wasm cache off, wasm threads from the probe and the proxy worker off. */
 export function configureTjs(tjs: TjsModule, env: Env | undefined, cache?: unknown): void {
   const e = tjs.env;
   if (!e) return;
@@ -93,6 +99,7 @@ function modelIdOf(rec: ModelRecord): string {
   return id;
 }
 
+/** The transformers.js provider for the models hub: configures the runtime once and loads each record through a registered loader or `pipeline`. */
 export function tjsProvider(opts: TjsProviderOptions): TjsProvider {
   const loaders = new Map<string, TjsLoader>();
   let configured: TjsModule | null = null;

@@ -13,6 +13,7 @@ export interface FileProgressEvent {
   progress?: number;
 }
 
+/** Progress summed across files: bytes loaded, the total when known, the fraction, the file count and a status line. */
 export interface MergedProgress {
   loaded: number;
   /** null while no file has reported a total. */
@@ -23,6 +24,7 @@ export interface MergedProgress {
   line: string;
 }
 
+/** Merge transformers.js per file progress events into one {@link MergedProgress} and pass it to `onUpdate`. */
 export function progressMerger(onUpdate: (p: MergedProgress) => void): (ev: FileProgressEvent) => void {
   const files = new Map<string, [number, number | null]>();
   return (ev) => {

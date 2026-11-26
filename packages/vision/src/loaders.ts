@@ -60,6 +60,7 @@ export function depthFromOutput(out: { predicted_depth?: TensorLike; depth?: Raw
   return { width: d.width, height: d.height, data, range: [0, 255] };
 }
 
+/** The transformers.js loader for depth records: a depth-estimation pipeline wrapped as a {@link DepthModel}. */
 export async function depthLoader(ctx: TjsLoadContext): Promise<DepthModel> {
   const pipe = (await ctx.tjs.pipeline!("depth-estimation", ctx.record.source.modelId!, ctx.options)) as Fn & { dispose?: () => unknown };
   return {
@@ -68,6 +69,7 @@ export async function depthLoader(ctx: TjsLoadContext): Promise<DepthModel> {
   };
 }
 
+/** The transformers.js loader for caption and question records: the VLM's processor and model wrapped as a {@link Vlm}. */
 export async function vlmLoader(ctx: TjsLoadContext): Promise<Vlm> {
   const id = ctx.record.source.modelId!;
   const processor = (await cls(ctx.tjs, "AutoProcessor").from_pretrained(id)) as Fn & {
