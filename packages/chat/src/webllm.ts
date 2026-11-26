@@ -11,6 +11,7 @@
 import { createEngine, type EngineOptions } from "./engine.js";
 import { ChatError, type ChatEngine, type Driver, type DriverEvent, type DriverRequest, type Finish, type ToolCall } from "./types.js";
 
+/** The @mlc-ai/web-llm version this file is pinned to. */
 export const WEBLLM_VERSION = "0.2.84";
 
 /** The parts of an MLCEngine this driver uses. */
@@ -35,6 +36,7 @@ export interface WebLLMModule {
 
 const FINISH: Record<string, Finish> = { stop: "stop", length: "length", tool_calls: "tool", abort: "abort" };
 
+/** Options for `webllmDriver`: a built MLCEngine, its model id and whether to send native tools. */
 export interface WebLLMDriverOptions {
   engine: MLCEngineLike;
   modelId: string;
@@ -42,6 +44,7 @@ export interface WebLLMDriverOptions {
   nativeTools?: boolean;
 }
 
+/** A driver over a WebLLM MLCEngine that streams chat completions and names a runtime and model library mismatch. */
 export function webllmDriver(o: WebLLMDriverOptions): Driver {
   return {
     id: `webllm:${o.modelId}`,
@@ -101,6 +104,7 @@ export function webllmDriver(o: WebLLMDriverOptions): Driver {
   };
 }
 
+/** Options for `loadWebLLM`: the module, model id, wanted context window, custom catalog entries, a progress callback and native tools. */
 export interface LoadWebLLMOptions extends EngineOptions {
   module: WebLLMModule;
   modelId: string;
@@ -174,6 +178,7 @@ export interface WebLLMModelEntry {
   model_lib?: string;
 }
 
+/** Lists, measures and evicts the models in WebLLM's own IndexedDB cache. */
 export interface WebLLMCache {
   /** Models with at least one stored entry, largest first. */
   list(): Promise<WebLLMCacheEntry[]>;

@@ -13,6 +13,7 @@
 
 import type { ChatMessage } from "./types.js";
 
+/** Options for `normalizeMessages`: system role, strict alternation and tool results as user turns. */
 export interface NormalizeOptions {
   /** false: merge system text into the first user turn. Default true. */
   systemRole?: boolean;
@@ -22,6 +23,7 @@ export interface NormalizeOptions {
   toolAsUser?: boolean;
 }
 
+/** Rewrites a message list for a template: merges system turns, turns tool results into user turns, and joins same role turns when asked. */
 export function normalizeMessages(input: readonly ChatMessage[], o: NormalizeOptions = {}): ChatMessage[] {
   const systemRole = o.systemRole ?? true;
   const strict = o.strictAlternation ?? false;
@@ -61,6 +63,7 @@ const TAG_NAMES = ["think", "thinking", "thought", "reason", "reasoning"];
 /** Control markers small models leak into text (ChatML, Llama 3, Gemma, harmony channels). */
 const MARKERS = /<\|im_start\|>(?:assistant|user|system)?\n?|<\|im_end\|>|<\|eot_id\|>|<\|end_of_text\|>|<\|start_header_id\|>\w*<\|end_header_id\|>\n?|<end_of_turn>|<start_of_turn>(?:model|user)?\n?|<\|endoftext\|>|<\|channel\|>\w*(?:<\|message\|>)?|<\|message\|>|<\|end\|>|<\|return\|>|<\/s>/g;
 
+/** Removes ChatML, Llama 3, Gemma and channel control markers that small models leak into text. */
 export function stripMarkers(s: string): string {
   return s.replace(MARKERS, "");
 }
@@ -70,6 +73,7 @@ export function stripThink(s: string): string {
   return splitThink(s).text;
 }
 
+/** Splits a whole text into visible text and think text, both trimmed. */
 export function splitThink(s: string): { text: string; think: string } {
   const sp = new ThinkSplitter();
   const a = sp.push(s);
@@ -89,6 +93,7 @@ function partialTagTail(s: string, closing: string | null): number {
   return cands.some((c) => c.toLowerCase().startsWith(tail) || (c === "<|" && /^<\|[\w]*\|?$/.test(tail))) ? s.length - lt : 0;
 }
 
+/** Separates think blocks from visible text as a stream arrives, closed or unclosed, holding back half a tag until it can be read. */
 export class ThinkSplitter {
   private buf = "";
   private inThink: string | null = null;

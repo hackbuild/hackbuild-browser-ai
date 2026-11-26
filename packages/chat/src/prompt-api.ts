@@ -9,16 +9,19 @@
 import { createEngine, type EngineOptions } from "./engine.js";
 import { ChatError, type ChatEngine, type Driver, type DriverEvent, type DriverRequest } from "./types.js";
 
+/** The parts of a Chrome Prompt API session this driver uses. */
 export interface LanguageModelSession {
   promptStreaming(input: string, opts?: { responseConstraint?: unknown; signal?: AbortSignal }): AsyncIterable<string> | ReadableStream<string>;
   destroy?(): void;
 }
 
+/** The parts of Chrome's `LanguageModel` global this driver uses. */
 export interface LanguageModelStatic {
   availability(opts?: Record<string, unknown>): Promise<"unavailable" | "downloadable" | "downloading" | "available">;
   create(opts?: Record<string, unknown>): Promise<LanguageModelSession>;
 }
 
+/** Returns the `LanguageModel` global when the browser has one, else null. */
 export function getLanguageModel(g: unknown = globalThis): LanguageModelStatic | null {
   const lm = (g as { LanguageModel?: LanguageModelStatic }).LanguageModel;
   return lm && typeof lm.create === "function" ? lm : null;
@@ -37,6 +40,7 @@ async function* chunksOf(s: AsyncIterable<string> | ReadableStream<string>): Asy
   }
 }
 
+/** Options for the Prompt API engine: the `LanguageModel` to use, a download progress callback and the languages in and out. */
 export interface PromptApiOptions {
   LanguageModel?: LanguageModelStatic;
   onDownload?: (fraction: number) => void;
@@ -50,6 +54,7 @@ export function promptLanguages(languages: readonly string[] = ["en"]): Record<s
   return { expectedInputs: io, expectedOutputs: io };
 }
 
+/** A driver over Chrome's built in Prompt API that creates a session per request from the history. */
 export function promptApiDriver(o: PromptApiOptions = {}): Driver {
   const lm = o.LanguageModel ?? getLanguageModel();
   return {
@@ -101,6 +106,7 @@ export function promptApiDriver(o: PromptApiOptions = {}): Driver {
   };
 }
 
+/** An engine over Chrome's built in Prompt API. */
 export function promptApi(o: PromptApiOptions & EngineOptions = {}): ChatEngine {
   return createEngine(promptApiDriver(o), o);
 }

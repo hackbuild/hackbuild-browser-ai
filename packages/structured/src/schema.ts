@@ -9,6 +9,7 @@
 
 import type { JsonSchema, ToolSpec } from "@hackbuild/chat";
 
+/** The JSON Schema keywords `sanitizeSchema` removes, because grammar compilers refuse them. */
 export const STRIPPED_KEYWORDS = [
   "minItems",
   "maxItems",
@@ -23,8 +24,10 @@ export const STRIPPED_KEYWORDS = [
   "pattern",
 ] as const;
 
+/** The name of the pseudo tool a model calls to answer the user in words. */
 export const RESPOND = "respond_to_user";
 
+/** Copy a schema without the keywords grammar compilers refuse, keeping property names, and add a root `type: "object"` when the root has no type. */
 export function sanitizeSchema(schema: JsonSchema, opts: { strip?: readonly string[] } = {}): JsonSchema {
   const strip = new Set(opts.strip ?? STRIPPED_KEYWORDS);
   const walk = (v: unknown, key: string | null): unknown => {
@@ -43,6 +46,7 @@ export function sanitizeSchema(schema: JsonSchema, opts: { strip?: readonly stri
   return out;
 }
 
+/** Whether the agent schemas add the `respond_to_user` pseudo tool and ask for a thought first. */
 export interface AgentSchemaOptions {
   /** Add the respond_to_user pseudo tool. Default true. */
   respond?: boolean;
@@ -58,6 +62,7 @@ function respondTool(): ToolSpec {
   };
 }
 
+/** The tool list with `respond_to_user` added at the end, unless it is there already or `on` is false. */
 export function withRespond(tools: readonly ToolSpec[], on = true): ToolSpec[] {
   return on && !tools.some((t) => t.name === RESPOND) ? [...tools, respondTool()] : [...tools];
 }

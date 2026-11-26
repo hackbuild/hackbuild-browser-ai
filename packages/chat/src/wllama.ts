@@ -13,7 +13,9 @@
 import { createEngine, type EngineOptions } from "./engine.js";
 import { ChatError, type ChatEngine, type Driver, type DriverEvent, type DriverRequest, type Finish } from "./types.js";
 
+/** The @wllama/wllama version this file is pinned to. */
 export const WLLAMA_VERSION = "4.0.0";
+/** The older @wllama/wllama version that stays the fallback. */
 export const WLLAMA_FALLBACK_VERSION = "3.8.1";
 
 /** jsdelivr URLs of the ESM entry and the wasm for a wllama version. */
@@ -22,6 +24,7 @@ export function wllamaUrls(version: string = WLLAMA_VERSION): { esm: string; was
   return { esm: `${base}index.js`, wasm: `${base}wasm/wllama.wasm` };
 }
 
+/** The parts of a Wllama instance this driver uses. */
 export interface WllamaLike {
   createChatCompletion(opts: Record<string, unknown>): Promise<AsyncIterable<{ choices: { delta?: { content?: string | null }; finish_reason?: string | null }[] }>>;
   loadModel(blobs: Blob[], params?: Record<string, unknown>): Promise<void>;
@@ -30,12 +33,14 @@ export interface WllamaLike {
   exit?(): Promise<void>;
 }
 
+/** The parts of the @wllama/wllama module the loader uses. */
 export interface WllamaModule {
   Wllama: new (paths: { default: string }, cfg?: Record<string, unknown>) => WllamaLike;
 }
 
 const FINISH: Record<string, Finish> = { stop: "stop", length: "length", content_filter: "refusal", tool_calls: "tool" };
 
+/** Options for `wllamaDriver`: a loaded Wllama, an id and whether to keep the KV prefix between calls. */
 export interface WllamaDriverOptions {
   wllama: WllamaLike;
   id?: string;
@@ -43,6 +48,7 @@ export interface WllamaDriverOptions {
   cachePrompt?: boolean;
 }
 
+/** A driver over a loaded Wllama that streams chat completions and prewarms its prefix cache. */
 export function wllamaDriver(o: WllamaDriverOptions): Driver {
   const d: Driver = {
     id: `wllama:${o.id ?? "model"}`,
@@ -105,6 +111,7 @@ export function wllamaDriver(o: WllamaDriverOptions): Driver {
   return d;
 }
 
+/** Options for `loadWllama`: the module, wasm URL, GGUF blobs, context size, GPU layers and the reasoning switch. */
 export interface LoadWllamaOptions extends EngineOptions {
   module: WllamaModule;
   /** wasm URL; default the jsdelivr URL for WLLAMA_VERSION. */

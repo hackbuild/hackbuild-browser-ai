@@ -9,12 +9,14 @@
 import { normalizeMessages, ThinkSplitter } from "./text.js";
 import { ChatError, type ChatEngine, type ChatEvent, type ChatMessage, type ChatResult, type Driver, type DriverRequest, type Finish, type JsonSchema, type StreamOptions, type ToolCall } from "./types.js";
 
+/** Template quirks of a model: whether it takes a system role, needs strict user and assistant alternation, or wants a default repetition penalty. */
 export interface EngineQuirks {
   systemRole?: boolean;
   strictAlternation?: boolean;
   repetitionPenalty?: number;
 }
 
+/** Options for `createEngine`: quirks, default max tokens, starting with schemas off, and the clock for reply stats. */
 export interface EngineOptions {
   quirks?: EngineQuirks;
   /** Default max tokens. 512. */
@@ -30,6 +32,7 @@ export const PREWARM_DELAY_MS = 1200;
 
 const SCHEMA_ERR = /grammar|schema|response_format|json_schema|xgrammar|responseConstraint|constraint/i;
 
+/** Tells whether an error is the runtime refusing a schema, counted only when a schema was sent. */
 export function isSchemaError(e: unknown, sentSchema: boolean): boolean {
   if (!sentSchema) return false;
   if (e instanceof ChatError && e.code === "schema") return true;
@@ -37,6 +40,7 @@ export function isSchemaError(e: unknown, sentSchema: boolean): boolean {
   return e instanceof Error && SCHEMA_ERR.test(e.message);
 }
 
+/** The system prompt text that asks for one JSON object matching a schema, used when the runtime refuses the schema itself. */
 export function schemaInstruction(schema: JsonSchema): string {
   return `Reply with one JSON object that matches this JSON Schema, and nothing else:\n${JSON.stringify(schema)}`;
 }
@@ -49,6 +53,7 @@ function withInstruction(msgs: ChatMessage[], text: string): ChatMessage[] {
   return out;
 }
 
+/** Wraps a driver in a chat engine that normalizes roles, splits think blocks, cuts stop strings and falls back from schema to free text. */
 export function createEngine(driver: Driver, opts: EngineOptions = {}): ChatEngine {
   let noSchema = opts.noSchema ?? !driver.caps.schema;
   const quirks = opts.quirks ?? {};

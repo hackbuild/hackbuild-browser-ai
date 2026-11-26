@@ -11,6 +11,7 @@ import { createSession, migrateSession, type ChatSession, type SessionMessage } 
 import { createChatStore, type ChatSink, type ChatStore } from "./store.js";
 import type { ChatMessage, ConverseEngine, DirectorLike, RecordedCue, ReplyStats, SpeakerLike, Timers, ToolCall } from "./types.js";
 
+/** What a conversation needs: the engine and a clock, and optionally the system text, greeting, history cap, director, speaker, memory, camera line and sink. */
 export interface ConverseOptions {
   engine: ConverseEngine;
   /** Clock in ms for message times and new sessions. */
@@ -39,6 +40,7 @@ export interface ConverseOptions {
   debounceMs?: number;
 }
 
+/** What a conversation emits: the session changed, reply text or think text arrived, a reply finished or failed, or busy flipped. */
 export type ConverseEvent =
   | { type: "change"; session: ChatSession }
   | { type: "text"; id: string; text: string }
@@ -47,6 +49,7 @@ export type ConverseEvent =
   | { type: "error"; message: SessionMessage; error: unknown }
   | { type: "busy"; busy: boolean };
 
+/** A running conversation: send, stop, redo, edit, remove, speak again, restore and clear, with events through `on`. */
 export interface Conversation {
   readonly session: ChatSession;
   readonly busy: boolean;
@@ -78,6 +81,7 @@ export interface Conversation {
 
 const isAbort = (e: unknown, signal: AbortSignal) => signal.aborted || (e instanceof Error && e.name === "AbortError");
 
+/** Make a conversation over a streaming engine; it keeps the history rules, drives the director and speaker, and saves through the sink when you give one. */
 export function createConversation(o: ConverseOptions): Conversation {
   let n = 0;
   const makeId = o.makeId ?? (() => `m${o.now().toString(36)}${(n++).toString(36)}`);

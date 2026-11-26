@@ -11,20 +11,24 @@ import { createEngine, type EngineOptions } from "./engine.js";
 import type { ChatEngine, Driver, DriverEvent, DriverRequest } from "./types.js";
 import { Channel } from "./util.js";
 
+/** The @huggingface/transformers version this file is written against. */
 export const TRANSFORMERS_VERSION = "4.3.2";
 
+/** The parts of a transformers.js text generation pipeline this driver uses. */
 export interface TextGenerationLike {
   (messages: { role: string; content: string }[], opts: Record<string, unknown>): Promise<unknown>;
   tokenizer: unknown;
   dispose?(): Promise<void>;
 }
 
+/** The parts of the @huggingface/transformers module the loader uses. */
 export interface TransformersModule {
   pipeline(task: "text-generation", model: string, opts?: Record<string, unknown>): Promise<TextGenerationLike>;
   TextStreamer: new (tokenizer: unknown, opts: { skip_prompt?: boolean; skip_special_tokens?: boolean; callback_function?: (t: string) => void }) => unknown;
   InterruptableStoppingCriteria: new () => { interrupt(): void; reset?(): void };
 }
 
+/** Options for `transformersDriver`: the module's streamer and stopping classes, a built pipeline, an id and the system role quirk. */
 export interface TransformersDriverOptions {
   module: Pick<TransformersModule, "TextStreamer" | "InterruptableStoppingCriteria">;
   generator: TextGenerationLike;
@@ -33,6 +37,7 @@ export interface TransformersDriverOptions {
   systemRole?: boolean;
 }
 
+/** A driver over a transformers.js text generation pipeline that streams through TextStreamer and stops on abort. */
 export function transformersDriver(o: TransformersDriverOptions): Driver {
   return {
     id: `tjs:${o.id ?? "model"}`,
@@ -75,6 +80,7 @@ export function transformersDriver(o: TransformersDriverOptions): Driver {
   };
 }
 
+/** Options for `loadTransformers`: the module, model id, device, dtype and a progress callback. */
 export interface LoadTransformersOptions extends EngineOptions {
   module: TransformersModule;
   modelId: string;
@@ -83,6 +89,7 @@ export interface LoadTransformersOptions extends EngineOptions {
   onProgress?: (p: unknown) => void;
 }
 
+/** Builds a transformers.js text generation pipeline for a model id and wraps it in an engine. */
 export async function loadTransformers(o: LoadTransformersOptions): Promise<ChatEngine> {
   const popts: Record<string, unknown> = {};
   if (o.device) popts.device = o.device;

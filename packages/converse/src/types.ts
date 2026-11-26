@@ -6,6 +6,7 @@
 
 export type Role = "system" | "user" | "assistant" | "tool";
 
+/** One tool call a model asked for: the tool name and its arguments as a JSON string. */
 export interface ToolCall {
   name: string;
   /** Arguments as the model wrote them (a JSON string). */
@@ -13,6 +14,7 @@ export interface ToolCall {
   id?: string;
 }
 
+/** One message of a request: role, text, and the tool calls or tool result id when there are any. */
 export interface ChatMessage {
   role: Role;
   content: string;
@@ -37,6 +39,7 @@ export type EngineEvent =
   | { type: "tool"; calls: ToolCall[] }
   | { type: "done"; result: { text: string; finish: string; toolCalls?: ToolCall[]; stats?: ReplyStats } };
 
+/** The engine a conversation streams from: a `stream` of events per request, and an optional `prewarm` that fills the prefix cache. */
 export interface ConverseEngine {
   stream(messages: readonly ChatMessage[], opts?: { signal?: AbortSignal }): AsyncIterable<EngineEvent>;
   prewarm?(messages: readonly ChatMessage[], opts?: { signal?: AbortSignal }): Promise<boolean>;
@@ -67,6 +70,7 @@ export interface SpeakerLike {
   stop(): void;
 }
 
+/** The timer pair the store debounces with; pass your own in tests. */
 export interface Timers {
   setTimeout(fn: () => void, ms: number): unknown;
   clearTimeout(h: unknown): void;

@@ -26,6 +26,7 @@ export function savable(m: SessionMessage): boolean {
   return !(m.role === "assistant" && !m.content && !m.raw && !m.think && !m.toolCalls?.length && m.error === undefined);
 }
 
+/** A debounced saver of one session; it drops saves until `markRestored()` is called. */
 export interface ChatStore {
   /** False until `restored()` is called; saves before that are dropped. */
   readonly restored: boolean;
@@ -36,6 +37,7 @@ export interface ChatStore {
   flush(): Promise<void>;
 }
 
+/** Make a store that saves to `sink` 600 ms after the last change, leaving out replies still waiting for their first word. */
 export function createChatStore(sink: ChatSink, o: { debounceMs?: number; timers?: Timers; onError?: (e: unknown) => void } = {}): ChatStore {
   const timers = o.timers ?? defaultTimers;
   const ms = o.debounceMs ?? SAVE_DEBOUNCE_MS;

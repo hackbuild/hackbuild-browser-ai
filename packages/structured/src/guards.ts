@@ -11,8 +11,10 @@ export interface GuardOptions {
   pushbacks?: number;
 }
 
+/** Which guard tripped: too many parse failures, a repeated call, garbage replies or too many pushbacks. */
 export type StopReason = "parse-fails" | "repeat" | "garbage" | "pushbacks";
 
+/** Counters over one agent run that return a `StopReason` when a limit is reached. */
 export interface Guards {
   /** Record a reply that did not parse. */
   parseFail(): StopReason | null;
@@ -33,6 +35,7 @@ export function jsonCharRatio(text: string): number {
   return n / t.length;
 }
 
+/** True when a reply is empty, repeats a short run six times or more, or has a JSON punctuation share above `ratio`. */
 export function looksLikeGarbage(text: string, ratio = 0.18): boolean {
   const t = text.trim();
   if (!t) return true;
@@ -52,6 +55,7 @@ export function fingerprint(name: string, args: unknown): string {
   return `${name}:${JSON.stringify(norm(args))}`;
 }
 
+/** Make guards with the defaults 3 parse failures, the same call 3 times in the last 6, 2 garbage replies in a row, and 3 pushbacks. */
 export function createGuards(o: GuardOptions = {}): Guards {
   const maxFails = o.parseFails ?? 3;
   const rep = o.repeat ?? { count: 3, window: 6 };

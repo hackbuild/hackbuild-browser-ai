@@ -9,12 +9,16 @@ import { RECALL_NOTE, withRecall } from "@hackbuild/memory";
 import type { ChatSession, SessionMessage } from "./session.js";
 import type { ChatMessage } from "./types.js";
 
+/** The fixed line added to the system text when seen lines are on; it tells the model what `[seen]` lines mean. */
 export const SEEN_NOTE = "Lines that start with [seen] under a user message say what the camera showed when the person wrote it. Use them when they fit.";
+/** The tag in front of each recalled memory line under a user turn. */
 export const MEMORY_TAG = "[memory]";
+/** The tag in front of the camera line under a user turn. */
 export const SEEN_TAG = "[seen]";
 /** Small models copy replies with no letter or digit, so those stay out of history. */
 const WORDY = /[\p{L}\p{N}]/u;
 
+/** What `buildMessages` applies: a message cap, and whether memory and seen notes and lines go in. */
 export interface HistoryOptions {
   /** Keep at most this many messages after the system text; never fewer than 2. Default all. */
   limit?: number;

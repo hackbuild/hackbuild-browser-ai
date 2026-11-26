@@ -11,6 +11,7 @@ import { createEngine, type EngineOptions } from "./engine.js";
 import { ChatError, type ChatEngine, type ChatMessage, type Driver, type DriverEvent, type DriverRequest, type Finish, type ToolCall } from "./types.js";
 import { sse } from "./util.js";
 
+/** Options shared by the remote engines: model, API key, fetch, extra headers and the model's licence or terms. */
 export interface RemoteOptions extends EngineOptions {
   model: string;
   apiKey?: string;
@@ -45,6 +46,7 @@ async function post(f: typeof fetch, url: string, headers: Record<string, string
 
 const OAI_FINISH: Record<string, Finish> = { stop: "stop", length: "length", tool_calls: "tool", content_filter: "refusal", function_call: "tool" };
 
+/** Options for an OpenAI compatible endpoint: the base URL, the schema mode and llama.cpp sampling fields. */
 export interface OpenAIOptions extends RemoteOptions {
   /** Base URL up to and including /v1, e.g. http://localhost:11434/v1 (Ollama). */
   base: string;
@@ -80,6 +82,7 @@ export function oaiMessages(ms: readonly ChatMessage[]): Record<string, unknown>
   return out;
 }
 
+/** A driver over an OpenAI compatible chat completions endpoint, streamed over server sent events. */
 export function openaiDriver(o: OpenAIOptions): Driver {
   const f = o.fetch ?? globalThis.fetch.bind(globalThis);
   const url = o.base.replace(/\/+$/, "") + "/chat/completions";
@@ -152,6 +155,7 @@ export function openaiCompatible(o: OpenAIOptions): ChatEngine {
   return createEngine(openaiDriver(o), o);
 }
 
+/** Options for the Anthropic Messages API: base URL, API version header and the browser access header. */
 export interface AnthropicOptions extends RemoteOptions {
   /** Default https://api.anthropic.com */
   base?: string;

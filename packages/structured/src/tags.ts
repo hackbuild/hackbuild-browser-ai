@@ -30,6 +30,7 @@ export interface TagGrammar {
   maxTag?: number;
 }
 
+/** One tag found in model text: its key, resolved value, the text as written, and its offset in the visible text. */
 export interface Tag {
   key: string;
   value: string;
@@ -77,6 +78,7 @@ export function resolveValue(value: string, vocab: readonly string[], synonyms: 
   return best >= 0 ? vocab[best]! : null;
 }
 
+/** A streaming tag parser: `feed` chunks, `end` the stream, `parse` whole text, or `strip` text for speech. */
 export interface TagParser {
   feed(chunk: string): { text: string; tags: Tag[] };
   /** Flush at the end of the stream. An unclosed tag is returned as text. */
@@ -87,6 +89,7 @@ export interface TagParser {
   strip(text: string): string;
 }
 
+/** Make a tag parser for the keys, synonyms and line keys you give. */
 export function createTagParser(g: TagGrammar): TagParser {
   const keys = Object.keys(g.keys);
   const keyLower = new Map(keys.map((k) => [k.toLowerCase(), k]));

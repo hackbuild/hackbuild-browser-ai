@@ -41,6 +41,7 @@ export function grabCode(value: string): { code: string; lang: string | null } {
   return { code: value.trim(), lang: null };
 }
 
+/** An action read from an ACTION line: the tool name, its positional arguments, and the text as written. */
 export interface ParsedAction {
   name: string;
   /** Positional arguments from `name(a, b)` or `name a b` forms. */

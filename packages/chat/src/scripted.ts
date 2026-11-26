@@ -7,6 +7,7 @@
 import { createEngine, type EngineOptions } from "./engine.js";
 import { ChatError, type ChatEngine, type Driver, type DriverEvent, type DriverRequest } from "./types.js";
 
+/** Options for a scripted engine: the replies or a function of the request, chunk size, a schema refusal message and caps. */
 export interface ScriptedOptions extends EngineOptions {
   /** Replies in order (the last one repeats), or a function of the request. */
   replies: readonly string[] | ((req: DriverRequest, call: number) => string);
@@ -19,6 +20,7 @@ export interface ScriptedOptions extends EngineOptions {
   id?: string;
 }
 
+/** A driver with no model that streams fixed replies in small pieces and records each request in `calls`. */
 export function scriptedDriver(o: ScriptedOptions): Driver & { calls: DriverRequest[] } {
   const calls: DriverRequest[] = [];
   return {
@@ -45,6 +47,7 @@ export function scriptedDriver(o: ScriptedOptions): Driver & { calls: DriverRequ
   };
 }
 
+/** An engine over `scriptedDriver`, for stub pages and tests. */
 export function scripted(o: ScriptedOptions): ChatEngine & { calls: DriverRequest[] } {
   const d = scriptedDriver(o);
   return Object.assign(createEngine(d, o), { calls: d.calls });

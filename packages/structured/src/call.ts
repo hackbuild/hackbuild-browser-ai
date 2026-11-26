@@ -20,14 +20,17 @@ import { parseAction, parseLines } from "./lines.js";
 import { buildAgentSchema, buildLooseAgentSchema, RESPOND } from "./schema.js";
 import { createTagParser } from "./tags.js";
 
+/** How `call` asks the model for a tool: constrained JSON, a Hermes prompt, native tools, inline tags, or THOUGHT and ACTION lines. */
 export type Mode = "constrained" | "prompt" | "native" | "tags" | "lines";
 
+/** What a runtime is known to do: native tool calls, `<tool_call>` tags, and a token cap for actions. */
 export interface CallQuirks {
   nativeTools?: boolean;
   toolCallTags?: boolean;
   maxTokensAction?: number;
 }
 
+/** The tools, mode, quirks, guards and sampling settings for one `call`. */
 export interface CallOptions {
   tools: readonly ToolSpec[];
   mode?: Mode | "auto";
@@ -40,6 +43,7 @@ export interface CallOptions {
   respond?: boolean;
 }
 
+/** The result of one `call`: the mode used, thought, tool and arguments, text for the user, raw reply, fallback taken and any guard that tripped. */
 export interface Decision {
   mode: Mode;
   thought: string;
@@ -54,6 +58,7 @@ export interface Decision {
   stop: StopReason | null;
 }
 
+/** The mode `auto` uses: native when the quirks and engine allow tools, constrained when the engine takes schemas, prompt for tool call tag models, else lines. */
 export function pickMode(chat: ChatEngine, q: CallQuirks = {}): Mode {
   if (q.nativeTools && chat.caps.tools) return "native";
   if (chat.caps.schema) return "constrained";
@@ -73,6 +78,7 @@ function withSystem(msgs: readonly ChatMessage[], text: string): ChatMessage[] {
   return out;
 }
 
+/** The system text that lists the tools in `<tools>` and asks for one `<tool_call>` reply, in the Hermes and Qwen format. */
 export function hermesToolPrompt(tools: readonly ToolSpec[]): string {
   const list = tools.map((t) => ({ type: "function", function: { name: t.name, description: t.description ?? "", parameters: t.parameters } }));
   return [
@@ -113,6 +119,7 @@ function argsFromPositional(t: ToolSpec | undefined, args: string[]): Record<str
   return out;
 }
 
+/** Ask a chat engine for one tool decision in the chosen mode, with the strict to loose to text fallbacks in constrained mode. */
 export async function call(chat: ChatEngine, messages: readonly ChatMessage[], o: CallOptions): Promise<Decision> {
   const respond = o.respond !== false;
   const mode: Mode = !o.mode || o.mode === "auto" ? pickMode(chat, o.quirks) : o.mode;

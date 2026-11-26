@@ -105,6 +105,7 @@ export function parseLooseJSON(raw: string): unknown {
   return null;
 }
 
+/** A tool choice read from model JSON: the thought, the tool name and its arguments object. */
 export interface ToolDecision {
   thought: string;
   name: string;

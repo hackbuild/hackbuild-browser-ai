@@ -2,6 +2,7 @@
 
 export type Role = "system" | "user" | "assistant" | "tool";
 
+/** One turn of a conversation: a role, its text, and for tool turns the tool name, call id or calls. */
 export interface ChatMessage {
   role: Role;
   content: string;
@@ -16,12 +17,14 @@ export interface ChatMessage {
 /** JSON Schema as a plain object. */
 export type JsonSchema = Record<string, unknown>;
 
+/** A tool the model may call: its name, a description and a JSON Schema for its arguments. */
 export interface ToolSpec {
   name: string;
   description?: string;
   parameters: JsonSchema;
 }
 
+/** A tool call the model made, with its arguments as the JSON string the model wrote. */
 export interface ToolCall {
   name: string;
   /** Arguments as the model wrote them (a JSON string). */
@@ -29,6 +32,7 @@ export interface ToolCall {
   id?: string;
 }
 
+/** Options for one reply: sampling, stop strings, schema and fallbacks, tools, an abort signal and what to do with think blocks. */
 export interface StreamOptions {
   maxTokens?: number;
   temperature?: number;
@@ -49,6 +53,7 @@ export interface StreamOptions {
   think?: "emit" | "drop";
 }
 
+/** Why a reply ended. */
 export type Finish = "stop" | "length" | "abort" | "tool" | "refusal" | "error";
 
 /** What a driver yields. Drivers do not strip think tags; the engine does. */
@@ -58,6 +63,7 @@ export type DriverEvent =
   | { type: "tool"; calls: ToolCall[] }
   | { type: "done"; finish: Finish; usage?: { input?: number; output?: number } };
 
+/** The request an engine hands its driver after normalizing messages and options. */
 export interface DriverRequest {
   messages: ChatMessage[];
   maxTokens: number;
@@ -86,6 +92,7 @@ export interface ReplyStats {
   totalMs: number;
 }
 
+/** What a runtime supports: constrained output, native tools, a system role and stop strings. */
 export interface DriverCaps {
   /** Grammar or schema constrained output. */
   schema: boolean;
@@ -114,6 +121,7 @@ export type ChatEvent =
   | { type: "tool"; calls: ToolCall[] }
   | { type: "done"; result: ChatResult };
 
+/** A finished reply: visible text, think text, finish reason, tool calls, schema fallback state, usage and timing stats. */
 export interface ChatResult {
   text: string;
   think: string;
@@ -127,6 +135,7 @@ export interface ChatResult {
   stats: ReplyStats;
 }
 
+/** A chat engine over one runtime, with the same stream, complete, prewarm and dispose calls for every runtime. */
 export interface ChatEngine {
   readonly id: string;
   readonly provider: string;
@@ -142,6 +151,7 @@ export interface ChatEngine {
   dispose(): Promise<void>;
 }
 
+/** An error from a chat engine, with a `code` (schema, http, runtime, load, abort or unavailable) and the HTTP status when there is one. */
 export class ChatError extends Error {
   readonly code: "schema" | "http" | "runtime" | "load" | "abort" | "unavailable";
   readonly status: number | undefined;

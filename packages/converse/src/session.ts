@@ -8,9 +8,12 @@
 
 import type { ChatMessage, ReplyStats, Role, ToolCall } from "./types.js";
 
+/** The `kind` field of every chat session file. */
 export const SESSION_KIND = "hackbuild.chat";
+/** The session schema version this build writes and the newest it reads. */
 export const SESSION_VERSION = 1;
 
+/** One stored message: visible text, the raw reply, think text, error, stats, seen and recalled lines, cues and tool calls. */
 export interface SessionMessage {
   id: string;
   role: Role;
@@ -34,6 +37,7 @@ export interface SessionMessage {
   at?: number;
 }
 
+/** A saved chat in the `.hbchat.json` shape: id, title, times, model, system text, settings and messages. */
 export interface ChatSession {
   kind: typeof SESSION_KIND;
   version: typeof SESSION_VERSION;
@@ -48,6 +52,7 @@ export interface ChatSession {
   messages: SessionMessage[];
 }
 
+/** The error a session read throws, with a lowercase reason such as `not a chat session: no messages list`. */
 export class SessionError extends Error {
   constructor(message: string) {
     super(message);
@@ -60,6 +65,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
+/** Make an empty session with the id and time you give; the title defaults to `new chat`. */
 export function createSession(o: { id: string; now: number; title?: string; system?: string; model?: { id: string; provider?: string } }): ChatSession {
   const s: ChatSession = { kind: SESSION_KIND, version: SESSION_VERSION, id: o.id, title: o.title ?? "new chat", created: o.now, updated: o.now, messages: [] };
   if (o.system !== undefined) s.system = o.system;
