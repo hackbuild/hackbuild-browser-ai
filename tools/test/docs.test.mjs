@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { anchors, checkReadme, firstBlock, sections, slug } from "../check-readme.mjs";
+import { anchors, checkReadme, firstBlock, PROVENANCE, quickImports, sections, slug } from "../check-readme.mjs";
 import { exportText, oneLine, typeText } from "../llms.mjs";
 
 test("slug follows the GitHub heading rule", () => {
@@ -41,4 +41,15 @@ test("exportText and oneLine give a signature and the first sentence", () => {
   const r = { kind: 64, name: "f", signatures: [{ kind: 4096, parameters: [{ name: "a", type: { type: "intrinsic", name: "number" }, flags: { isOptional: true } }], type: { type: "intrinsic", name: "void" } }] };
   assert.equal(exportText(r), "function f(a?: number): void");
   assert.equal(oneLine({ summary: [{ kind: "text", text: "Does a thing, e.g. this. Then more." }] }), "Does a thing, e.g. this.");
+});
+
+test("quickImports names packages, type imports and subpaths included", () => {
+  const code = 'import { a } from "@hackbuild/chat/wllama";\nimport type { B } from "@hackbuild/ai-env";\nimport x from "./local.js";\nconst m = await import("three/addons");\n';
+  assert.deepEqual([...quickImports(code)].sort(), ["@hackbuild/ai-env", "@hackbuild/chat", "three"]);
+});
+
+test("provenance phrases are caught", () => {
+  assert.ok(PROVENANCE.test("Default 6144 (as earlier builds did)."));
+  assert.ok(PROVENANCE.test("the earlier transcription tool's layouts"));
+  assert.ok(!PROVENANCE.test("earlier segments stay on screen"));
 });

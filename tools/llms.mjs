@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // llms: the files a coding agent reads. The same tool in each hackbuild
-// library repository; the repository specific parts are REPO, SITE, SUMMARY
-// and MISTAKES below. Generated, never hand edited:
+// library repository; the repository specific parts are REPO, SITE and SUMMARY
+// below. Generated, never hand edited:
 //
 //   packages/<pkg>/llms.md   shipped in each tarball: purpose, install,
 //                            every public export's signature with its one
@@ -14,7 +14,7 @@
 //   docs/llms-full.txt       llms.txt followed by every llms.md.
 //
 // Inputs: the TypeDoc JSON in .local/api/<pkg>.json (node tools/api-docs.mjs
-// writes it), each README (one line, "What it does", "Install", ts blocks of
+// writes it), packages/<pkg>/llms.json (its mistakes), each README (one line, "What it does", "Install", ts blocks of
 // "Concepts", "Errors and troubleshooting") and examples/<pkg>/quick.ts.
 // Usage: node tools/llms.mjs [--check]
 //   --check  fail when a generated file differs from what is on disk
@@ -28,12 +28,18 @@ export const REPO = "hackbuild-browser-ai";
 export const SUMMARY =
   "hackbuild-browser-ai is a set of ESM packages under @hackbuild that run language, vision and speech models in a browser tab: one chat interface over local runtimes (WebLLM, wllama, transformers.js, the Chrome Prompt API) and remote endpoints, a resumable weight store, structured output for small models, memory with a Rust wasm core, speech in and out, transcription, vision, image generation, character cards and an agent loop. Runtimes are optional peers that you load and pass in; weights are never bundled and load from their upstream host through @hackbuild/weights; every package has a single file build that runs from file://.";
 const NOTE = `Every package is ESM only with types included, installs from npm under @hackbuild, and is MIT. Each llms.md below lists the package's exports with signatures, minimal examples and the mistakes to avoid. Code: https://github.com/hackbuild/${REPO}`;
-export const MISTAKES = [
-  "Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.",
-  "Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.",
-  "file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.",
-  "Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.",
-];
+/**
+ * The mistakes an agent makes with one package, from packages/<pkg>/llms.json
+ * ({ "mistakes": ["...", ...] }, written by hand, not shipped). Every package
+ * has one; a package without it fails the run.
+ */
+export function mistakes(name) {
+  const file = join(root, "packages", name, "llms.json");
+  if (!existsSync(file)) throw new Error(`llms: packages/${name}/llms.json is missing; it holds the package's mistakes list`);
+  const list = JSON.parse(readFileSync(file, "utf8")).mistakes;
+  if (!Array.isArray(list) || !list.length || list.some((m) => typeof m !== "string" || !m.trim())) throw new Error(`llms: packages/${name}/llms.json needs a non empty "mistakes" array of strings`);
+  return list;
+}
 
 const names = () => readdirSync(join(root, "packages")).filter((n) => existsSync(join(root, "packages", n, "package.json"))).sort();
 
@@ -234,7 +240,7 @@ export function llmsMd(name) {
     out.push("## Examples", "");
     for (const [t, code] of examples) out.push(`### ${t}`, "", "```ts", code, "```", "");
   }
-  out.push("## Mistakes to avoid", "", ...MISTAKES.map((m) => `- ${m}`));
+  out.push("## Mistakes to avoid", "", ...mistakes(name).map((m) => `- ${m}`));
   const errs = errorRows(r.body("Errors and troubleshooting"));
   if (errs.length) out.push("", "## Errors this package throws", "", ...errs.map((e) => `- ${e}`));
   return absLinks(out.join("\n"), name).trimEnd() + "\n";
@@ -243,7 +249,7 @@ export function llmsMd(name) {
 /** docs/llms.txt in the llmstxt.org format. */
 export function llmsTxt(list) {
   const out = [`# ${REPO}`, "", `> ${SUMMARY}`, "", NOTE, "", "## Packages", ""];
-  for (const n of list) out.push(`- [@hackbuild/${n}](${SITE}docs/${n}/llms.md): ${readme(n).line}`);
+  for (const n of list) out.push(`- [@hackbuild/${n}](${SITE}docs/${n}/llms.md): ${absLinks(readme(n).line, n)}`);
   out.push("", "## Quick starts", "");
   for (const n of list) if (existsSync(join(root, "examples", n, "quick.ts"))) out.push(`- [${n} quick start](${SITE}docs/${n}/quick.ts): the smallest program for @hackbuild/${n}, typechecked in CI`);
   out.push("", "## Docs", "", `- [getting started](${SITE}docs/): install, the first program, and how the packages fit`, `- [concepts](${SITE}docs/concepts.html): runtimes passed in, the weight store, file:// builds, labels on numbers`, `- [examples](${SITE}): the live demo pages`, "", "## Optional", "");
