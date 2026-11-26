@@ -8,7 +8,7 @@ Every package is ESM only with types included, installs from npm under @hackbuil
 
 - [@hackbuild/act](https://hackbuild.github.io/hackbuild-browser-ai/docs/act/llms.md): Let a language model act while it speaks: mood, gesture and posture tags in its reply fire when the voice reaches them, limited to names your avatar can realize.
 - [@hackbuild/agent](https://hackbuild.github.io/hackbuild-browser-ai/docs/agent/llms.md): Run an agent turn sized for small models in a browser tab: perceive, recall, decide, act and reflect, over tools you give it.
-- [@hackbuild/ai-elements](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-elements/llms.md): Deprecated: use [@hackbuild/ai-views](../ai-views/README.md), which draws the same views with hackbuild-ui as custom elements and Vue components.
+- [@hackbuild/ai-elements](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-elements/llms.md): Deprecated: use [@hackbuild/ai-views](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-views/llms.md), which draws the same views with hackbuild-ui as custom elements and Vue components.
 - [@hackbuild/ai-env](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-env/llms.md): Find out what the tab can run, and load runtimes and workers in a way that also works from a file:// page.
 - [@hackbuild/ai-views](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-views/llms.md): Put a model picker, a chat, a transcriber, a mask studio or a camera frame on your page, drawn with the hackbuild-ui stylesheet, as custom elements or Vue components.
 - [@hackbuild/audio-dsp](https://hackbuild.github.io/hackbuild-browser-ai/docs/audio-dsp/llms.md): Filter, clean, measure and time speech and music in the tab on a Rust wasm core, and write the WAV, MIDI, subtitle and zip files the results go into.
@@ -661,10 +661,12 @@ const talk = talkingLoop(binding.all);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You expect untagged sentences to fire cues. The director mode defaults to `"tags"`; pass `mode: "hybrid"` to `createDirector` to run the inferrer on sentences with no tag.
+- You fire cues as the text streams in. `feed` and `finish` only place cues; call `director.reached(offset)` with the character offset your voice reports in the visible text, and cues fire then.
+- You send the raw model text to speech. Send the `text` that `feed` and `finish` return, which has the tags stripped, and keep the raw tagged reply in the chat history so the model keeps tagging.
+- You call `pickClip` without an `rng`. It requires `{ rng }`; pass a seeded function returning numbers in 0 to 1, since nothing here calls Math.random.
+- You list clip names the avatar cannot play. Build the vocabulary with `buildVocabulary` from the avatar's own expressions and clips, or from `bindActs(...).acts`, so `promptBlock` and `grammar` offer only names it can realize.
+- You read `director.record()` right after `finish` when you pass an `embedder`. Cues the embedder resolves or infers arrive later; await `director.settle()` first.
 
 ## Errors this package throws
 
@@ -1238,10 +1240,11 @@ for (const d of chain.lastDrops) inspector.push(dropLine(d), d.raw);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a model runtime into the agent. The agent loads no runtime and no weights; pass a `ChatEngine` from `@hackbuild/chat` as `brain`, or `brain: null` to run the reflex brain and goal planners alone.
+- You throw a plain `Error` from a tool for an expected failure. Throw `ToolError` with a first person sentence such as `i do not see a mug here.`; that text is what the model reads next.
+- You leave `rng` unset and every free tick picks the first `idle` plan. Pass a seeded `rng` to `createAgent` when you give it `idle` plans.
+- You set `mode: "reflex"` without a `reflex`. Give it a `Reflex` with `add(pattern, steps)` rules; with no brain, requests the rules cannot map end the turn as `no-brain`.
+- You read only the spoken text after `handle`. Check `turn.ended` too: `failures`, `repeat`, `steps` and `guard` mean the turn stopped early, and `turn.results` holds each step's text.
 
 ## Errors this package throws
 
@@ -1361,10 +1364,10 @@ The rows of a recall trace as text, marking the hits handed to the model.
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You start new code on @hackbuild/ai-elements. It is deprecated; install @hackbuild/ai-views and import `define` from `@hackbuild/ai-views/elements`.
+- You look for the 0.1 model picker, download bar, status pills or chat panel. They are gone; use `<model-select>`, `<chat-pane>` and `<chat-composer>` from @hackbuild/ai-views.
+- You expect bare tag names from this package's `define()`. Its prefix defaults to `hb`, so you get `<hb-model-select>`; the ai-views `define()` registers bare names by default.
+- You leave out the stylesheet. The elements draw with the page's hackbuild-ui stylesheet, so install @virgilvox/hackbuild-ui as the peer and load its CSS.
 
 ---
 
@@ -1607,7 +1610,7 @@ Encodes text as a base64 data: URL, JavaScript by default.
 function toClassicWorker(src: string): { count: number; text: string }
 ```
 
-Turn module workers into classic workers: Chrome refuses module workers from a file:// page (as earlier builds did).
+Turn module workers into classic workers: Chrome refuses module workers from a file:// page.
 
 ```ts
 interface WorkerLike {
@@ -1652,10 +1655,12 @@ worker.postMessage(21);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a runtime with a static `import` or a bare `import()` of a CDN URL. Load it with `importEsm(urls)` and pass the module on, so it also works from a file:// page; give a list of URLs to get a CDN fallback in one call.
+- You point `importEsm` at a build whose imports use bare specifiers. It rewrites relative imports only, so use a bundled CDN build such as jsDelivr `+esm`.
+- You read `navigator.hardwareConcurrency` for wasm threads. Use `env.threads` from `probe()`: it is 1 unless the page is cross origin isolated, then at most `maxThreads` (default 4).
+- You assume OPFS and Cache Storage on a file:// page. `probe()` reports both false there without calling them, and `importEsm` swaps module workers for classic ones by default, since Chrome refuses module workers from a file:// page.
+- You pass `integrity` or a worker `sha256` on a plain http page that is not localhost. The check needs Web Crypto, which exists only in a secure context, and it throws `no web crypto in this context, so a sha256 cannot be checked`.
+- You add `"inline"` to the `spawnWorker` rungs for code you do not trust. The inline rung runs the source on the page with the DOM and storage in reach, and a `{ url }` source runs inline only with a matching `sha256`.
 
 ## Errors this package throws
 
@@ -2212,7 +2217,7 @@ A transcript export format: txt, srt, vtt or json.
 const FACE_API_BASE: "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/"
 ```
 
-face-api weights (MIT) as an earlier face swap tool loaded them, from the package CDN.
+Base URL of the face-api weights (MIT) on the package CDN.
 
 ```ts
 function fitMap(src: { h: number; w: number }, view: { h: number; w: number }, fit?: "cover" | "contain"): { dx: number; dy: number; scale: number }
@@ -2790,10 +2795,11 @@ const thread = chatThread({ engine });
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import a model runtime into a view or expect a picker to start one. A pick loads only through the `loader` you pass to `useModelPick`; with none it throws `no loader for <id>: pass one to useModelPick, such as weightsLoader(store)`. Bring the runtime in with `importEsm` from @hackbuild/ai-env and start it inside your loader.
+- You pass `weightsLoader(store)` for a record that loads through its runtime, such as a WebLLM row. It fetches only records with a `source.url` or a repo and files, under `rec.licence`, and throws `<label> loads through its runtime. the page passes a loader for it.` for the rest; write your own loader for those.
+- You expect the elements to exist after import. Nothing registers on import; call `define()` once, or `define("hb")` for `<hb-model-select>`, from `@hackbuild/ai-views/elements`.
+- You style the views locally or leave the stylesheet out. They draw in light DOM with the page's hackbuild-ui stylesheet, so load that stylesheet and install @virgilvox/hackbuild-ui as the required peer.
+- You import `@hackbuild/ai-views/vue` on a page without Vue. Only that entry imports Vue, an optional peer; the main entry is node safe state and `/elements` needs no framework.
 
 ## Errors this package throws
 
@@ -2933,13 +2939,13 @@ interface GateOptions {
 }
 ```
 
-The hysteresis gate from the earlier transcription tool, over frame levels in dB: speech turns on after 3 frames above the threshold and off after 25 below, regions are padded, merged across short gaps and dropped when short.
+The hysteresis gate over frame levels in dB: speech turns on after 3 frames above the threshold and off after 25 below, regions are padded, merged across short gaps and dropped when short.
 
 ```ts
 function gateThreshold(noiseDb: number, loudDb: number, marginDb?: number): number
 ```
 
-Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8 (as earlier builds did).
+Threshold from the floor: floor + margin, at least floor + 2, at most the 95th percentile minus 8.
 
 ```ts
 function loadDsp(src: CoreSource): Promise<Dsp>
@@ -2982,7 +2988,7 @@ interface OlaSegment {
 }
 ```
 
-Overlap add for models that take fixed length segments (htdemucs in an earlier August build): segments of S samples on a stride of S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
+Overlap add for models that take fixed length segments (htdemucs): segments of S samples on a stride of S (1 - overlap), a linear crossfade over min(S - stride, S / 4) at each end, weights floored at 1e-4, and a division by the summed weights.
 
 ```ts
 interface Onset {
@@ -3035,13 +3041,13 @@ interface Segment {
 }
 ```
 
-File writers: txt, srt, vtt and json transcripts in the earlier transcription tool layouts (byte for byte), lrc in the earlier lyrics tool's, 16 bit and float WAV, standard MIDI files in the earlier transcription tool layout (format 1, 480 ticks per quarter, drums on channel 10), and a store only zip.
+File writers: txt, srt, vtt and json transcripts in fixed layouts (byte for byte), lrc, 16 bit and float WAV, standard MIDI files (format 1, 480 ticks per quarter, drums on channel 10), and a store only zip.
 
 ```ts
 function spreadWords(text: string, start: number, end: number): Segment[]
 ```
 
-Word timing spread across a line by character count (as earlier builds did).
+Word timing spread across a line by character count.
 
 ```ts
 function timestamp(t: number, comma: boolean): string
@@ -3053,7 +3059,7 @@ hh:mm:ss,mmm (srt) or hh:mm:ss.mmm (vtt); milliseconds rounded, capped at 999.
 function toJson(t: TranscriptJson): string
 ```
 
-The earlier transcription tool json export: times to 3 decimals, two space indent.
+The json export: times to 3 decimals, two space indent.
 
 ```ts
 function toLrc(lines: readonly Segment[], title?: string): string
@@ -3138,10 +3144,11 @@ console.log(wav.length, "bytes", toSrt(regions.map(([a, b]) => ({ start: a / 160
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch the wasm by a relative URL and the page breaks on file://. Pass `{ base64: AUDIO_DSP_WASM_BASE64 }` from `@hackbuild/audio-dsp/inline` to `loadDsp`; use `{ url }` or `{ bytes }` only when you host the file yourself, and a failed fetch throws `audio-dsp wasm: http <status> for <url>`.
+- You call the kernels before `loadDsp` resolves, or expect them on the module. Await `loadDsp(src)` once and call every kernel on the `Dsp` it returns; each call copies its input into wasm memory and hands back a new `Float32Array`.
+- You expect a scalar fallback on an old browser. The core needs WebAssembly with simd128 and there is no build without it, so feature check and tell the person the browser is too old.
+- You read `gate` regions as seconds. They come back in samples, end exclusive; divide by the sample rate before you pass them to `toSrt` or `toVtt`, which take seconds.
+- You pass `stftMag` a window that is not a power of two, or `frameDb` a fractional hop. Both throw a RangeError naming the bad value; use whole numbers, and a power of two for the window.
 
 ## Errors this package throws
 
@@ -3242,7 +3249,7 @@ interface EegNetRunner {
 }
 ```
 
-Where a neural model (EEGNet on tfjs in an earlier biosignal build) plugs in.
+Where a neural model (such as EEGNet on tfjs) plugs in.
 
 ```ts
 interface Epoch {
@@ -3303,27 +3310,30 @@ import { BIOSIGNAL_WASM_BASE64 } from "@hackbuild/biosignal/inline";
 
 // the wasm core, inlined so nothing is fetched
 const bs = await loadBiosignal({ base64: BIOSIGNAL_WASM_BASE64 });
-
-// continuous EEG at 256 Hz, one Float32Array per channel, and labelled events
-const channels: Float32Array[] = [new Float32Array(256 * 60), new Float32Array(256 * 60)];
-const events = [{ at: 256, label: 0 }, { at: 256 * 10, label: 1 }];
-const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows per trial
-
-// alpha and beta bands; folds hold whole trials, so no window leaks across
-const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
-console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
-
-// train on everything, then save the model as JSON (reload with bs.load)
-const model = bs.train(epochs, bands, 256, { classes: 2 });
-console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  // a CSV at 256 Hz: one row per sample, one column per channel, then a label where a trial starts
+  const rows = (await input.files![0]!.text()).trim().split("\n").map((l) => l.trim().split(","));
+  const n = rows[0]!.length - 1;
+  const channels = Array.from({ length: n }, (_, c) => Float32Array.from(rows, (r) => Number(r[c])));
+  const events = rows.flatMap((r, at) => (r[n] ? [{ at, label: Number(r[n]) }] : []));
+  const epochs = epochsFromEvents(channels, events, 256, 4, 64); // 4 windows of 1 s per trial
+  // alpha and beta bands; folds hold whole trials, so no window leaks across
+  const bands = [{ lo: 8, hi: 12 }, { lo: 13, hi: 30 }];
+  console.log("accuracy per fold", bs.crossValidate(epochs, bands, 256, { classes: 2 }));
+  // train on everything, then save the model as JSON (reload with bs.load)
+  const model = bs.train(epochs, bands, 256, { classes: 2 });
+  console.log(model.predict(epochs[0]!), JSON.stringify(model.toJSON()).length, "bytes of json");
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch `biosignal.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: BIOSIGNAL_WASM_BASE64 }` from `@hackbuild/biosignal/inline` to `loadBiosignal`, which fetches nothing.
+- You cut windows yourself and give every window its own trial. Build epochs with `epochsFromEvents`, which marks each event's windows with one `trial`, so `crossValidate` keeps whole trials on one side of a fold; `byTrial: false` gives the leaky number.
+- You call `train` or `crossValidate` without `classes`, or with labels outside it. `classes` is required and every label must be 0 to `classes - 1`, or it throws a `RangeError` such as "label 2 is outside 0 to 1".
+- You reload a saved model with `JSON.parse` alone. Pass the parsed object to `bs.load`, which checks its kind, version and header and throws "not a hackbuild biosignal model, or a newer version" otherwise.
+- You call `predict` after `dispose`. The classifier lives in the wasm core and throws "model was dropped" once freed; dispose it only when you are done with it.
 
 ## Errors this package throws
 
@@ -3635,20 +3645,19 @@ import { CHARACTER_WASM_BASE64 } from "@hackbuild/character/inline";
 // load the wasm core from the inlined base64 (or pass { url } or { bytes })
 const core = await loadCharacterCore({ base64: CHARACTER_WASM_BASE64 });
 
-// read a card the user dropped: PNG, CHARX or JSON, detected from the bytes
-const file = new File([], "card.png");
-const read = core.read(new Uint8Array(await file.arrayBuffer()));
-
-// any version to V3, then add or update the profile extension
-const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
-console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
-
-// fill the greeting and pick the lorebook entries the last turns activate
-console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
-console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
-
-// write it back as a PNG with both card chunks
-console.log(core.writePng(card).length, "bytes");
+// read a card the user picks: PNG, CHARX or JSON, detected from the bytes
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const read = core.read(new Uint8Array(await input.files![0]!.arrayBuffer()));
+  // any version to V3, then add or update the profile extension
+  const { card, notes } = core.migrate(core.upgrade(read.card), { create: true });
+  console.log(read.format, read.spec, notes, core.validate(card), profileOf(card)?.voice.engine);
+  // fill the greeting and pick the lorebook entries the last turns activate
+  console.log(fillMacros(card.data.first_mes, { char: card.data.name, user: "Sam" }));
+  console.log(activeLore(card.data.character_book, "the last few turns of chat", { budgetChars: 1200 }));
+  // write it back as a PNG with both card chunks
+  console.log(core.writePng(card).length, "bytes");
+};
 ```
 
 ### from the concepts
@@ -3665,10 +3674,11 @@ console.log(core.writePng(card).length, "bytes");
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You call card methods on the module itself. Await `loadCharacterCore` once and call `read`, `upgrade`, `migrate`, `validate` and `writePng` on the `CharacterCore` it returns; every method is synchronous after that.
+- You fetch `character.wasm` by a relative URL from a file:// page and the fetch fails. Import `CHARACTER_WASM_BASE64` from `@hackbuild/character/inline` and pass `{ base64: CHARACTER_WASM_BASE64 }`, or pass `{ bytes }` you already hold.
+- You pass a `File` or `Blob` to `core.read`. Pass a `Uint8Array` of the file's bytes, for example `new Uint8Array(await file.arrayBuffer())`; the format is detected from the bytes.
+- You read `profileOf(card)` on a card straight from `read` and get null. Run `core.migrate(core.upgrade(read.card), { create: true })` to get a V3 card with the profile extension added.
+- You treat a bad card as a quiet failure. Every failed core call throws a `CharacterError` with the core's message, so wrap `read` and the writers in try and catch, and use `validate` to list problems by path without throwing.
 
 ## Errors this package throws
 
@@ -3706,10 +3716,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/chat
+npm install @hackbuild/chat @hackbuild/ai-env @hackbuild/models @hackbuild/weights
 ```
 
-It depends on `@hackbuild/converse`. Each runtime is an optional peer behind its own subpath, and no file imports a runtime: you pass the module in, so a page that uses only the remote engine never loads WebLLM. Install only the peer for the subpath you use.
+It depends on `@hackbuild/converse`. The quick start also uses `@hackbuild/ai-env`, `@hackbuild/models` and `@hackbuild/weights`. Each runtime is an optional peer behind its own subpath, and no file imports a runtime: you pass the module in, so a page that uses only the remote engine never loads WebLLM. Install only the peer for the subpath you use.
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -4551,12 +4561,13 @@ jsdelivr URLs of the ESM entry and the wasm for a wllama version.
 import { importEsm } from "@hackbuild/ai-env";
 import type { ChatMessage } from "@hackbuild/chat";
 import { loadWllama, wllamaUrls, type WllamaModule } from "@hackbuild/chat/wllama";
+import { CATALOG, pinnedBase } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 
-// Qwen2.5 0.5B Instruct q4_k_m GGUF, weights Apache-2.0, cached by the weight store
-const store = await openWeightStore();
-const url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
-const gguf = await store.get({ url, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" });
+// Qwen2.5 0.5B Instruct q4_k_m GGUF; the record names the weight licence, the store caches the file
+const rec = CATALOG.find((r) => r.id === "qwen2.5-0.5b-instruct-gguf")!;
+const url = pinnedBase(rec.source.repo!) + rec.source.file!;
+const gguf = await (await openWeightStore()).get({ url, licence: rec.licence });
 
 // the runtime is passed in, never bundled
 const chat = await loadWllama({ module: await importEsm<WllamaModule>(wllamaUrls().esm), blobs: [gguf] });
@@ -4578,10 +4589,12 @@ const chat = await hub.use("chat", { size: "small" });
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You never import `@mlc-ai/web-llm`, `@wllama/wllama` or `@huggingface/transformers` statically. Pass the imported module as `module` to `loadWebLLM`, `loadWllama` or `loadTransformers`; for wllama use `await importEsm(wllamaUrls().esm)` from `@hackbuild/ai-env`, which also works from file://.
+- `loadWllama` takes GGUF files as `blobs`, never a URL. Get each Blob with `store.get({ url, licence })` from `@hackbuild/weights`, take the licence from the model record (`rec.licence`), and pass split GGUF files in order.
+- Text events never hold think blocks or control markers. Read reasoning from `think` events, or pass `think: "drop"`; do not strip tags from `text` yourself.
+- A schema refusal does not throw. The engine tries `fallbackSchemas`, then turns schemas off for that engine and puts the schema in the prompt; check `result.schemaFallback` and parse the text yourself when it is true.
+- `anthropicMessages` needs `model` and sends no temperature, top_p or top_k. `openaiCompatible` takes the base URL up to `/v1`, and sends `repeat_penalty` only with `llamaParams: true`.
+- "webllm runtime and model library do not match" means the WebLLM module and the model library disagree. Pin `@mlc-ai/web-llm` to 0.2.84 and call `dispose()` on an engine before you load the next one.
 
 ## Errors this package throws
 
@@ -4616,10 +4629,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/converse
+npm install @hackbuild/converse @hackbuild/chat
 ```
 
-It depends on `@hackbuild/memory`, which installs with it. No peers. The engine, director and speaker are taken by shape, so it imports none of `@hackbuild/chat`, `@hackbuild/act` or `@hackbuild/speak`; install the ones you use.
+It depends on `@hackbuild/memory`, which installs with it. No peers. The engine, director and speaker are taken by shape, so it imports none of `@hackbuild/chat`, `@hackbuild/act` or `@hackbuild/speak`; install the ones you use. The quick start uses the scripted engine of `@hackbuild/chat`.
 
 ## Exports
 
@@ -4854,7 +4867,7 @@ A message worth saving: anything but an assistant reply with no text, no think, 
 const SAVE_DEBOUNCE_MS: 600
 ```
 
-Debounce between a change and its save, in ms (vendor, from an earlier build).
+Debounce between a change and its save, in ms (vendor).
 
 ```ts
 const SEEN_NOTE: "Lines that start with [seen] under a user message say what the camera showed when the person wrote it. Use them when they fit."
@@ -4981,10 +4994,12 @@ console.log(exportSession(conv.session));
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- This package imports no runtime and no engine. Pass any `ChatEngine` from `@hackbuild/chat` as `engine`, or `scripted()` from there when you want no model; never import a runtime here.
+- `now` is required. Pass a clock such as `() => Date.now()`, or a fake clock in tests.
+- With a `sink`, call `await conv.restore()` before the first `send`. Nothing is saved until `restore()` resolves, so a page that skips it never writes its session.
+- `send` stops the reply that is still streaming before it adds the new turn, and resolves with `null` when the reply was empty or aborted before a word. Check for `null` instead of reading `reply.content`.
+- The `greeting` is shown first and never sent to the engine. Put instructions in `system`, and read what the next reply would send with `conv.request()`.
+- `importSession` throws `SessionError` for a file that is not JSON, has no messages list, or carries a newer version. Catch it and show its message instead of loading a broken session.
 
 ## Errors this package throws
 
@@ -5119,13 +5134,13 @@ The loaded wasm core: depth to cloud, relief heights and solids, surface nets, s
 function fitToPrint(m: Mesh, sizeMM: number): Mesh
 ```
 
-Centre the mesh and scale it so its longest side is `sizeMM` (as earlier builds did).
+Centre the mesh and scale it so its longest side is `sizeMM`.
 
 ```ts
 const HEIGHT_SOURCES: readonly HeightSource[]
 ```
 
-The height from select, in the bench's order and words.
+The height sources, in the order and words a height source select shows.
 
 ```ts
 interface HeightSource {
@@ -5154,7 +5169,7 @@ The pose with no rotation and no translation.
 function inflateHeight(img: RgbaImage, cols: number, rows: number, o?: { blur?: number; invert?: boolean; threshold?: number }): { cover: Uint8Array; values: Float32Array }
 ```
 
-Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over t, the distance to the outline over the largest distance (as the bench did).
+Inflated silhouette per cell, 0 to 1: a dome sqrt(1 - (1 - t)^2) over t, the distance to the outline over the largest distance.
 
 ```ts
 function loadDepthMesh(src: CoreSource): Promise<DepthMesh>
@@ -5191,7 +5206,7 @@ Edges used by other than exactly two triangles; 0 for a closed manifold surface.
 function photoRelief(dm: DepthMesh, image: RgbaImage, o: PhotoReliefOptions): Promise<PhotoRelief>
 ```
 
-Photo to relief in one call: a height source, the bench's parameters, the relief mask and the erase and restore brushes, then the closed solid.
+Photo to relief in one call: a height source, the relief parameters, the relief mask and the erase and restore brushes, then the closed solid.
 
 ```ts
 interface PhotoRelief {
@@ -5306,7 +5321,7 @@ A binary STL of the mesh, with a face normal per triangle, in the mesh's own uni
 function trackGood(r: { error: number; inliers: number; pose: Pose }, prev: Pose, sampled: number, maxDist?: number): boolean
 ```
 
-The earlier scan bench gate for a tracked frame: enough inliers, low error, and no jump.
+The accept test for a tracked frame: enough inliers, low error, and no jump.
 
 ```ts
 interface Turntable {
@@ -5349,20 +5364,21 @@ import { DEPTH_MESH_WASM_BASE64 } from "@hackbuild/depth-mesh/inline";
 
 // the wasm core, inlined so nothing is fetched
 const dm = await loadDepthMesh({ base64: DEPTH_MESH_WASM_BASE64 });
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
 
-// a photo drawn on a canvas; brightness needs no model
-const canvas = document.querySelector("canvas")!;
-const image = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
-
-// a 30 mm wide relief, 0.24 to 2.4 mm high, as a closed solid
-const r = await photoRelief(dm, image, { source: "brightness", width: 30, base: 0.24, height: 2.4 });
-for (const [level, text] of r.notes) console.log(level, text);
-console.log("open edges", openEdges(r.mesh.indices)); // 0 for a closed solid
-
-// a binary STL in mm, ready for a slicer
-const stl = toStl(r.mesh);
-const url = URL.createObjectURL(new Blob([stl as BlobPart], { type: "model/stl" }));
-console.log("relief.stl", stl.length, "bytes at", url);
+input.onchange = async () => {
+  // the chosen photo's pixels; brightness needs no model
+  const bitmap = await createImageBitmap(input.files![0]!);
+  const ctx = new OffscreenCanvas(bitmap.width, bitmap.height).getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0);
+  // a 30 mm wide relief, 0.24 to 2.4 mm high, as a closed solid
+  const r = await photoRelief(dm, ctx.getImageData(0, 0, bitmap.width, bitmap.height), { source: "brightness", width: 30, base: 0.24, height: 2.4 });
+  console.log("open edges", openEdges(r.mesh.indices), r.notes); // 0 for a closed solid
+  // a binary STL in mm, ready for a slicer
+  const stl = toStl(r.mesh);
+  const url = URL.createObjectURL(new Blob([stl as BlobPart], { type: "model/stl" }));
+  console.log("relief.stl", stl.length, "bytes at", url);
+};
 ```
 
 ### from the concepts
@@ -5391,10 +5407,11 @@ const relief = dm.heightfieldMesh(h, map.width, map.height, 0.25);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You fetch `depth-mesh.wasm` by URL from a page opened on file://, and the fetch fails. Pass `{ base64: DEPTH_MESH_WASM_BASE64 }` from `@hackbuild/depth-mesh/inline` to `loadDepthMesh`, which fetches nothing; use `{ url }` or `{ bytes }` only where you serve the file.
+- You expect this package to run Depth Anything. It loads no model; for `source: "depth"` pass `depth` to `photoRelief` as a stored map or a call that makes one, for example through `depth` from @hackbuild/vision, whose weights are Apache-2.0.
+- You treat a `photoRelief` result as depth based without reading `notes`. When the depth map is missing or its call throws, it falls back to brightness and says so in a "warn" note; check `r.notes` before you tell the user what they got.
+- You keep the voxel model from `model(voxel)` forever. Call `dispose` on it when the scan ends, since its memory lives in the wasm heap.
+- You pass grids whose length does not match the size you give. Every call checks and throws a `RangeError` such as "values for a ... grid, which needs ..."; pass `cols * rows` values, and masks the same length as the heights.
 
 ## Errors this package throws
 
@@ -5419,7 +5436,7 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 
 - Gives the two providers every model package plugs into the `@hackbuild/models` hub, one per runtime.
 - Imports transformers.js and onnxruntime-web at run time from pinned CDN URLs with fallbacks, once per page.
-- Builds the ladders of device and dtype a load walks, in the orders the earlier builds settled on.
+- Builds the ladders of device and dtype a load walks, in a fixed order per model family.
 - Merges per file download progress into one fraction and one status line.
 - Turns a load, run, storage, mic or camera failure into one lowercase line that names it and the working alternative.
 
@@ -5526,7 +5543,7 @@ A lowercase line for a failure, naming it and the working alternative.
 const LADDERS: { readonly depth: () => Rung[]; readonly ort: (opts?: { webgpu?: boolean }) => Rung[]; readonly perceptionCpu: () => Rung[]; readonly smolvlm: () => Rung[]; readonly vlmGpuOnly: () => Rung[]; readonly whisperSmall: (q4Decoder?: boolean) => Rung[]; readonly whisperTurbo: () => Rung[] }
 ```
 
-Ladders by name, from the builds.
+Ladders by name, one per model family.
 
 ```ts
 function loadOrt(opts?: ImportEsmOptions & { version?: string }): () => Promise<OrtModule>
@@ -5556,7 +5573,7 @@ Progress summed across files: bytes loaded, the total when known, the fraction, 
 function ortLadder(): Rung[]
 ```
 
-The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm.
+The onnxruntime-web ladder to walk after one fetch: webgpu at basic, all, disabled, then wasm.
 
 ```ts
 interface OrtModel {
@@ -5610,7 +5627,7 @@ Options for ortProvider: the runtime loader, the weight store, the wasm file dir
 function ortRungs(opts?: { webgpu?: boolean }): Rung[]
 ```
 
-onnxruntime-web rungs: the earlier transcription tool walk, or wasm only when the graph is known to fail on webgpu.
+onnxruntime-web rungs: webgpu then wasm, or wasm only when the graph is known to fail on webgpu.
 
 ```ts
 interface OrtSession {
@@ -5809,7 +5826,7 @@ wasm thread count to set on a runtime: the probe's safe count, 1 without a probe
 ```ts
 import { probe } from "@hackbuild/ai-env";
 import { humanError, LADDERS, loadOrt, loadTransformers, ortProvider, ortWasmPaths, tjsProvider } from "@hackbuild/devices";
-import { createHub } from "@hackbuild/models";
+import { CATALOG, createHub } from "@hackbuild/models";
 import { openWeightStore } from "@hackbuild/weights";
 
 // one hub per page; one provider per runtime, each runtime imported at run time from a pinned url
@@ -5817,9 +5834,10 @@ const hub = createHub({ env: await probe() });
 hub.provide("tjs", tjsProvider({ runtime: loadTransformers() }).factory);
 hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore(), wasmPaths: ortWasmPaths() }).factory);
 
-// a record walks its ladder: webgpu fp16, webgpu fp32, wasm q8, wasm fp32
-const source = { modelId: "onnx-community/depth-anything-v2-small" }; // weights Apache-2.0
-hub.registry.add({ id: "depth", provides: ["depth"], provider: "tjs", source, sizeMB: 100, sizeSource: "inferred", ladder: LADDERS.depth(), licence: "Apache-2.0", commercial: true });
+// a catalog record on the depth ladder: webgpu fp16, webgpu fp32, wasm q8, wasm fp32
+const rec = { ...CATALOG.find((r) => r.id === "depth-anything-v2-small")!, ladder: LADDERS.depth() };
+hub.registry.add(rec);
+console.log("weight licence", rec.licence); // from the record
 
 // load it; a failure becomes one lowercase line naming it and what still works
 const line = await hub.use("depth").then((l) => `loaded on ${l.rung.device}`, (e) => humanError(e));
@@ -5838,20 +5856,22 @@ hub.provide("ort", ort.factory);
 ### from the concepts
 
 ```ts
-LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32 (as earlier builds did)
-LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu (as earlier builds did)
-LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm (as earlier builds did)
-LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap (an earlier vision build)
-LADDERS.ort()            // webgpu at basic, all, disabled, then wasm (as earlier builds did)
+LADDERS.depth()          // webgpu fp16, webgpu fp32, wasm q8, wasm fp32
+LADDERS.perceptionCpu()  // wasm q8, wasm fp32, then webgpu
+LADDERS.whisperTurbo()   // fp16 encoder plus q4 decoder, fp32 encoder, q8 on wasm
+LADDERS.smolvlm()        // per sub graph dtypes, q4 retry in a fresh heap
+LADDERS.ort()            // webgpu at basic, all, disabled, then wasm
 tjsLadder({ webgpu: ["q4f16"], wasm: ["q8"] })
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import `@huggingface/transformers` or `onnxruntime-web` at the top of your file. Pass `loadTransformers()` to `tjsProvider` and `loadOrt()` to `ortProvider`; both import once per page from pinned URLs through the file:// safe `importEsm`, and a failed import retries on the next call.
+- You call `hub.provide` for a runtime in each package or component. Provide `tjs` and `ort` once per page; every model package registers its loader on the same provider with `tjs.loader(capability, fn)`.
+- You expect transformers.js weights to persist on file://. The browser cache is off there; pass `cache: transformersCache(store)` from @hackbuild/weights to `tjsProvider`. Wasm threads come from the probe, so do not set them yourself.
+- You build an ort record without files or fetch the graph per rung. `ortProvider` needs `store` and reads each file once through `store.once`, then builds every rung's session from the same bytes; a record without `source.url`, `source.file` or `source.files` throws "an ort record needs source.url, source.file or source.files". The weight licence is the record's `licence`.
+- You pass `{ integrity: RUNTIME_SHA256 }` and leave ort's wasm paths alone. The checked text imports from a Blob URL, which moves `import.meta.url`; pass `wasmPaths: ortWasmPaths()` to `ortProvider` when you turn integrity on.
+- You show the raw error from a failed load. Pass it to `humanError(e)`, or `humanError("mic", e)` and `humanError("camera", e)` for a device, and show the one lowercase line it returns.
 
 ## Errors this package throws
 
@@ -5880,10 +5900,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/embed
+npm install @hackbuild/embed @hackbuild/weights
 ```
 
-It depends on @hackbuild/memory, @hackbuild/models and @hackbuild/devices, which install with it. It has no peers. transformers.js is passed in at run time for `miniLM` and `tjsEmbedder`, never imported by this package; `loadTransformers` in @hackbuild/devices loads the pinned 4.3.2.
+It depends on @hackbuild/memory, @hackbuild/models and @hackbuild/devices, which install with it. It has no peers. The quick start also uses `@hackbuild/weights`. transformers.js is passed in at run time for `miniLM` and `tjsEmbedder`, never imported by this package; `loadTransformers` in @hackbuild/devices loads the pinned 4.3.2.
 
 ## Exports
 
@@ -6109,13 +6129,13 @@ An in memory list of items and their vectors, searched by cosine for the top k.
 ### quick start
 
 ```ts
-import { staticEmbedder, VectorIndex } from "@hackbuild/embed";
+import { EMBED_RECORDS, staticEmbedder, VectorIndex } from "@hackbuild/embed";
 import { openWeightStore } from "@hackbuild/weights";
 
-// potion-base-8M, weights MIT, fetched once and cached by the weight store
-const base = "https://huggingface.co/minishlab/potion-base-8M/resolve/main/";
+// potion-base-8M; its record gives the pinned base URL and the weight licence, the weight store caches each file
+const rec = EMBED_RECORDS.find((r) => r.id === "potion-base-8m")!;
 const store = await openWeightStore();
-const get = (file: string) => store.once({ url: base + file, licence: "MIT" });
+const get = (file: string) => store.once({ url: rec.source.url + file, licence: rec.licence });
 const dec = new TextDecoder();
 const e = staticEmbedder({ name: "potion-base-8M", tokenizer: dec.decode(await get("tokenizer.json")), weights: await get("model.safetensors"), config: dec.decode(await get("config.json")) });
 
@@ -6130,10 +6150,12 @@ console.log(e.id, index.search(e.embedOne("where is the cup"), 2, 0.1));
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- Never import `@huggingface/transformers` here. Pass the module to `miniLM` or a pipeline to `tjsEmbedder`, for example `await loadTransformers()()` from `@hackbuild/devices`; the static embedder needs no runtime at all.
+- `loadStaticEmbedder(base)` fetches straight from the URL and does not cache. To keep the files, read them with `store.once({ url, licence: rec.licence })` from `@hackbuild/weights`, taking the URL from the record's `source.url` in `EMBED_RECORDS`, and pass the bytes to `staticEmbedder`.
+- Take the weight licence from the record (`rec.licence` in `EMBED_RECORDS`): potion-base-8M and bge-small-en-v1.5 are MIT, all-MiniLM-L6-v2 is Apache-2.0. Never write it as a constant.
+- The static embedder reads WordPiece and WordLevel tokenizers only. A Unigram or BPE tokenizer.json throws `tokenizer model ... is not supported`, so point it at a model2vec repo such as potion-base-8M.
+- Keep the embedder `id` with your stored vectors. It changes whenever the weights, tokenizer, dtype, device, pooling or normalization change, and `@hackbuild/memory` re-embeds on a new id; never compare vectors from two ids.
+- `miniLM` runs on wasm q8 by default. Pass `device: "webgpu"` with `dtype: "fp32"` to move it; never pair webgpu with q8.
 
 ## Errors this package throws
 
@@ -6166,10 +6188,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/imagegen
+npm install @hackbuild/imagegen @hackbuild/ai-env @hackbuild/devices @hackbuild/weights
 ```
 
-It depends on [@hackbuild/models](https://hackbuild.github.io/hackbuild-browser-ai/docs/models/llms.md). The hub path also needs [@hackbuild/devices](https://hackbuild.github.io/hackbuild-browser-ai/docs/devices/llms.md) for the ort provider and [@hackbuild/weights](https://hackbuild.github.io/hackbuild-browser-ai/docs/weights/llms.md) for the store; install them when you load through the hub. No package is bundled from these runtimes; they load at run time:
+It depends on [@hackbuild/models](https://hackbuild.github.io/hackbuild-browser-ai/docs/models/llms.md). The hub path in the quick start also needs [@hackbuild/ai-env](https://hackbuild.github.io/hackbuild-browser-ai/docs/ai-env/llms.md) for `probe`, [@hackbuild/devices](https://hackbuild.github.io/hackbuild-browser-ai/docs/devices/llms.md) for the ort provider and [@hackbuild/weights](https://hackbuild.github.io/hackbuild-browser-ai/docs/weights/llms.md) for the store; the line above installs them. No package is bundled from these runtimes; they load at run time:
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -6459,7 +6481,7 @@ const hub = createHub({ env: await probe() });
 hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore() }).factory);
 attachImagegen(hub);
 
-// sd-turbo, 2397 MiB (vendor), Stability AI Non-Commercial Research Community License: no commercial use
+// sd-turbo; gen.record.licence names its weight licence (Stability AI, no commercial use)
 const gen = await loadImagegen(hub, { id: "sd-turbo" });
 
 // the CLIP tokenizer (weights MIT) through transformers.js, 77 ids
@@ -6501,10 +6523,12 @@ const img = await gen.generate(tokenize, { prompt, negative, seed, signal });
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import `onnxruntime-web` statically. Provide it through the hub with `hub.provide("ort", ortProvider({ runtime: loadOrt(), store }).factory)` from @hackbuild/devices, and onnxruntime-web loads at run time from its pinned URL.
+- You fetch the three graphs yourself. Pass `store: await openWeightStore()` to `ortProvider`, call `attachImagegen(hub)`, then `loadImagegen(hub, { id: "sd-turbo" })`; the graphs load from the Hugging Face hub and the weight store caches them. Read the weight licence from `gen.record.licence`, since SD-Turbo here bars commercial use.
+- You call `generate` without a tokenizer. It takes a `ClipTokenize` you build, for example the CLIP tokenizer from `loadTransformers()` padded to 77 ids, then the request with `prompt` and `seed`.
+- You offer image generation where there is no WebGPU adapter. The records have only a WebGPU rung and no wasm fallback, so check the adapter first and disable the load button without one.
+- You pass a size the model does not make. `applyForm` refuses it with a `FormError` ("this model makes 512 pixel images, not ...") whose message you can show as is; read the sizes from `gen.form.sizes`.
+- You keep the model loaded after the user leaves the generator. Call `gen.release()` so the hub can drop the graphs under its memory budget.
 
 ## Errors this package throws
 
@@ -6532,10 +6556,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/listen
+npm install @hackbuild/listen @hackbuild/devices @hackbuild/weights
 ```
 
-It depends on @hackbuild/models and @hackbuild/transcribe and has no peers. onnxruntime-web for Silero and the transcriber's runtime are passed in by you, for example through the loaders in @hackbuild/devices.
+It depends on @hackbuild/models and @hackbuild/transcribe and has no peers; the quick start also uses @hackbuild/devices for the runtimes and @hackbuild/weights for the Silero bytes. onnxruntime-web for Silero and the transcriber's runtime are passed in by you, for example through the loaders in @hackbuild/devices.
 
 | subpath | runtime | pin |
 |---|---|---|
@@ -6866,8 +6890,8 @@ import { openWeightStore } from "@hackbuild/weights";
 const stream = await openMic();
 const ctx = new AudioContext();
 // Silero VAD v5 (weights MIT) on onnxruntime-web, its bytes cached by the weight store
-const silero = VAD_RECORDS[0]!.source;
-const bytes = await (await openWeightStore()).once({ url: silero.url!, sha256: silero.sha256!, licence: "MIT" });
+const silero = VAD_RECORDS[0]!;
+const bytes = await (await openWeightStore()).once({ url: silero.source.url!, sha256: silero.source.sha256!, licence: silero.licence });
 const vad = await sileroVad((await loadOrt()()) as unknown as OrtLike, bytes);
 // Whisper (weights MIT) through the models hub turns each utterance into text; mic blocks feed the listener
 const hub = createHub();
@@ -6880,10 +6904,12 @@ await micBlocks(ctx, stream, (b) => listener.push(b));
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import onnxruntime-web at the top of the file for Silero. Pass the runtime in: `sileroVad(await loadOrt()(), bytes)` with `loadOrt` from @hackbuild/devices; this package bundles no runtime.
+- You pass `sileroVad` a URL. It takes the model bytes: fetch them with `store.once({ url, sha256, licence })` from @hackbuild/weights, taking `url`, `sha256` and `licence` from `VAD_RECORDS[0]`, so the hash is checked and the licence comes from the record.
+- You push blocks and nothing happens. The listener drops every block until you call `start()`, and `stop()` resets the machine and the VAD state.
+- You leave out `inputRate`. It defaults to 48000, so pass `ctx.sampleRate` from the AudioContext that feeds `micBlocks`, or the 16 kHz frames are cut from the wrong rate.
+- You download the models before asking for the microphone. Call `openMic()` first so the prompt shows at once, and keep its echo cancellation on, since barge in counts on the character's voice being cancelled out of the input.
+- You expect barge in to work on its own. Wire `setTalking` to @hackbuild/speak's `onSpeaking` and `onBargeIn` to the speaker's `stop()`; transcription failures arrive in `onError`, never as a throw.
 
 ## Errors this package throws
 
@@ -6924,7 +6950,7 @@ No dependencies and no peers. It runs no model and fetches nothing.
 function decodeAudio(data: ArrayBuffer | Blob, sampleRate?: number, Ctx?: OfflineCtor): Promise<DecodedAudio>
 ```
 
-Decode and resample with the browser's decoder (as earlier builds did).
+Decode and resample with the browser's decoder.
 
 ```ts
 interface DecodedAudio {
@@ -7000,30 +7026,36 @@ Sample times for a video of `duration` seconds every `step` seconds, inside the 
 ### quick start
 
 ```ts
-import { decodeAudio, lumaHistogram, pickKeyframes, record } from "@hackbuild/media";
+import { decodeAudio, lumaHistogram, pickKeyframes, sampleTimes } from "@hackbuild/media";
 
-// audio at 16 kHz for speech to text, from a file the user dropped
-const file = new File([], "clip.mp4");
-const { channels, duration } = await decodeAudio(file, 16000);
-console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
-
-// keyframes from frames you sampled off a video into RGBA pixels
-const frames: { t: number; rgba: Uint8ClampedArray }[] = [];
-const keys = pickKeyframes(frames.map((f) => ({ t: f.t, hist: lumaHistogram(f.rgba) })), { threshold: 0.3, maxGap: 10, max: 12 });
-console.log("keyframes at", keys.map((i) => frames[i]?.t));
-
-// record a canvas for five seconds
-const canvas = document.querySelector("canvas")!;
-const rec = record(canvas.captureStream(30));
-setTimeout(async () => console.log("recorded", rec.mimeType, (await rec.stop()).size, "bytes"), 5000);
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const file = input.files![0]!;
+  const { channels, duration } = await decodeAudio(file, 16000); // the audio at 16 kHz for speech to text
+  console.log(`${channels.length} channels, ${duration.toFixed(1)} s`);
+  // one small frame a second off a video element, then keyframes by scene change
+  const video = Object.assign(document.createElement("video"), { src: URL.createObjectURL(file), muted: true });
+  await new Promise((r) => (video.onloadeddata = r));
+  const g = new OffscreenCanvas(64, 36).getContext("2d")!;
+  const frames: { t: number; hist: Float32Array }[] = [];
+  for (const t of sampleTimes(video.duration, 1)) {
+    video.currentTime = t;
+    await new Promise((r) => (video.onseeked = r));
+    g.drawImage(video, 0, 0, 64, 36);
+    frames.push({ t, hist: lumaHistogram(g.getImageData(0, 0, 64, 36).data) });
+  }
+  console.log("keyframes at", pickKeyframes(frames, { threshold: 0.3, maxGap: 10, max: 12 }).map((i) => frames[i]!.t));
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You call `decodeAudio` in a worker and get `no OfflineAudioContext here. decode on the page, not in a worker.` Decode on the page and post the channels to the worker, or pass an OfflineAudioContext constructor as the third argument in tests.
+- You decode at the file's own rate and resample later. Pass the rate the model wants as the second argument: `decodeAudio(file, 16000)` for speech models, 44100 for @hackbuild/stems, 22050 for @hackbuild/notes.
+- You mix the channels yourself and lose one. `decodeAudio` keeps every channel in `channels`; pick or mix them where you use them, for example with `toMono` from @hackbuild/transcribe.
+- You expect mkv or avi to decode everywhere. This package adds no demuxer, so a file decodes only when the browser plays it in a video tag; catch `this browser will not decode the audio track (...)` and ask for mp4, webm, mp3 or wav.
+- You pass `pickKeyframes` raw pixels. Give it `{ t, hist }` per frame, where `hist` is `lumaHistogram(rgba)`; it returns indices into your frames, and `sampleTimes(duration, step)` gives the times to seek to.
+- You start `record` without a MediaRecorder check. It throws `no MediaRecorder in this browser. recording is off.`; hide the record control and say why, and read `mimeType` for the type it chose.
 
 ## Errors this package throws
 
@@ -7114,7 +7146,7 @@ Fixed lines always go in; ranked sections join highest priority first while they
 const CHARS_PER_TOKEN: 3.6
 ```
 
-Characters per token for the default estimate (inferred from earlier builds, not measured on a tokenizer).
+Characters per token for the default estimate (inferred, not measured on a tokenizer).
 
 ```ts
 interface CompactOptions {
@@ -7250,7 +7282,7 @@ interface CoreParams {
 }
 ```
 
-Recall parameters.
+Recall parameters; each one left out takes its default.
 
 ```ts
 type CoreSource = { url: string | URL } | { bytes: ArrayBuffer | Uint8Array } | { base64: string }
@@ -7879,10 +7911,12 @@ const file = await seal(key, workspaceJson, "file:workspace.json");
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- `open` needs a loaded core. Call `loadCore` first with `{ url }`, `{ bytes }` or `{ base64: MEMORY_WASM_BASE64 }` from `@hackbuild/memory/inline`, and pass it as `core`; on file:// use the base64 form, since the core has no threads and loads from bytes.
+- Without `embed`, recall is keyword only and `status.mode` says `keyword`. `hashedEmbedder()` downloads nothing and matches shared words only; for real recall pass an embedder from `@hackbuild/embed`, whose weights carry their own licence.
+- `recall` strengthens every hit and counts a use. Call `explain` when you want the trace of a query without changing the memory.
+- When IndexedDB fails, `open` still resolves and the memory lives in a Map until the page closes. Read `status.notes` and tell the person instead of assuming it was saved.
+- A lost password means sealed data is gone. `deriveKey` throws `SealError` with code `wrong-password` for a wrong one, and a plain row in a sealed store throws, so export a plain memory and import it into a sealed one.
+- Inject recall with `injectRecall` or `RecallConversation`, which keep a fixed note in the system message and put recalled lines under the latest user message only. Do not put recall into the system prompt per turn, or the runtime loses its cached prefix.
 
 ## Errors this package throws
 
@@ -7913,7 +7947,7 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Purpose
 
 - Holds model records: what a model provides, which runtime runs it, the device and dtype ladder to walk, quirks app code needs, its size with a source word, and its weight licence.
-- Ships a catalogue of 45 records (computed) with pinned commits and file hashes for the Hugging Face repos they load.
+- Ships a catalogue of chat and starter records with pinned commits and file hashes for the Hugging Face repos they load.
 - Says whether a record fits this machine (memory budget, WebGPU, shader-f16, storage) and why not, before any download.
 - Runs a hub that routes a capability to a record, walks its ladder through a provider factory, keeps loaded models under a memory budget, and runs GPU work one job at a time.
 - Suggests first visit defaults with one reason per field.
@@ -7921,10 +7955,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/models
+npm install @hackbuild/models @hackbuild/devices @hackbuild/weights
 ```
 
-Depends on @hackbuild/ai-env for the `Env` type. No peers. No weights ship here; runtimes come in through the factories you register.
+Depends on @hackbuild/ai-env for the `Env` type. No peers. The quick start also installs @hackbuild/devices for the transformers.js provider and @hackbuild/weights for the file cache; the records and the hub need neither. No weights ship here; runtimes come in through the factories you register.
 
 ## Exports
 
@@ -8300,7 +8334,7 @@ Implicit needs of a rung: a webgpu device needs an adapter, an f16 dtype needs s
 function ortLadder(): Rung[]
 ```
 
-The onnxruntime-web ladder the earlier transcription tool walks after one fetch: webgpu at basic, all, disabled, then wasm.
+The onnxruntime-web ladder to walk after one fetch: webgpu at basic, all, disabled, then wasm.
 
 ```ts
 interface OrtRung {
@@ -8367,7 +8401,7 @@ A size preset that fills the slot rack with catalogue ids, named by weight class
 const PRESETS: readonly Preset[]
 ```
 
-Size presets that fill the rack, named by weight class (the earlier slot rack's three presets, light to heavy).
+Size presets that fill the rack, named by weight class (three presets, light to heavy).
 
 ```ts
 function presetTotal(preset: Preset, records: readonly ModelRecord[] | { get(id: string): ModelRecord | undefined }): PresetTotal
@@ -8618,26 +8652,28 @@ import { openWeightStore, transformersCache } from "@hackbuild/weights";
 // what fits this machine, before any download
 const env = await probe();
 for (const r of CATALOG) console.log(r.id, fitOf(r, env).reason);
-
-// a hub over the catalogue; transformers.js is imported at run time, its files go through the weight store
-const cache = transformersCache(await openWeightStore(), { licenceFor: (u) => (u.includes("/depth-anything-v2-small/") ? "Apache-2.0" : null), sha256For: pinnedSha });
+// transformers.js is imported at run time; its files go through the weight store under each record's licence
+const licenceFor = (url: string) => CATALOG.find((r) => r.source?.repo && url.includes(`/${r.source.repo}/`))?.licence ?? null;
+const cache = transformersCache(await openWeightStore(), { licenceFor, sha256For: pinnedSha });
 const hub = createHub({ registry: createRegistry(CATALOG), env, budgetMB: 4000 });
 hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache }).factory);
-
-// depth-anything-v2-small, weights Apache-2.0: routed by capability, ladder walked, loaded once
-hub.onLoad((e) => console.log(e.id, e.phase, e.fraction));
-const depth = await hub.use<(image: string) => Promise<unknown>>("depth");
-console.log("runs on", depth.rung.device, "after", depth.failures.length, "failed rungs");
-console.log(await hub.run(depth, (pipe) => pipe("https://example.com/room.jpg")));
-hub.release(depth);
+// depth-anything-v2-small, weights Apache-2.0, on a picked photo: routed by capability, ladder walked, loaded once
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const depth = await hub.use<(image: string) => Promise<unknown>>("depth");
+  console.log("runs on", depth.rung.device, await hub.run(depth, (pipe) => pipe(URL.createObjectURL(input.files![0]!))));
+  hub.release(depth);
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import transformers.js, onnxruntime-web or WebLLM yourself and call it directly. Register a factory per provider with `hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache }).factory)` from @hackbuild/devices, so the runtime comes in at run time, then ask the hub with `hub.use(capability)`.
+- You write a record without `licence`, or hard code a licence string where the record has one. `createRegistry` refuses a record with no licence, and the hub states `record.licence` once before the first load; read the licence from the record.
+- You call `hub.use` and never `hub.release`. A model stays resident until its refs reach zero, and with `budgetMB` set a new load throws `HubError` code `budget` when busy models fill it; release what you are done with.
+- You run webgpu inference beside a render loop without a schedule. Call `hub.reportFrame(ms)` from the loop and pass `{ frameBudgetMs, minIntervalMs }` to `hub.run`, and catch code `skipped` when you pass `when: "skip"`.
+- You walk `ortLadder()` with a fresh download per rung. Pair it with `store.once(ref)` from @hackbuild/weights so every rung reads one download, and pass `pinnedSha` as `sha256For` so pinned files are checked.
+- You read `LadderError` as a single failure. `failures` lists one kind per rung: `runtime-mismatch` means pin the runtime, `out-of-memory` means a smaller model, `f16` means an f32 rung.
 
 ## Errors this package throws
 
@@ -8671,10 +8707,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/notes
+npm install @hackbuild/notes @hackbuild/ai-env @hackbuild/media
 ```
 
-It depends on `@hackbuild/models` and `@hackbuild/audio-dsp`. It has no peer dependencies: you pass tfjs 3.21.0 in at runtime through `tfjsPitchProvider`, so nothing of tfjs is bundled.
+It depends on `@hackbuild/models` and `@hackbuild/audio-dsp`. The quick start also uses @hackbuild/ai-env to import tfjs and @hackbuild/media to decode the file. It has no peer dependencies: you pass tfjs 3.21.0 in at runtime through `tfjsPitchProvider`, so nothing of tfjs is bundled.
 
 ## Exports
 
@@ -8780,7 +8816,7 @@ Notes from posteriors: a note starts at an onset peak over onsetThresh (or a fra
 const DETAILS: { readonly loose: { readonly frameThresh: 0.22; readonly mergeGap: 0.08; readonly minDur: 0.03; readonly minFrames: 3; readonly onsetThresh: 0.35 }; readonly normal: { readonly frameThresh: 0.3; readonly mergeGap: 0.05; readonly minDur: 0.05; readonly minFrames: 5; readonly onsetThresh: 0.5 }; readonly tight: { readonly frameThresh: 0.35; readonly mergeGap: 0.03; readonly minDur: 0.06; readonly minFrames: 8; readonly onsetThresh: 0.6 } }
 ```
 
-Note extraction presets (as earlier builds did).
+Note extraction presets.
 
 ```ts
 const DRUM_BANDS: Band[]
@@ -8798,13 +8834,13 @@ Drum hits from a mono signal at any rate: resamples to 22050 Hz, finds onsets pe
 function estimateTempo(dsp: Dsp, mono: Float32Array, sampleRate: number): { bpm: number; offset: number }
 ```
 
-bpm (2 decimals) and grid offset in seconds (3 decimals), the earlier transcription tool estimateTempo.
+bpm (2 decimals) and grid offset in seconds (3 decimals).
 
 ```ts
 function fitGridToNotes(dsp: Dsp, notes: readonly Note[]): { bpm: number; offset: number; r: number } | null
 ```
 
-Grid from transcribed notes by vector strength; null when R is under 0.25 (as earlier builds did).
+Grid from transcribed notes by vector strength; null when R is under 0.25.
 
 ```ts
 const GM_DRUMS: { readonly hat: 42; readonly kick: 36; readonly snare: 38; readonly tom: 45 }
@@ -8816,13 +8852,13 @@ General MIDI notes for each drum: kick 36, snare 38, hat 42, tom 45.
 function isShaderFailure(e: unknown): boolean
 ```
 
-Shader failures that mean "use the cpu backend" (as earlier builds did).
+Shader failures that mean "use the cpu backend".
 
 ```ts
 function keepMonophonic(notes: readonly Note[], pick?: "high" | "low"): Note[]
 ```
 
-One note at a time, keeping the higher (or lower) line (as earlier builds did).
+One note at a time, keeping the higher (or lower) line.
 
 ```ts
 interface MidiTrack {
@@ -8867,7 +8903,7 @@ Runs B windows (B * BP_WINDOW samples) and returns frames and onsets, B * BP_ROW
 function refineNotes(notes: readonly Note[], o?: { harmonics?: boolean; mergeGap?: number; minDur?: number; minVel?: number }): Note[]
 ```
 
-Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust (as earlier builds did).
+Merge same pitch splits, drop octave, twelfth and double octave ghosts, drop dust.
 
 ```ts
 function runPitch(m: PitchModel, mono: Float32Array, o?: { onProgress?: (f: number) => void; signal?: AbortSignal; yieldEvery?: () => Promise<void> }): Promise<{ frames: Float32Array<ArrayBufferLike>[]; onsets: Float32Array<ArrayBufferLike>[] }>
@@ -8911,33 +8947,34 @@ function writeMidi(tracks: readonly MidiTrack[], bpm: number): Uint8Array
 
 ```ts
 import { importEsm } from "@hackbuild/ai-env";
+import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
 import { attachNotes, decodeNotes, DETAILS, refineNotes, runPitch, tfjsPitchProvider, writeMidi, type PitchModel, type Tfjs } from "@hackbuild/notes";
 
-// a hub with the Basic Pitch record (weights Apache-2.0), tfjs 3.21.0 passed in at runtime
+// a hub with the Basic Pitch record (weights Apache-2.0, stated by the hub from the record), tfjs 3.21.0 passed in at runtime
 const hub = createHub();
 attachNotes(hub);
 hub.provide("tfjs", tfjsPitchProvider({ runtime: () => importEsm<Tfjs>("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/+esm") }));
-
-// ten seconds of 22050 Hz mono audio, for example from decodeAudio in @hackbuild/media
-const mono = new Float32Array(22050 * 10);
-
-// frame and onset posteriors from Basic Pitch, then notes
-const m = await hub.use<PitchModel>("notes");
-const post = await hub.run(m, (pitch) => runPitch(pitch, mono, { onProgress: (f) => console.log(`${Math.round(f * 100)} percent`) }));
-hub.release(m);
-const notes = refineNotes(decodeNotes(post.frames, post.onsets, DETAILS.normal), DETAILS.normal);
-// a MIDI file with one bass track at 120 bpm
-const mid = writeMidi([{ name: "bass", notes, program: 33 }], 120);
-console.log(`${notes.length} notes, ${mid.length} bytes`);
+// a picked file at 22050 Hz, frame and onset posteriors from Basic Pitch, then notes and a MIDI file
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const { channels } = await decodeAudio(input.files![0]!, 22050);
+  const m = await hub.use<PitchModel>("notes");
+  const post = await hub.run(m, (pitch) => runPitch(pitch, channels[0]!, { onProgress: (f) => console.log(`${Math.round(f * 100)} percent`) }));
+  hub.release(m);
+  const notes = refineNotes(decodeNotes(post.frames, post.onsets, DETAILS.normal), DETAILS.normal);
+  const mid = writeMidi([{ name: "bass", notes, program: 33 }], 120); // one bass track at 120 bpm
+  console.log(`${notes.length} notes, ${mid.length} bytes`);
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import @tensorflow/tfjs at the top of the file. Pass a loader instead: `tfjsPitchProvider({ runtime: () => importEsm(url) })` with tfjs 3.21.0, and share that one tfjs instance across the page.
+- You call `hub.use("notes")` before registering the runtime and get `no factory for provider tfjs`. Call `attachNotes(hub)` and `hub.provide("tfjs", tfjsPitchProvider(...))` first.
+- You expect the Basic Pitch graph to go through @hackbuild/weights. tfjs `loadGraphModel` fetches it from the record's `source.url`, so it sits in the browser's HTTP cache, and the hub states the licence from the record on first load.
+- You hand `runPitch` 44.1 kHz stereo. It takes 22050 Hz mono: decode with `decodeAudio(file, 22050)` from @hackbuild/media and pass one channel, and run it inside `hub.run(m, ...)` with `hub.release(m)` after.
+- You decode with the basic-pitch library's settings and wonder why notes differ. `decodeNotes` is its own decoder; pass the same `DETAILS` preset to `decodeNotes` and `refineNotes`, and treat the AbortError `notes stopped` from your `signal` as a cancel.
 
 ## Errors this package throws
 
@@ -9116,7 +9153,7 @@ interface CloneOptions {
 }
 ```
 
-Voice clone reference preparation: mono in, linear resample to 24 kHz, cut to 15 s, peak normalized to 0.9 (earlier builds' settings).
+Voice clone reference preparation: mono in, linear resample to 24 kHz, cut to 15 s, peak normalized to 0.9.
 
 ```ts
 function createSpeaker(o: SpeakerOptions): Speaker
@@ -9653,29 +9690,32 @@ Word spans in a text: [start, end) character offsets.
 import { importEsm } from "@hackbuild/ai-env";
 import { bellowsEngine, createSpeaker, renderedWav, webSpeechEngine, type BellowsVoiceModule } from "@hackbuild/speak";
 
-// one AudioContext, made after a click so the browser lets it play
-const ctx = new AudioContext();
+// the browser lets audio play only after a click
+document.querySelector("button")!.onclick = async () => {
+  const ctx = new AudioContext();
+  // the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
+  const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
+  const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
 
-// the bellows voice first (a vocal tract model, no weights, code MIT), the system voice as fallback
-const bellows = bellowsEngine({ runtime: () => importEsm<BellowsVoiceModule>("https://cdn.jsdelivr.net/npm/bellows-voice@0.8.0/dist/engine.js/+esm"), rng: Math.random });
-const speaker = createSpeaker({ ctx, engines: [bellows, webSpeechEngine()], onProgress: (p) => console.log("reached", p.offset, p.kind) });
+  // feed a reply as it streams; the last call says it is complete
+  speaker.feed("Hello there, this is the first clause.");
+  speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
+  await speaker.done();
 
-// feed a reply as it streams; the last call says it is complete
-speaker.feed("Hello there, this is the first clause.");
-speaker.feed("Hello there, this is the first clause. And here is the rest.", true);
-await speaker.done();
-
-// render a line offline and keep it as a wav
-const wav = renderedWav(await speaker.render("Saved to a file."));
-console.log("wav", wav.size, "bytes");
+  // render a line offline and keep it as a wav
+  const wav = renderedWav(await speaker.render("Saved to a file."));
+  console.log("wav", wav.size, "bytes");
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import kokoro-js or bellows-voice at the top of the file. Pass a loader instead: `runtime: () => importEsm(url)` from @hackbuild/ai-env or `runtimeLoader` from @hackbuild/devices; this package never bundles a runtime.
+- You add `kokoroEngine` and it refuses to load. Its phonemizer is GPL-3.0-or-later, so it loads only with `allowGplPhonemizer: true`; show `KOKORO_GPL_NOTICE` first, or use `bellowsEngine` and `webSpeechEngine`, which carry no GPL code.
+- You call `bellowsEngine({ runtime })` without `rng`. The seed is one draw from the `rng` you inject, so pass one (`Math.random`, or a seeded Rng when you want the same audio twice).
+- You make the AudioContext at page load and hear nothing. Make it inside a click handler and pass it to `createSpeaker({ ctx, engines })`, with `webSpeechEngine()` last in the chain as the fallback.
+- You feed each new token on its own. `feed(text)` takes the whole visible reply so far, `feed(text, true)` marks it complete, and offsets in `onProgress` are in that text; call `stop()` for barge in and `dispose()` when the speaker goes away.
+- You expect Kokoro or Pocket weights to go through @hackbuild/weights. Kokoro's come through kokoro-js and Pocket's from its pinned Space commit, each with its own fetch, and each engine states its weight licence through `onStatus` on first load.
 
 ## Errors this package throws
 
@@ -9712,7 +9752,7 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/stems
+npm install @hackbuild/stems @hackbuild/media @hackbuild/weights
 ```
 
 It depends on `@hackbuild/models`, `@hackbuild/devices` and `@hackbuild/audio-dsp`. It has no peer dependencies: onnxruntime-web 1.27.0 loads at runtime through `loadOrt` in `@hackbuild/devices`, and you open the weight store with `@hackbuild/weights`.
@@ -9825,31 +9865,33 @@ The four stems in model output order: drums, bass, other, vocals.
 
 ```ts
 import { loadOrt, ortProvider } from "@hackbuild/devices";
+import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
 import { attachStems, separate } from "@hackbuild/stems";
 import { openWeightStore } from "@hackbuild/weights";
 
-// a hub with the htdemucs records (weights MIT); onnxruntime-web loads at runtime
+// a hub with the htdemucs records (weights MIT, stated from the record); onnxruntime-web loads at runtime, weights go through the store
 const hub = createHub();
 attachStems(hub);
-const store = await openWeightStore();
-hub.provide("ort", ortProvider({ runtime: loadOrt(), store }).factory);
+hub.provide("ort", ortProvider({ runtime: loadOrt(), store: await openWeightStore() }).factory);
 
-// a 44.1 kHz stereo mix, for example from decodeAudio in @hackbuild/media
-const left = new Float32Array(44100 * 10);
-const right = new Float32Array(44100 * 10);
-
-// separate on the fast tier, with progress per segment
-const { stems, rtf } = await separate(hub, left, right, { model: "htdemucs-fast", onProgress: (p) => console.log(`segment ${p.done} of ${p.total}`) });
-console.log(`vocals ${stems.vocals.left.length} samples, ${rtf.toFixed(2)}x realtime`);
+// a picked song at 44.1 kHz stereo, separated on the fast tier with progress per segment
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => {
+  const { channels } = await decodeAudio(input.files![0]!, 44100);
+  const left = channels[0]!;
+  const { stems, rtf } = await separate(hub, left, channels[1] ?? left, { model: "htdemucs-fast", onProgress: (p) => console.log(`segment ${p.done} of ${p.total}`) });
+  console.log(`vocals ${stems.vocals.left.length} samples, ${rtf.toFixed(2)}x realtime`);
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import onnxruntime-web at the top of the file. Pass `loadOrt()` from @hackbuild/devices as the `runtime` of `ortProvider` and register its `.factory` with `hub.provide("ort", ...)` after `attachStems(hub)`; this package bundles no runtime.
+- You fetch the htdemucs graph yourself. `ortProvider({ runtime, store })` fetches it once through `store.once` on the @hackbuild/weights store you open with `openWeightStore()`, and the hub states the licence from the record on first load.
+- You pass a 48 kHz or mono buffer to `separate`. It takes 44.1 kHz (`SAMPLE_RATE`) left and right channels: decode with `decodeAudio(file, 44100)` from @hackbuild/media and pass the left channel twice for a mono file.
+- You load another htdemucs ONNX export and get `this htdemucs export needs a spectrogram input`. Only waveform only exports with one input run here; use the `htdemucs-fast` or `htdemucs-slow` records from StemSplitio.
+- You expect `htdemucs-slow` to be a bigger model. Every tier is the same network and overlap is the speed control: pass `overlap` from 0 to 0.6, lower is faster, and treat the AbortError `separation stopped` from your `signal` as a cancel.
 
 ## Errors this package throws
 
@@ -9878,7 +9920,7 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/structured
+npm install @hackbuild/structured @hackbuild/chat
 ```
 
 It depends on `@hackbuild/chat`, which installs with it. No peers; the runtime that runs the model is the one your chat engine loads.
@@ -9975,7 +10017,7 @@ Stable fingerprint of a call: name plus arguments with sorted keys.
 function grabCode(value: string): { code: string; lang: string | null }
 ```
 
-The body of a fenced block when there is one, else the text trimmed (as earlier builds did).
+The body of a fenced block when there is one, else the text trimmed.
 
 ```ts
 interface GuardOptions {
@@ -9986,7 +10028,7 @@ interface GuardOptions {
 }
 ```
 
-Turn guards for small models (as earlier builds did): stop after 3 parse failures, when the same call repeats 3 times in the last 6, or after 2 garbage replies in a row; cap pushbacks at 3.
+Turn guards for small models: stop after 3 parse failures, when the same call repeats 3 times in the last 6, or after 2 garbage replies in a row; cap pushbacks at 3.
 
 ```ts
 interface Guards {
@@ -10025,7 +10067,7 @@ interface LinesOptions {
 }
 ```
 
-Line tagged formats: the earlier agent build's THOUGHT / ACTION ReAct with multi line bodies (PATH, CONTENT, CODE), the vision sandbox's short Thought / Action, and the three line SAW / THOUGHT / GOAL cortex.
+Line tagged formats: THOUGHT / ACTION ReAct with multi line bodies (PATH, CONTENT, CODE), the vision sandbox's short Thought / Action, and the three line SAW / THOUGHT / GOAL cortex.
 
 ```ts
 function looksLikeGarbage(text: string, ratio?: number): boolean
@@ -10188,10 +10230,11 @@ console.log(d.mode, d.tool?.name, d.tool?.args, d.say, d.stop);
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- This package loads no runtime and no weights. Pass a `ChatEngine` from `@hackbuild/chat` to `call`; the runtime and the weight licence belong to that engine.
+- `call` does not throw on a reply it cannot parse. Check `d.tool`, which is `null` when nothing usable came back, and `d.fallback`, which says `loose` or `text` when the strict schema was refused.
+- Create one `createGuards()` per run and pass the same object to every `call`. Stop the loop when `d.stop` is set; it names `parse-fails`, `repeat`, `garbage` or `pushbacks`, and `guards.reset()` starts over.
+- `mode: "auto"` picks native only when you pass `quirks.nativeTools` and the engine has tools, then constrained when the engine takes schemas, then prompt with `quirks.toolCallTags`, else lines. Pass the model's quirks or name the mode.
+- A reply with no tool becomes the `respond_to_user` tool with `{ message }`, and its text is in `d.say`. Handle that tool name instead of treating it as a missing tool, or pass `respond: false` to leave it out.
 
 ## Errors this package throws
 
@@ -10222,7 +10265,7 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/transcribe
+npm install @hackbuild/transcribe @hackbuild/media @hackbuild/weights
 ```
 
 It depends on @hackbuild/ai-env, @hackbuild/models, @hackbuild/devices and @hackbuild/audio-dsp, and has no peers. transformers.js is not a dependency: `loadTransformers()` from @hackbuild/devices imports the pinned build (`@huggingface/transformers@4.3.2`) at run time. Use @hackbuild/media to decode files and @hackbuild/weights to cache weights.
@@ -10235,7 +10278,7 @@ It depends on @hackbuild/ai-env, @hackbuild/models, @hackbuild/devices and @hack
 function acceptsFile(f: Pick<FileLike, "name" | "type">): boolean
 ```
 
-Audio or video by MIME type, or by one of the earlier tool's extensions.
+Audio or video by MIME type, or by one of its known extensions.
 
 ```ts
 interface Analysis {
@@ -10344,7 +10387,7 @@ Decoded audio: the sample rate and one Float32Array per channel.
 function defaultTranscribeId(webgpu: boolean): string
 ```
 
-The record earlier builds picked: turbo with a webgpu adapter, base.en without.
+The default record: turbo with a webgpu adapter, base.en without.
 
 ```ts
 interface Dropped extends Seg {
@@ -10491,7 +10534,7 @@ One file in the queue: its state, phase, progress, measured levels, result and e
 type JobState = "queued" | "running" | "done" | "failed"
 ```
 
-The file queue (as the earlier transcription tool ran it): files are accepted by type or extension, a file over 1.5 GB (vendor, the earlier tool's limit) gets a warning, and each job goes queued, running (decoding, then working), done or failed.
+The file queue: files are accepted by type or extension, a file over 1.5 GB gets a warning, and each job goes queued, running (decoding, then working), done or failed.
 
 ```ts
 interface Language {
@@ -10559,7 +10602,7 @@ interface LiveOptions {
 }
 ```
 
-Live segmentation (as earlier builds did): audio arrives in blocks, is decimated to 16 kHz, and is cut into segments either when a gate closes for 500 ms (squelch mode), at a fixed window (8 s with the squelch off, 2 to 12 s in spirit box mode), or at 24 s, since Whisper pads to 30 s.
+Live segmentation: audio arrives in blocks, is decimated to 16 kHz, and is cut into segments either when a gate closes for 500 ms (squelch mode), at a fixed window (8 s with the squelch off, 2 to 12 s in spirit box mode), or at 24 s, since Whisper pads to 30 s.
 
 ```ts
 class LiveSegmenter {
@@ -10807,7 +10850,7 @@ A stub ASR: one chunk per reel reading "stub transcript, N s", with no weights.
 function toMono(channels: readonly Float32Array<ArrayBufferLike>[], mode?: "auto" | "mix" | "L" | "R"): Float32Array
 ```
 
-Mono from a decoded buffer, as earlier builds chose it: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest.
+Mono from a decoded buffer: one channel when it is 6 dB louder, else the channels within 20 dB of the loudest.
 
 ```ts
 function toSixteenK(rate: number): { process(x: Float32Array): Float32Array; reset(): void } | null
@@ -10932,7 +10975,7 @@ Web Speech settings: language, interim results, callbacks and the recognizer con
 const WHISPER_LANGUAGES: readonly Language[]
 ```
 
-The earlier transcription tool's list, in its order, after auto detect.
+The 19 languages, in order, after auto detect.
 
 ```ts
 interface Word {
@@ -10956,28 +10999,29 @@ import { AUDIO_DSP_WASM_BASE64 } from "@hackbuild/audio-dsp/inline";
 import { loadTransformers, tjsProvider } from "@hackbuild/devices";
 import { decodeAudio } from "@hackbuild/media";
 import { createHub } from "@hackbuild/models";
-import { asSrt, attachTranscribe, defaultTranscribeId, toMono, transcribe } from "@hackbuild/transcribe";
+import { asSrt, attachTranscribe, defaultTranscribeId, toMono, transcribe, TRANSCRIBE_RECORDS } from "@hackbuild/transcribe";
 import { openWeightStore, transformersCache } from "@hackbuild/weights";
 
-// a hub with the whisper and moonshine records; transformers.js comes in through the devices loader, weights through the store
-const env = await probe();
-const hub = createHub({ env });
+// a hub with the whisper and moonshine records; transformers.js comes in through the devices loader, weights through the store with each record's licence
+const hub = createHub({ env: await probe() });
 attachTranscribe(hub);
-hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache: transformersCache(await openWeightStore(), { licenceFor: () => "MIT" }) }).factory);
-
-// 16 kHz mono from a dropped file, then whisper (weights MIT): large-v3-turbo with webgpu, base.en without
+hub.provide("tjs", tjsProvider({ runtime: loadTransformers(), cache: transformersCache(await openWeightStore(), { licenceFor: (url) => TRANSCRIBE_RECORDS.find((r) => r.source.modelId && url.includes(r.source.modelId))?.licence ?? null }) }).factory);
 const dsp = await loadDsp({ base64: AUDIO_DSP_WASM_BASE64 });
-const { channels } = await decodeAudio(new File([], "talk.mp3"), 16000);
-const out = await transcribe(hub, dsp, toMono(channels), { model: defaultTranscribeId(env.webgpu), language: "en" });
-console.log(asSrt(out.segments), out.dropped.length, "lines dropped");
+const input = document.querySelector<HTMLInputElement>("input[type=file]")!;
+input.onchange = async () => { // 16 kHz mono from the picked file, then whisper: large-v3-turbo with webgpu, base.en without
+  const { channels } = await decodeAudio(input.files![0]!, 16000);
+  const out = await transcribe(hub, dsp, toMono(channels), { model: defaultTranscribeId(hub.env?.webgpu ?? false), language: "en" });
+  console.log(asSrt(out.segments), out.dropped.length, "lines dropped");
+};
 ```
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import @huggingface/transformers at the top of the file. Pass `loadTransformers()` from @hackbuild/devices as the `runtime` of `tjsProvider` and register it with `hub.provide("tjs", ...)` after `attachTranscribe(hub)`; this package bundles no runtime.
+- You let transformers.js fetch weights on its own. Pass `cache: transformersCache(store, { licenceFor })` from @hackbuild/weights to `tjsProvider`, with `licenceFor` reading `licence` off the matching record in `TRANSCRIBE_RECORDS`, never a string you type.
+- You hand `transcribe` a decoded buffer at 44.1 or 48 kHz. It takes 16 kHz mono: decode with `decodeAudio(file, 16000)` from @hackbuild/media, then `toMono(channels)`, and pass the audio-dsp core from `loadDsp` as the second argument.
+- You pass `task` or `language` for an english only model such as `whisper-base.en`. transformers.js rejects them; `transcribe` already leaves them out for those records, and `languagesFor(record, wanted)` tells you the language is locked.
+- You hard code a model id. `defaultTranscribeId(webgpu)` gives large-v3-turbo with a webgpu adapter and base.en without; a stop through `signal` rejects with an AbortError whose message is `transcription stopped`; treat it as a cancel and show no error.
 
 ## Errors this package throws
 
@@ -11159,7 +11203,7 @@ A loaded depth model: `estimate` returns a DepthMap for an image.
 function depthToRgba(d: { data: Float32Array; height: number; width: number }): Uint8ClampedArray
 ```
 
-A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (an earlier relief bench stores depth as a PNG data URL).
+A depth map as an 8 bit grey RGBA buffer, for a canvas or a PNG (store it as a PNG data URL to keep it with a design).
 
 ```ts
 function depthWorker(o: DepthWorkerOptions): Promise<DepthWorker>
@@ -11208,7 +11252,7 @@ Objects in an image from the routed detector (MediaPipe EfficientDet by default,
 function detectCadenceMs(lastLatencyMs: number): number
 ```
 
-Detection cadence as earlier builds ran it: wait max(0.45 s, 4 times the last latency) between runs.
+Detection cadence: wait max(0.45 s, 4 times the last latency) between runs.
 
 ```ts
 interface Detection {
@@ -11291,7 +11335,7 @@ A face landmark fallback record over face-api.js tiny nets (code MIT; weights MI
 function fitSize(w: number, h: number, maxPx?: number): { height: number; scale: number; width: number }
 ```
 
-Scale so the longest side is at most maxPx (as earlier builds did).
+Scale so the longest side is at most maxPx.
 
 ```ts
 function fixedLandmarker(count: number, source?: string): Landmarker
@@ -11434,7 +11478,7 @@ interface LoopOptions<T> {
 }
 ```
 
-A perception loop beside a render loop: one step at a time (the earlier scan bench's busy guard), each step started no sooner than `interval(lastLatency)` after the previous one began (an earlier scene app detection cadence, the earlier chat build's fixed periods), stopped by `stop()` or an abort signal.
+A perception loop beside a render loop: one step at a time (a busy guard), each step started no sooner than `interval(lastLatency)` after the previous one began (an adaptive cadence or a fixed period), stopped by `stop()` or an abort signal.
 
 ```ts
 interface Mask {
@@ -11469,7 +11513,7 @@ Shrink by a disc of radius `r` pixels; the image border does not count as outsid
 function maskFeather(m: Mask, r: number): Mask
 ```
 
-Soft edges: a gaussian of radius `r` with sigma r / 2 (the earlier mask studio's smooth, before its rethreshold), edges clamped.
+Soft edges: a gaussian of radius `r` with sigma r / 2 (a smooth without a rethreshold), edges clamped.
 
 ```ts
 function maskFromRle(r: MaskRle): Mask
@@ -11514,7 +11558,7 @@ COCO style uncompressed run length: column major, the first run counts outside p
 function maskSubtract(a: Mask, b: Mask): Mask
 ```
 
-`a` with `b` taken out (shift with a selection tool in the earlier mask studio).
+`a` with `b` taken out (shift with a selection tool in a mask editor).
 
 ```ts
 function maskThreshold(m: Mask, t?: number): Mask
@@ -11752,7 +11796,7 @@ class ResultCache<T> {
 }
 ```
 
-A small LRU of results by key (an earlier relief bench keeps the depth map with the design so it never reruns).
+A small LRU of results by key, so a depth map is computed once per image.
 
 ```ts
 function samLoader(ctx: TjsLoadContext): Promise<Segmenter>
@@ -11920,6 +11964,8 @@ hub.provide("mediapipe", mediapipeProvider({ runtime: loadTasksVision() }));
 
 // each call loads its model on first use, runs it under the gpu lock, and releases it
 const video = document.querySelector("video")!;
+video.srcObject = await navigator.mediaDevices.getUserMedia({ video: true }); // the webcam
+await video.play();
 const map = await depth(hub, video); // Depth Anything V2 small, weights Apache-2.0
 const boxes = await detect(hub, video, { scoreThreshold: 0.4 }); // MediaPipe EfficientDet lite0, Apache-2.0
 const line = await caption(hub, video); // SmolVLM 256M, Apache-2.0
@@ -11955,10 +12001,11 @@ await depth(hub, frame, { size: "tiny", schedule: { minIntervalMs: 1200, frameBu
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You import `@huggingface/transformers` or `@mediapipe/tasks-vision` at the top of your file. Pass the loaders instead: `tjsProvider({ runtime: loadTransformers() })` from @hackbuild/devices and `mediapipeProvider({ runtime: loadTasksVision() })`, and each runtime loads at run time from its pinned URL.
+- You call `attachVision(hub, tjs)` and expect models to load. It adds the records and the transformers.js loaders only; also call `hub.provide("tjs", tjs.factory)` and `hub.provide("mediapipe", mediapipeProvider(...))`.
+- You expect MediaPipe weights to go through the weight store on their own. They load by URL from `MP_MODELS`; pass `store` to `mediapipeProvider` to read them through @hackbuild/weights with resume, sha-256 and the licence line.
+- You expect YOLO or a model from `PICKER_RECORDS` to answer `detect` or a `model` id. None is registered by default; build YOLO with `yoloRecord({ url })` for an export you supply (licence AGPL-3.0 unless you pass `licence`) and add it, or any picker record, with `hub.registry.add`.
+- You run `depth` on the main thread beside a render loop and trust `schedule` to keep the frames. Run `depthWorker({ urls: transformersUrls(), device })` instead; it loads only registered depth records and throws "is not a registered depth record" unless you pass `record` with its licence named.
 
 ## Errors this package throws
 
@@ -11994,10 +12041,10 @@ Generated by tools/llms.mjs from the TypeDoc JSON, the README and the examples o
 ## Install
 
 ```sh
-npm install @hackbuild/weights
+npm install @hackbuild/weights @hackbuild/models
 ```
 
-No dependencies and no peers. No weights ship with this package; each file keeps its own licence.
+No dependencies and no peers. The quick start also installs @hackbuild/models for its model records and pinned hashes; the store does not need it. No weights ship with this package; each file keeps its own licence.
 
 ## Exports
 
@@ -12089,7 +12136,7 @@ Hugging Face resolve URL base for a repo and revision.
 function idbBackend(opts?: { db?: string; indexedDB?: IDBFactory }): Backend
 ```
 
-IndexedDB parts, the layout earlier builds used: one `kv` store with `<key>:meta` and `<key>:<n>` records.
+IndexedDB parts: one `kv` store with `<key>:meta` and `<key>:<n>` records.
 
 ```ts
 interface LocksLike {
@@ -12272,18 +12319,21 @@ A weight store: get with resume, put files the user supplied, list, evict, cance
 ### quick start
 
 ```ts
+import { CATALOG, pinnedBase, pinnedSha } from "@hackbuild/models";
 import { openWeightStore, WeightError } from "@hackbuild/weights";
 
 // one store over opfs, indexeddb parts, cache storage or memory, the first that opens
 const store = await openWeightStore();
 console.log("stored in", store.backend.name, (await store.estimate()).quota, "bytes of quota");
 
-// Qwen2.5 0.5B Instruct q4_k_m GGUF, weights Apache-2.0; an interrupted download resumes on the next get
-const url = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf";
+// Qwen2.5 0.5B Instruct q4_k_m GGUF: the record names the repo, the file and the weight licence (Apache-2.0)
+const rec = CATALOG.find((r) => r.id === "qwen2.5-0.5b-instruct-gguf")!;
+const url = pinnedBase(rec.source!.repo!) + rec.source!.file!;
+const sha256 = pinnedSha(url);
 try {
-  const gguf = await store.get({ url, key: "gguf:Qwen/Qwen2.5-0.5B-Instruct-GGUF/q4_k_m", licence: "Apache-2.0" }, {
-    onProgress: (p) => console.log(p.fraction === null ? `${(p.loaded / 1e6).toFixed(0)} MB` : `${(p.fraction * 100).toFixed(0)}%`),
-  });
+  // an interrupted download resumes on the next get; the bytes are checked against the pinned sha-256
+  const ref = { url, key: `gguf:${rec.id}`, licence: rec.licence, ...(sha256 ? { sha256 } : {}) };
+  const gguf = await store.get(ref, { onProgress: (p) => console.log(p.fraction === null ? `${(p.loaded / 1e6).toFixed(0)} MB` : `${(p.fraction * 100).toFixed(0)}%`) });
   console.log(gguf.size, "bytes, cached for the next visit");
 } catch (e) {
   // code is http, sha256, quota, abort or range
@@ -12293,10 +12343,12 @@ try {
 
 ## Mistakes to avoid
 
-- Pass the runtime module in; never import it. WebLLM, wllama, transformers.js, onnxruntime-web, kokoro-js and MediaPipe are optional peers: load one with the package's loader or `importEsm` from @hackbuild/ai-env (pinned URLs, file:// safe) and hand the module to the package. A static `import` of a runtime breaks the single file build and pulls megabytes into every page.
-- Fetch weights through @hackbuild/weights (`openWeightStore()`, then `store.get({ url, key, licence })`), or take a URL, ArrayBuffer or File from the user. Never bundle, commit or inline weights, and state the weight licence before the download starts.
-- file:// rules: Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk. Use the single file build (`dist/single/index.iife.js`, a classic script that sets a `Hackbuild<Pkg>` global) or serve over http. There are no wasm threads, so no SharedArrayBuffer or cross origin isolation is needed; workers start classic from a Blob.
-- Inject randomness as `Rng = () => number` where an option takes one; library code never calls `Math.random`.
+- You `fetch` weight URLs yourself or bundle the files. Open one store with `openWeightStore()` and call `store.get({ url, key, licence })`; it resumes a broken download with a Range request and keeps the bytes for the next visit.
+- You write the licence as a string in your code. Take it from the model record, `licence: rec.licence` from @hackbuild/models, and pass `sha256: pinnedSha(url)` when the file is pinned; a mismatch removes the parts and throws `WeightError` code `sha256`.
+- You call `store.get` once per session attempt when a runtime tries several sessions on one file. Use `store.once(ref)` so every attempt reads one download, and `release(key)` when you are done.
+- You hand transformers.js its own cache and lose resume and the licence line. Set `env.customCache` to `transformersCache(store, { licenceFor, sha256For: pinnedSha })`, where `licenceFor(url)` returns the `licence` of the model record whose repo the URL names, or null for files the store should not fetch itself.
+- You expect OPFS or Cache Storage on a file:// page. `auto` leaves both out there and the store lands on IndexedDB parts, then memory.
+- You treat `WeightError` code `quota` as a failed download. It is thrown before the body is read when free space is under 1.2 times the file; evict other keys or call `store.persist()`, and catch code `http` to call `get` again, which resumes.
 
 ## Errors this package throws
 

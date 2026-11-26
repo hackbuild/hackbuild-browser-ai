@@ -18,7 +18,7 @@ No package bundles weights, and none are hosted with these pages. A model loads 
 
 ## builds that run from file://
 
-Every package has a single file build in `dist/single/`: an ES module for pages served over http, and a classic script (`index.iife.js`) that sets a `Hackbuild<Pkg>` global. Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk, so a page saved to disk uses the classic script. Workers start as classic scripts from a Blob. The Rust wasm cores use SIMD128 and no threads, so no page needs cross origin isolation.
+Every package has a single file build in `dist/single/`: an ES module for pages served over http, and a classic script (`index.iife.js`) that sets a `Hackbuild<Pkg>` global. Chrome refuses module scripts, module workers and dynamic imports of file URLs on a page opened from disk, so a page saved to disk uses the classic script. Workers start as classic scripts from a Blob. The Rust wasm cores in this repository use SIMD128 and no threads, so they need no cross origin isolation. A runtime's own wasm (onnxruntime-web, transformers.js) gets its thread count from the probe through @hackbuild/devices: more than one thread only on a cross origin isolated page, one thread otherwise.
 
 ## errors name the failure
 
