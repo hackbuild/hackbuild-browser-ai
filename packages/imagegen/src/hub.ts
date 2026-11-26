@@ -10,7 +10,8 @@
 
 import type { Capability, Hub, Loaded, ModelRecord, RunOptions, UseOptions } from "@hackbuild/models";
 import { generate, type ClipTokenize, type Generated, type GenerateOptions, type OrtLike, type SessionLike, type Sessions } from "./pipeline.js";
-import { formOf, IMAGEGEN_RECORDS, type ImageForm } from "./records.js";
+import { formOf, IMAGEGEN_PICKER_RECORDS, IMAGEGEN_RECORDS, type ImageForm } from "./records.js";
+import { generateXl, type XlSessions } from "./xl.js";
 
 /** What the ort provider loads, structurally: the module and sessions by graph name. */
 export interface ImagegenModel {
@@ -26,7 +27,7 @@ export interface ImageGenerator {
   readonly loaded: Loaded<ImagegenModel>;
   readonly record: ModelRecord;
   readonly form: ImageForm;
-  readonly sessions: Sessions;
+  readonly sessions: Sessions & { textEncoder2?: SessionLike };
   /** Generate with the form's defaults filled in; fields the model does not take are dropped. */
   generate(tokenize: ClipTokenize, o: FormOptions): Promise<Generated>;
   release(): void;
@@ -42,14 +43,16 @@ export function attachImagegen(hub: Hub): void {
   hub.registry.add(...IMAGEGEN_RECORDS);
 }
 
-/** The three sessions of a loaded model, by the form's graph names. */
-export function sessionsOf(m: ImagegenModel, form: ImageForm): Sessions {
+/** The sessions of a loaded model, by the form's graph names: three, or four with SDXL's second text encoder. */
+export function sessionsOf(m: ImagegenModel, form: ImageForm): Sessions & { textEncoder2?: SessionLike } {
   const pick = (k: string) => {
     const s = m.sessions[k];
     if (!s) throw new Error(`the loaded model has no ${k} graph; it has ${Object.keys(m.sessions).join(", ") || "none"}`);
     return s;
   };
-  return { textEncoder: pick(form.graphs.textEncoder), unet: pick(form.graphs.unet), vaeDecoder: pick(form.graphs.vaeDecoder) };
+  const out: Sessions & { textEncoder2?: SessionLike } = { textEncoder: pick(form.graphs.textEncoder), unet: pick(form.graphs.unet), vaeDecoder: pick(form.graphs.vaeDecoder) };
+  if (form.pipeline === "sdxl") out.textEncoder2 = pick(form.graphs.textEncoder2 ?? "text_encoder_2");
+  return out;
 }
 
 /** Clamp a request to what the form allows, with the form's defaults. */
@@ -67,9 +70,15 @@ export function applyForm(form: ImageForm, o: Omit<GenerateOptions, "run">): Omi
 /**
  * Load an image model through the hub: a record id (`{ id: "sd-1.5" }`)
  * or the capability ("imagegen", which the hub routes, or sends to the
- * stub in stub mode). A record without a form (the stub) gets SD-Turbo's.
+ * stub in stub mode). A picker record named by id (`sdxl-turbo`) is added
+ * to the registry first. A record without a form (the stub) gets
+ * SD-Turbo's. An SDXL form runs `generateXl` behind the same interface.
  */
 export async function loadImagegen(hub: Hub, what: Capability | { id: string } = "imagegen", o: UseOptions = {}): Promise<ImageGenerator> {
+  if (typeof what === "object" && !hub.registry.get(what.id)) {
+    const listed = IMAGEGEN_PICKER_RECORDS.find((r) => r.id === what.id);
+    if (listed) hub.registry.add(listed);
+  }
   const loaded = await hub.use<ImagegenModel>(what, o);
   const form = formOf(loaded.record) ?? IMAGEGEN_RECORDS[0]!.form;
   let sessions: Sessions;
@@ -84,10 +93,12 @@ export async function loadImagegen(hub: Hub, what: Capability | { id: string } =
     record: loaded.record,
     form,
     sessions,
-    generate(tokenize, req) {
+    async generate(tokenize, req) {
       const { runOptions, ...rest } = req;
       const run = <T>(fn: () => Promise<T>) => hub.run(loaded, () => fn(), { ...(runOptions ?? {}), ...(rest.signal ? { signal: rest.signal } : {}) });
-      return generate(loaded.value.ort, sessions, tokenize, { ...applyForm(form, rest), run });
+      const opts = { ...applyForm(form, rest), run };
+      if (form.pipeline === "sdxl") return generateXl(loaded.value.ort, sessions as XlSessions, tokenize, form.xl ? { ...opts, xl: form.xl } : opts);
+      return generate(loaded.value.ort, sessions, tokenize, opts);
     },
     release() {
       hub.release(loaded);

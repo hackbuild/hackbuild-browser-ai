@@ -2,3 +2,4 @@ export { sigmas, trailingTimesteps, leadingTimesteps, mulberry32, gaussian, eule
 export { generate, toRgba, padIds, VAE_SCALE, type OrtLike, type SessionLike, type Sessions, type ClipTokenize, type GenerateOptions, type Generated } from "./pipeline.js";
 export { IMAGEGEN_RECORDS, IMAGEGEN_PICKER_RECORDS, formOf, loadLabel, type ImageForm, type ImagegenRecord } from "./records.js";
 export { attachImagegen, loadImagegen, sessionsOf, applyForm, stubImagegenModel, FormError, type ImagegenModel, type ImageGenerator, type FormOptions } from "./hub.js";
+export { generateXl, toHalf, fromHalf, floatsOf, padIds2, XL_IO, type XlSessions, type XlIo } from "./xl.js";

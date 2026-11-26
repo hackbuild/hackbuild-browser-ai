@@ -124,13 +124,15 @@ What the generate form shows for a model: step range, guidance, negative prompt,
 
 | Property | Type | Description |
 | ------ | ------ | ------ |
-| <a id="property-graphs"></a> `graphs` | `object` | Session keys of the three graphs in the loaded ort model. |
+| <a id="property-graphs"></a> `graphs` | `object` | Session keys of the graphs in the loaded ort model; `textEncoder2` for SDXL. |
 | `graphs.textEncoder` | `string` | - |
+| `graphs.textEncoder2?` | `string` | - |
 | `graphs.unet` | `string` | - |
 | `graphs.vaeDecoder` | `string` | - |
 | <a id="property-guidance-1"></a> `guidance` | \| \{ `default`: `number`; `max`: `number`; `min`: `number`; `step`: `number`; \} \| `null` | Classifier free guidance; null when the model takes none and the field is hidden. |
 | <a id="property-negative-1"></a> `negative` | `boolean` | Show a negative prompt field. Only models run with guidance use one. |
 | <a id="property-note"></a> `note` | `string` | One line under the select saying what the model is. |
+| <a id="property-pipeline"></a> `pipeline?` | `"sd"` \| `"sdxl"` | "sdxl" runs `generateXl` (two encoders, pooled embeddings, time ids); "sd" (default) runs `generate`. |
 | <a id="property-sizes"></a> `sizes` | `number`[] | Output sides in pixels the graphs accept, the default first. |
 | <a id="property-spacing-1"></a> `spacing` | [`Spacing`](#spacing) | - |
 | <a id="property-steps-1"></a> `steps` | `object` | - |
@@ -138,6 +140,7 @@ What the generate form shows for a model: step range, guidance, negative prompt,
 | `steps.max` | `number` | - |
 | `steps.min` | `number` | - |
 | <a id="property-tokenizer"></a> `tokenizer` | `string` | CLIP tokenizer the caller loads, transformers.js model id. |
+| <a id="property-xl"></a> `xl?` | `Partial`\<[`XlIo`](#xlio)\> | Input and output names and dtypes for the SDXL pipeline, over `XL_IO`. |
 
 ***
 
@@ -152,7 +155,7 @@ An image model loaded through the hub: its record, form and sessions, `generate`
 | <a id="property-form"></a> `form` | `readonly` | [`ImageForm`](#imageform) |
 | <a id="property-loaded"></a> `loaded` | `readonly` | `Loaded`\<[`ImagegenModel`](#imagegenmodel)\> |
 | <a id="property-record"></a> `record` | `readonly` | `ModelRecord` |
-| <a id="property-sessions"></a> `sessions` | `readonly` | [`Sessions`](#sessions) |
+| <a id="property-sessions"></a> `sessions` | `readonly` | [`Sessions`](#sessions) & `object` |
 
 #### Methods
 
@@ -254,6 +257,39 @@ The three graphs of a Stable Diffusion export: text encoder, UNet and VAE decode
 | <a id="property-unet"></a> `unet` | [`SessionLike`](#sessionlike) |
 | <a id="property-vaedecoder"></a> `vaeDecoder` | [`SessionLike`](#sessionlike) |
 
+***
+
+### XlIo
+
+Input and output names and dtypes of an SDXL export; [XL\_IO](#xl_io) holds the defaults.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-hidden1"></a> `hidden1` | `string` | Hidden state output of the first encoder; the penultimate layer of 12. |
+| <a id="property-hidden2"></a> `hidden2` | `string` | Hidden state output of the second encoder; the penultimate layer of 32. |
+| <a id="property-io"></a> `io` | `"float32"` \| `"float16"` | Float tensor dtype at every graph edge. |
+| <a id="property-pad2"></a> `pad2` | `number` | Token id the second tokenizer pads with after the end token: 0, the exclamation mark token. |
+| <a id="property-pooled"></a> `pooled` | `string` | Pooled projection output of the second encoder. |
+| <a id="property-timestep"></a> `timestep` | `"float32"` \| `"float16"` \| `"int64"` | UNet timestep dtype. |
+| <a id="property-vaescale"></a> `vaeScale` | `number` | The SDXL VAE latent scale. |
+
+***
+
+### XlSessions
+
+The four graphs of an SDXL export: two text encoders, the UNet and the VAE decoder.
+
+#### Properties
+
+| Property | Type |
+| ------ | ------ |
+| <a id="property-textencoder-1"></a> `textEncoder` | [`SessionLike`](#sessionlike) |
+| <a id="property-textencoder2"></a> `textEncoder2` | [`SessionLike`](#sessionlike) |
+| <a id="property-unet-1"></a> `unet` | [`SessionLike`](#sessionlike) |
+| <a id="property-vaedecoder-1"></a> `vaeDecoder` | [`SessionLike`](#sessionlike) |
+
 ## Type Aliases
 
 ### ClipTokenize
@@ -343,8 +379,11 @@ Timestep spacing: `trailing` for SD-Turbo, `leading` for SD 1.5.
 const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[];
 ```
 
-Listed for pickers, not registered by attachImagegen: SDXL-Turbo has two
-text encoders and the pipeline here runs one, so routing must not pick it.
+Listed for pickers, not registered by attachImagegen, so routing by
+capability keeps SD-Turbo: SDXL-Turbo runs on `generateXl`, and the
+export's input and output names are inferred from its README and the
+SDXL description, not read from the graphs. `loadImagegen(hub, { id:
+"sdxl-turbo" })` adds it and loads it.
 
 ***
 
@@ -365,6 +404,16 @@ const VAE_SCALE: 0.18215 = 0.18215;
 ```
 
 The latent scale of the Stable Diffusion VAE; the final latent is divided by it before decoding.
+
+***
+
+### XL\_IO
+
+```ts
+const XL_IO: Readonly<XlIo>;
+```
+
+SDXL defaults: fp32 edges, int64 timestep, `hidden_states.11`, `hidden_states.31`, `text_embeds`, pad 0, scale 0.13025.
 
 ## Functions
 
@@ -460,6 +509,26 @@ The timesteps and sigmas for `steps` steps with the given spacing (trailing by d
 
 ***
 
+### floatsOf()
+
+```ts
+function floatsOf(t): Float32Array;
+```
+
+An output's floats; fp16 outputs (type "float16" or Uint16Array data) are decoded.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `t` | `Out` |
+
+#### Returns
+
+`Float32Array`
+
+***
+
 ### formOf()
 
 ```ts
@@ -477,6 +546,26 @@ The form for a record, or null for a record without one (a stub).
 #### Returns
 
 [`ImageForm`](#imageform) \| `null`
+
+***
+
+### fromHalf()
+
+```ts
+function fromHalf(h): Float32Array;
+```
+
+IEEE 754 half bits to float32.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `h` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+`Float32Array`
 
 ***
 
@@ -528,6 +617,37 @@ Text to image: encode the prompt, run the seeded Euler loop over the UNet, decod
 
 ***
 
+### generateXl()
+
+```ts
+function generateXl(
+   ort, 
+   s, 
+   tokenize, 
+   o
+): Promise<Generated>;
+```
+
+SDXL-Turbo text to image: both encoders, the joined hidden states and
+pooled embedding, the seeded Euler loop with `text_embeds` and
+`time_ids` on every UNet call, then the VAE. Guidance above 1 runs the
+UNet on the negative too. Throws when `size` is not a multiple of 8.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `ort` | [`OrtLike`](#ortlike) |
+| `s` | [`XlSessions`](#xlsessions) |
+| `tokenize` | [`ClipTokenize`](#cliptokenize) |
+| `o` | [`GenerateOptions`](#generateoptions) & `object` |
+
+#### Returns
+
+`Promise`\<[`Generated`](#generated)\>
+
+***
+
 ### leadingTimesteps()
 
 ```ts
@@ -568,7 +688,9 @@ function loadImagegen(
 
 Load an image model through the hub: a record id (`{ id: "sd-1.5" }`)
 or the capability ("imagegen", which the hub routes, or sends to the
-stub in stub mode). A record without a form (the stub) gets SD-Turbo's.
+stub in stub mode). A picker record named by id (`sdxl-turbo`) is added
+to the registry first. A record without a form (the stub) gets
+SD-Turbo's. An SDXL form runs `generateXl` behind the same interface.
 
 #### Parameters
 
@@ -650,13 +772,34 @@ CLIP token ids padded or cut to `n` (77), padded with `pad` or the last id.
 
 ***
 
+### padIds2()
+
+```ts
+function padIds2(ids, pad?): Int32Array;
+```
+
+CLIP ids for the second encoder: up to the first end token, then `pad` to 77.
+
+#### Parameters
+
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `ids` | `ArrayLike`\<`number`\> | `undefined` |
+| `pad?` | `number` | `0` |
+
+#### Returns
+
+`Int32Array`
+
+***
+
 ### sessionsOf()
 
 ```ts
-function sessionsOf(m, form): Sessions;
+function sessionsOf(m, form): Sessions & object;
 ```
 
-The three sessions of a loaded model, by the form's graph names.
+The sessions of a loaded model, by the form's graph names: three, or four with SDXL's second text encoder.
 
 #### Parameters
 
@@ -667,7 +810,7 @@ The three sessions of a loaded model, by the form's graph names.
 
 #### Returns
 
-[`Sessions`](#sessions)
+[`Sessions`](#sessions) & `object`
 
 ***
 
@@ -710,6 +853,26 @@ the whole flow (stages, timing cells, history) runs with no download.
 #### Returns
 
 [`ImagegenModel`](#imagegenmodel)
+
+***
+
+### toHalf()
+
+```ts
+function toHalf(f): Uint16Array;
+```
+
+Float32 to IEEE 754 half bits, round to nearest even.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `f` | `ArrayLike`\<`number`\> |
+
+#### Returns
+
+`Uint16Array`
 
 ***
 

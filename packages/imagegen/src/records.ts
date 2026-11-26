@@ -10,6 +10,7 @@
 
 import type { ModelRecord } from "@hackbuild/models";
 import type { Spacing } from "./schedule.js";
+import type { XlIo } from "./xl.js";
 
 /** What the generate form shows for a model: step range, guidance, negative prompt, sizes, spacing, a note, the tokenizer and the graph names. */
 export interface ImageForm {
@@ -25,8 +26,12 @@ export interface ImageForm {
   note: string;
   /** CLIP tokenizer the caller loads, transformers.js model id. */
   tokenizer: string;
-  /** Session keys of the three graphs in the loaded ort model. */
-  graphs: { textEncoder: string; unet: string; vaeDecoder: string };
+  /** Session keys of the graphs in the loaded ort model; `textEncoder2` for SDXL. */
+  graphs: { textEncoder: string; textEncoder2?: string; unet: string; vaeDecoder: string };
+  /** "sdxl" runs `generateXl` (two encoders, pooled embeddings, time ids); "sd" (default) runs `generate`. */
+  pipeline?: "sd" | "sdxl";
+  /** Input and output names and dtypes for the SDXL pipeline, over `XL_IO`. */
+  xl?: Partial<XlIo>;
 }
 
 /** A models hub record with the {@link ImageForm} for its model. */
@@ -125,8 +130,11 @@ export function loadLabel(rec: ModelRecord): string {
 }
 
 /**
- * Listed for pickers, not registered by attachImagegen: SDXL-Turbo has two
- * text encoders and the pipeline here runs one, so routing must not pick it.
+ * Listed for pickers, not registered by attachImagegen, so routing by
+ * capability keeps SD-Turbo: SDXL-Turbo runs on `generateXl`, and the
+ * export's input and output names are inferred from its README and the
+ * SDXL description, not read from the graphs. `loadImagegen(hub, { id:
+ * "sdxl-turbo" })` adds it and loads it.
  */
 export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
   {
@@ -134,15 +142,21 @@ export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
     label: "sdxl-turbo 512",
     speed: "steady",
     verdict: "not run yet",
-    unrunnable: "not run yet. sdxl-turbo needs two text encoders and this pipeline runs one.",
+    unrunnable: "not run yet. the sdxl pipeline is written; the export's graph names and fp16 io are inferred and unchecked.",
     group: "good",
     provides: ["imagegen"],
     provider: "ort",
     source: {
       repo: "webnn/sdxl-turbo",
-      files: [{ path: "text_encoder/model.onnx" }, { path: "text_encoder_2/model.onnx" }, { path: "unet/model.onnx" }, { path: "vae_decoder/model.onnx" }],
+      files: [
+        { path: "onnx/text_encoder_model_q4f16.onnx" },
+        { path: "onnx/text_encoder_2_model_q4f16.onnx" },
+        { path: "onnx/unet_model_q4f16.onnx" },
+        { path: "onnx/vae_decoder_model_q4f16.onnx" },
+      ],
     },
-    // q4f16 text encoder 124.4, text encoder 2 483.7, unet 1965.6, vae decoder 97.6 MB in the hub listing (vendor, 2026-11-25), in MiB
+    // text encoder 124433929, text encoder 2 483677630, unet 1965607674, vae decoder 97617257 bytes in the hub listing
+    // (vendor, 2026-11-25, https://huggingface.co/webnn/sdxl-turbo/tree/main/onnx), 2548 MiB
     sizeMB: 2548,
     sizeSource: "vendor",
     ladder: [{ device: "webgpu", ort: { executionProviders: ["webgpu"] }, options: free512 }],
@@ -151,7 +165,8 @@ export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
     place: "gpu",
     runtime: "onnxruntime-web@1.27.0",
     notes: [
-      "two text encoders; the pipeline in this package runs one, so this record is listed and not run yet",
+      "two text encoders, pooled embeddings and time ids, on generateXl",
+      "fp16 inputs and outputs per the export's README (--force_fp16_inputs); timestep dtype and hidden state names inferred",
       "the highest quality of the three image models",
     ],
     form: {
@@ -162,7 +177,9 @@ export const IMAGEGEN_PICKER_RECORDS: ImagegenRecord[] = [
       spacing: "trailing",
       note: "distilled from sdxl. 1 to 4 steps, no negative prompt. the best looking of the three.",
       tokenizer: "Xenova/clip-vit-base-patch16",
-      graphs,
+      graphs: { textEncoder: "text_encoder_model_q4f16", textEncoder2: "text_encoder_2_model_q4f16", unet: "unet_model_q4f16", vaeDecoder: "vae_decoder_model_q4f16" },
+      pipeline: "sdxl",
+      xl: { io: "float16", timestep: "float16" },
     },
   },
 ];

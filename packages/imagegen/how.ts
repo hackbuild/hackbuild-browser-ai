@@ -6,6 +6,7 @@ const how: HowDoc = {
   how: [
     `the three graphs (\`text_encoder\`, \`unet\`, \`vae_decoder\`) come through the shared weight store once, keyed by their folder. every graph call runs under \`hub.run\`, so the gpu lock and frame budget apply.`,
     `each record carries a \`form\`: the fields a model takes. \`applyForm\` fills the defaults, clamps steps and guidance, drops fields the model does not take, and refuses a size its graphs do not accept with a \`FormError\` whose message is the copy.`,
+    `sdxl-turbo runs on \`generateXl\`: two clip encoders joined to 2048 channels, the pooled \`text_embeds\`, six \`time_ids\`, and the latent over 0.13025; its form sets \`pipeline: "sdxl"\`, so \`loadImagegen(hub, { id: "sdxl-turbo" })\` returns the same generator. graph names and fp16 io are inferred from the export's readme.`,
     `in stub mode, \`stubFactory({ imagegen: () => stubImagegenModel() })\` gives a grey image with no weights.`,
   ],
   install: "npm install @hackbuild/imagegen",

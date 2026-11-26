@@ -1,6 +1,6 @@
 # @hackbuild/imagegen
 
-Generate an image from a prompt in your tab with SD-Turbo or SD 1.5 on onnxruntime-web WebGPU, seeded so the same seed gives the same start.
+Generate an image from a prompt in your tab with SD-Turbo, SD 1.5 or SDXL-Turbo on onnxruntime-web WebGPU, seeded so the same seed gives the same start.
 
 [![npm](https://img.shields.io/npm/v/@hackbuild/imagegen)](https://www.npmjs.com/package/@hackbuild/imagegen) [![licence MIT](https://img.shields.io/badge/licence-MIT-blue)](../../LICENSE) ![gzip 6.2 kB measured](https://img.shields.io/badge/gzip-6.2%20kB-blue) ![types included](https://img.shields.io/badge/types-included-blue)
 
@@ -9,7 +9,8 @@ Browser status: no model run of this package has been verified in a real browser
 ## What it does
 
 - Runs the CLIP text encoder, a seeded Euler loop over the UNet and the VAE decoder, and returns RGBA ready for ImageData.
-- Loads SD-Turbo or SD 1.5 through the models hub, with the three graphs cached in the weight store.
+- Runs SDXL-Turbo's two text encoders with pooled embeddings and time ids behind the same interface.
+- Loads SD-Turbo, SD 1.5 or SDXL-Turbo through the models hub, with the three graphs cached in the weight store.
 - Gives each model a form (steps, guidance, negative prompt, sizes) and clamps requests to it.
 - Runs every graph call under the hub's gpu lock and frame budget, so it shares the GPU with chat or vision models.
 
@@ -118,6 +119,15 @@ Noise is mulberry32 seeded, through Box-Muller to a normal; pass `rng` to replac
 
 The text encoder maps `input_ids` to `last_hidden_state`; the UNet maps `sample`, `timestep` (int64) and `encoder_hidden_states` to `out_sample`; the VAE decoder maps `latent_sample` to `sample`. The latent is divided by `VAE_SCALE` (0.18215) before decoding. Output sides are multiples of 8; the default is 512.
 
+### sdxl-turbo
+
+`generateXl(ort, sessions, tokenize, options)` runs SDXL-Turbo from the published SDXL description: both CLIP encoders on the same ids (the second padded with 0 after the end token), their penultimate hidden states joined to 2048 channels, the second encoder's pooled `text_embeds`, six `time_ids` (original size, crop top left, target size), the Euler loop on trailing timesteps, and the latent divided by 0.13025 before the VAE. `XL_IO` holds the default graph names (`hidden_states.11`, `hidden_states.31`, `text_embeds`) and dtypes; pass `xl: { io: "float16" }` for an export with fp16 inputs and outputs, and `toHalf` and `fromHalf` convert at the graph edge. The `sdxl-turbo` record's form sets `pipeline: "sdxl"`, so `loadImagegen(hub, { id: "sdxl-turbo" })` adds the picker record, loads its four graphs and returns the same `ImageGenerator` as SD-Turbo.
+
+```ts
+const gen = await loadImagegen(hub, { id: "sdxl-turbo" }); // four graphs, same interface
+const img = await gen.generate(tokenize, { prompt, seed });
+```
+
 ## API overview
 
 | export | what it does |
@@ -128,6 +138,8 @@ The text encoder maps `input_ids` to `last_hidden_state`; the UNet maps `sample`
 | [`ImageGenerator`](../../docs/api/imagegen/README.md#imagegenerator) | a loaded model: `generate` with its form applied, `release` |
 | [`IMAGEGEN_RECORDS`](../../docs/api/imagegen/README.md#imagegen_records) | SD-Turbo and SD 1.5 records with licence, size and form |
 | [`IMAGEGEN_PICKER_RECORDS`](../../docs/api/imagegen/README.md#imagegen_picker_records) | SDXL-Turbo, listed for pickers and not registered |
+| [`generateXl`](../../docs/api/imagegen/README.md#generatexl) | SDXL-Turbo text to image: two encoders, pooled embeddings, time ids |
+| [`XL_IO`](../../docs/api/imagegen/README.md#xl_io) | the SDXL graph names and dtypes `generateXl` assumes |
 | [`applyForm`](../../docs/api/imagegen/README.md#applyform) | fill a request's defaults and clamp it to the model's form |
 | [`loadLabel`](../../docs/api/imagegen/README.md#loadlabel) | the load button text with the size and its source |
 | [`formOf`](../../docs/api/imagegen/README.md#formof) | the form of a record |
@@ -147,7 +159,7 @@ The full reference is in [docs/api/imagegen](../../docs/api/imagegen/README.md).
 |---|---|---|---|---|
 | SD-Turbo | `schmuell/sd-turbo-ort-web` | 2397 MiB (vendor) | Stability AI Non-Commercial Research Community License, no commercial use | Hugging Face hub |
 | Stable Diffusion 1.5 | `microsoft/stable-diffusion-v1.5-webnn` | 1969 MiB (vendor) | CreativeML OpenRAIL-M, use restrictions in its attachment A | Hugging Face hub |
-| SDXL-Turbo (picker only) | `webnn/sdxl-turbo` | 2548 MiB (vendor) | Stability AI Community License (named in the card text) | Hugging Face hub |
+| SDXL-Turbo (picker only, `generateXl`) | `webnn/sdxl-turbo`, the four `onnx/*_q4f16.onnx` graphs | 2548 MiB (vendor) | Stability AI Community License (named in the card text) | Hugging Face hub |
 | CLIP tokenizer | `Xenova/clip-vit-base-patch16` | unknown | MIT | Hugging Face hub, through transformers.js |
 
 Sizes sum the Hugging Face file listing (no download). No weights ship in the package; they download when you ask, and @hackbuild/weights caches them. The default ONNX export, `schmuell/sd-turbo-ort-web`, carries the Stability AI Non-Commercial Research Community License, so it allows no commercial use. Upstream `stabilityai/sd-turbo` moved to the Stability AI Community License in July 2024; to use that licence, point the record at an export made from the current upstream weights and check its licence before use.
@@ -191,7 +203,15 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 | 2026-11-22 | `npx vitest run packages/imagegen` in Node 22.18.0: sigmas, trailing timesteps, seeded noise statistics, an Euler step that removes exactly predicted noise, id padding, RGBA conversion, the graph call order and shapes against fake sessions, seed reproducibility and abort | passes 10 tests; sigma at timestep 999 is 14.6146 (computed) |
 | 2026-11-24 | `test/hub.test.ts`: both forms, the load label, applyForm clamps and refusals, leading timesteps, the guidance mix against a hand computed latent, a load of sd-1.5 through the devices ort provider and a memory weight store with fake sessions, the stub mode, and a refusal when the graphs are missing | passes 8 tests; three fetches, graphs keyed by folder, 13 hub runs for 5 steps |
 
+| 2026-11-25 | `test/xl.test.ts`: half float round trip, the second tokenizer's zero padding, the joined 2048 style hidden state, pooled embeds and time ids on every UNet call, the 0.13025 VAE scale, fp16 edges and fp16 timestep, guidance on the negative, a missing output named, and `sdxl-turbo` loaded by id through the hub on fake sessions | passes 5 tests |
+
 ### Not verified by anything
+
+- SDXL-Turbo on the real `webnn/sdxl-turbo` export: the graph names
+  (`hidden_states.11`, `hidden_states.31`, `text_embeds`), the fp16
+  timestep and int32 ids are inferred from its README and the SDXL
+  description, not read from the graphs. The picker row says not run yet
+  until a browser run checks them.
 
 - SD-Turbo on real onnxruntime-web webgpu: graph names, image quality,
   speed and memory.
