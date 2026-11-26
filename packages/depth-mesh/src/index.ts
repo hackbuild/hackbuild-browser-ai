@@ -29,3 +29,16 @@ export {
   type DepthGrid,
   type MaskGrid,
 } from "./heights.js";
+export {
+  toThreeMf,
+  threeMfEntries,
+  reliefParts,
+  zipStore,
+  type ThreeMfPart,
+  type ThreeMfObject,
+  type ThreeMfFilament,
+  type ThreeMfOptions,
+  type ReliefGrid,
+  type ReliefSplit,
+} from "./threemf.js";
+export { modelDepth, depthImage, posePositions, glbMesh, type ModelPose, type ModelDepthOptions, type ModelDepth } from "./posed.js";

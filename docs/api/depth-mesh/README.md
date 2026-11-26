@@ -508,6 +508,53 @@ A triangle mesh: xyz positions and three indices per triangle.
 
 ***
 
+### ModelDepth
+
+A depth map from a posed model: the photo path's shape, plus the covered pixels and the raw z range.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-cover"></a> `cover` | `Uint8Array` | 1 where the model covers the pixel. |
+| <a id="property-data-2"></a> `data` | `Float32Array` | 0 to 1 per pixel, larger nearer, 0 off the model. |
+| <a id="property-height-2"></a> `height` | `number` | - |
+| <a id="property-range"></a> `range` | \[`far`: `number`, `near`: `number`\] | Posed z of the farthest and nearest visible points, model units. |
+| <a id="property-width-2"></a> `width` | `number` | - |
+
+***
+
+### ModelDepthOptions
+
+Options for [modelDepth](#modeldepth-1): the map width, the height (default from the posed aspect), the pose, the margin and the nearest and farthest values.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-floor"></a> `floor?` | `number` | Depth of the farthest visible point, so it stays apart from the background at 0. Default 0.1. |
+| <a id="property-height-3"></a> `height?` | `number` | Map height, pixels; default keeps the posed model's aspect. |
+| <a id="property-margin"></a> `margin?` | `number` | Empty border on each side, a share of the map. Default 0.04. |
+| <a id="property-pose"></a> `pose?` | [`ModelPose`](#modelpose) | - |
+| <a id="property-width-3"></a> `width` | `number` | Map width, pixels. |
+
+***
+
+### ModelPose
+
+A pose for [modelDepth](#modeldepth-1): which model axis is up, then yaw about up, pitch about x, roll about the view axis, in degrees.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-pitch"></a> `pitch?` | `number` | - |
+| <a id="property-roll"></a> `roll?` | `number` | - |
+| <a id="property-up"></a> `up?` | `"y"` \| `"z"` | The model's up axis. Default "y" (glTF); "z" for CAD and STL exports. |
+| <a id="property-yaw"></a> `yaw?` | `number` | - |
+
+***
+
 ### PhotoRelief
 
 What [photoRelief](#photorelief-1) returns: the closed solid, the heights per cell, the cell size, the source used and status notes.
@@ -546,7 +593,7 @@ Options for [photoRelief](#photorelief-1): the height source, a depth map or a c
 | <a id="property-erase"></a> `erase?` | [`MaskGrid`](#maskgrid) | Erase brush: cells set here are cut. | - |
 | <a id="property-gamma"></a> `gamma?` | `number` | Default 1. | [`ReliefParams`](#reliefparams).[`gamma`](#property-gamma-2) |
 | <a id="property-heal"></a> `heal?` | `boolean` | Fill corner to corner pinches so the solid closes. Default true. | - |
-| <a id="property-height-2"></a> `height?` | `number` | Highest relief height, mm. Default 2.4. | [`ReliefParams`](#reliefparams).[`height`](#property-height-4) |
+| <a id="property-height-4"></a> `height?` | `number` | Highest relief height, mm. Default 2.4. | [`ReliefParams`](#reliefparams).[`height`](#property-height-6) |
 | <a id="property-invert"></a> `invert?` | `boolean` | Depth and brightness: far or dark is high. Inflate: light art on dark is the silhouette. | [`ReliefParams`](#reliefparams).[`invert`](#property-invert-2) |
 | <a id="property-keeplargest"></a> `keepLargest?` | `boolean` | Keep only the largest piece. | - |
 | <a id="property-mask"></a> `mask?` | [`MaskGrid`](#maskgrid) | Relief only inside this mask, such as a segmentation mask. | - |
@@ -554,7 +601,7 @@ Options for [photoRelief](#photorelief-1): the height source, a depth map or a c
 | <a id="property-smooth"></a> `smooth?` | `number` | Smoothing radius, mm. Default 0.3. | [`ReliefParams`](#reliefparams).[`smooth`](#property-smooth-1) |
 | <a id="property-source-1"></a> `source` | [`HeightSourceName`](#heightsourcename) | - | - |
 | <a id="property-threshold"></a> `threshold?` | `number` | Inflate: brightness below this is inside when the art has no alpha. Default 0.5. | [`ReliefParams`](#reliefparams).[`threshold`](#property-threshold-1) |
-| <a id="property-width-2"></a> `width?` | `number` | Relief width on the print, mm. Default 30. | [`ReliefParams`](#reliefparams).[`width`](#property-width-3) |
+| <a id="property-width-4"></a> `width?` | `number` | Relief width on the print, mm. Default 30. | [`ReliefParams`](#reliefparams).[`width`](#property-width-5) |
 
 ***
 
@@ -571,6 +618,21 @@ Row major rotation (9) and translation (3).
 
 ***
 
+### ReliefGrid
+
+A relief grid: heights in mm per cell, row 0 at the top of the image, and the cell size; `photoRelief` returns one.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-cols-1"></a> `cols` | `number` | - |
+| <a id="property-heights-1"></a> `heights` | `Float32Array` | - |
+| <a id="property-px-1"></a> `px` | `number` | Cell size, mm. |
+| <a id="property-rows-1"></a> `rows` | `number` | - |
+
+***
+
 ### ReliefOptions
 
 How [DepthMesh.relief](#relief) turns 0 to 1 values into heights in mm: range, gamma, background cut, invert and mask.
@@ -582,7 +644,7 @@ How [DepthMesh.relief](#relief) turns 0 to 1 values into heights in mm: range, g
 | <a id="property-base-1"></a> `base` | `number` | Lowest relief height, mm. |
 | <a id="property-bgcut-1"></a> `bgcut?` | `number` | Background cut 0 to 0.98. |
 | <a id="property-gamma-1"></a> `gamma?` | `number` | - |
-| <a id="property-height-3"></a> `height` | `number` | Highest relief height, mm. |
+| <a id="property-height-5"></a> `height` | `number` | Highest relief height, mm. |
 | <a id="property-invert-1"></a> `invert?` | `boolean` | - |
 | <a id="property-mask-1"></a> `mask?` | `Uint8Array`\<`ArrayBufferLike`\> | Nonzero cells are inside. |
 
@@ -599,11 +661,11 @@ The relief settings in mm and 0 to 1 units; [RELIEF\_DEFAULTS](#relief_defaults)
 | <a id="property-base-2"></a> `base` | `number` | Lowest relief height, mm. Default 0.24. |
 | <a id="property-bgcut-2"></a> `bgcut` | `number` | Background cut 0 to 0.9, depth and brightness only. Default 0.25. |
 | <a id="property-gamma-2"></a> `gamma` | `number` | Default 1. |
-| <a id="property-height-4"></a> `height` | `number` | Highest relief height, mm. Default 2.4. |
+| <a id="property-height-6"></a> `height` | `number` | Highest relief height, mm. Default 2.4. |
 | <a id="property-invert-2"></a> `invert` | `boolean` | Depth and brightness: far or dark is high. Inflate: light art on dark is the silhouette. |
 | <a id="property-smooth-1"></a> `smooth` | `number` | Smoothing radius, mm. Default 0.3. |
 | <a id="property-threshold-1"></a> `threshold` | `number` | Inflate: brightness below this is inside when the art has no alpha. Default 0.5. |
-| <a id="property-width-3"></a> `width` | `number` | Relief width on the print, mm. Default 30. |
+| <a id="property-width-5"></a> `width` | `number` | Relief width on the print, mm. Default 30. |
 
 ***
 
@@ -615,9 +677,69 @@ RGBA pixels, as ImageData has them.
 
 | Property | Type |
 | ------ | ------ |
-| <a id="property-data-2"></a> `data` | `ArrayLike`\<`number`\> |
-| <a id="property-height-5"></a> `height` | `number` |
-| <a id="property-width-4"></a> `width` | `number` |
+| <a id="property-data-3"></a> `data` | `ArrayLike`\<`number`\> |
+| <a id="property-height-7"></a> `height` | `number` |
+| <a id="property-width-6"></a> `width` | `number` |
+
+***
+
+### ThreeMfFilament
+
+One loaded filament slot.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-color"></a> `color` | `string` | "#RRGGBB". |
+| <a id="property-preset"></a> `preset?` | `string` | filament_settings_id; default "Generic \<type\>". |
+| <a id="property-type"></a> `type?` | `string` | Slicer filament type. Default "PLA". |
+
+***
+
+### ThreeMfObject
+
+One object: its parts and where it sits on the bed, mm.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-at"></a> `at?` | readonly \[`number`, `number`, `number`\] | Bed position of the object origin, mm. Default [128, 128, 0], the middle of a 256 mm bed (inferred). |
+| <a id="property-name-1"></a> `name` | `string` | - |
+| <a id="property-parts"></a> `parts` | readonly [`ThreeMfPart`](#threemfpart)[] | - |
+
+***
+
+### ThreeMfOptions
+
+Options for [toThreeMf](#tothreemf): title, application string, printer and process preset names, designer, licence and the zip date.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-app"></a> `app?` | `string` | Application string the slicer reads the dialect version from. Default "BambuStudio-01.10.01.50", the hackbuild-3mf gold. |
+| <a id="property-date"></a> `date?` | `Date` | Zip time and the model dates. Default 2026-01-01, for equal bytes. |
+| <a id="property-designer"></a> `designer?` | `string` | - |
+| <a id="property-licence"></a> `licence?` | `string` | - |
+| <a id="property-printer"></a> `printer?` | `string` | printer_settings_id, such as "Flashforge Creator 5 Pro 0.4 nozzle"; left out when absent so the slicer keeps its own. |
+| <a id="property-process"></a> `process?` | `string` | print_settings_id, such as `0.20mm Standard @Flashforge Creator 5 Pro`; left out when absent. |
+| <a id="property-title"></a> `title?` | `string` | - |
+
+***
+
+### ThreeMfPart
+
+One part of an object: a closed mesh in mm (bed at z = 0) and its 1 based filament slot.
+
+#### Properties
+
+| Property | Type | Description |
+| ------ | ------ | ------ |
+| <a id="property-filament"></a> `filament` | `number` | 1 based filament slot; filaments[filament - 1] colours it. |
+| <a id="property-mesh-1"></a> `mesh` | [`Mesh`](#mesh) | - |
+| <a id="property-name-2"></a> `name` | `string` | - |
 
 ***
 
@@ -632,8 +754,8 @@ The turntable camera for [DepthMesh.carve](#carve): image size, focal length, di
 | <a id="property-dist"></a> `dist` | `number` | Camera to axis distance, object units. |
 | <a id="property-focal-1"></a> `focal` | `number` | Focal length, pixels. |
 | <a id="property-half"></a> `half` | `number` | Half size of the carved cube, object units. |
-| <a id="property-height-6"></a> `height` | `number` | - |
-| <a id="property-width-5"></a> `width` | `number` | - |
+| <a id="property-height-8"></a> `height` | `number` | - |
+| <a id="property-width-7"></a> `width` | `number` | - |
 
 ## Type Aliases
 
@@ -663,6 +785,56 @@ type HeightSourceName = "depth" | "brightness" | "inflate";
 ```
 
 The three height sources: Depth Anything depth, brightness, or an inflated silhouette.
+
+***
+
+### ReliefSplit
+
+```ts
+type ReliefSplit = 
+  | {
+  breaks: readonly number[];
+  by: "height";
+}
+  | {
+  by: "mask";
+  labels: Uint8Array | readonly object[];
+};
+```
+
+How [reliefParts](#reliefparts) cuts a relief: by height bands, or by a label per cell.
+
+#### Union Members
+
+##### Type Literal
+
+```ts
+{
+  breaks: readonly number[];
+  by: "height";
+}
+```
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| `breaks` | readonly `number`[] | Band tops in mm, ascending; n breaks make n + 1 bands, the last up to the top. |
+| `by` | `"height"` | - |
+
+***
+
+##### Type Literal
+
+```ts
+{
+  by: "mask";
+  labels: Uint8Array | readonly object[];
+}
+```
+
+| Name | Type | Description |
+| ------ | ------ | ------ |
+| `by` | `"mask"` | - |
+| `labels` | `Uint8Array` \| readonly `object`[] | One label per cell (0 to n - 1), row 0 at the top, the relief's cols by rows; or one mask per colour at any size, resampled (128 and up, or 1 in a 0 and 1 mask, is set), a later mask painting over an earlier one. |
 
 ## Variables
 
@@ -794,6 +966,32 @@ Depth per cell, resampled bilinear from the map's own size.
 
 ***
 
+### depthImage()
+
+```ts
+function depthImage(d): object;
+```
+
+The model's silhouette as an RGBA image (grey, opaque on the model, clear off it), the image `photoRelief` takes beside a [ModelDepth](#modeldepth).
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `d` | [`ModelDepth`](#modeldepth) |
+
+#### Returns
+
+`object`
+
+| Name | Type |
+| ------ | ------ |
+| `data` | `Uint8ClampedArray` |
+| `height` | `number` |
+| `width` | `number` |
+
+***
+
 ### fitToPrint()
 
 ```ts
@@ -808,6 +1006,29 @@ Centre the mesh and scale it so its longest side is `sizeMM`.
 | ------ | ------ |
 | `m` | [`Mesh`](#mesh) |
 | `sizeMM` | `number` |
+
+#### Returns
+
+[`Mesh`](#mesh)
+
+***
+
+### glbMesh()
+
+```ts
+function glbMesh(bytes): Mesh;
+```
+
+The triangles of a GLB in one mesh, every node's world transform
+applied: float POSITION and 8, 16 or 32 bit indices, triangle lists
+only. Throws on Draco or meshopt compression, which this reader does
+not decode; export the GLB without it.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `bytes` | `ArrayBuffer` \| `Uint8Array`\<`ArrayBufferLike`\> |
 
 #### Returns
 
@@ -873,6 +1094,27 @@ Instantiate the depth-mesh wasm core from a URL, bytes or base64 and return a [D
 
 ***
 
+### modelDepth()
+
+```ts
+function modelDepth(mesh, o): ModelDepth;
+```
+
+Rasterise a mesh's depth at a pose into a depth map: orthographic, the model fitted inside the margin, nearest surface wins.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `mesh` | [`Mesh`](#mesh) |
+| `o` | [`ModelDepthOptions`](#modeldepthoptions) |
+
+#### Returns
+
+[`ModelDepth`](#modeldepth)
+
+***
+
 ### openEdges()
 
 ```ts
@@ -918,6 +1160,88 @@ solid. Export it with `toStl`.
 #### Returns
 
 `Promise`\<[`PhotoRelief`](#photorelief)\>
+
+***
+
+### posePositions()
+
+```ts
+function posePositions(positions, pose?): Float32Array;
+```
+
+The positions turned to a pose: up axis to +y, then yaw, pitch and roll.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `positions` | `Float32Array` |
+| `pose?` | [`ModelPose`](#modelpose) |
+
+#### Returns
+
+`Float32Array`
+
+***
+
+### reliefParts()
+
+```ts
+function reliefParts(
+   dm, 
+   r, 
+   split, 
+   o?
+): ThreeMfPart[];
+```
+
+Cut a relief into closed bodies for a multi colour print: by height,
+band i holds the cells above its floor, from the floor up to the lower
+of the cell and the band top, so the bands stack; by mask, body k holds
+the cells labelled k at full height. Each body is a part on filament
+k + 1 (or `filaments[k]`). Empty bodies are left out. Centred on x and
+y like `photoRelief`, image up is +y.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `dm` | [`DepthMesh`](#depthmesh) |
+| `r` | [`ReliefGrid`](#reliefgrid) |
+| `split` | [`ReliefSplit`](#reliefsplit) |
+| `o?` | \{ `filaments?`: readonly `number`[]; `names?`: readonly `string`[]; \} |
+| `o.filaments?` | readonly `number`[] |
+| `o.names?` | readonly `string`[] |
+
+#### Returns
+
+[`ThreeMfPart`](#threemfpart)[]
+
+***
+
+### threeMfEntries()
+
+```ts
+function threeMfEntries(
+   objects, 
+   filaments, 
+   o?
+): Record<string, string>;
+```
+
+The entries of a 3MF package by name, before zipping; [toThreeMf](#tothreemf) zips them. Throws on a bad colour, a slot with no filament or an empty object.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `objects` | readonly [`ThreeMfObject`](#threemfobject)[] |
+| `filaments` | readonly [`ThreeMfFilament`](#threemffilament)[] |
+| `o?` | [`ThreeMfOptions`](#threemfoptions) |
+
+#### Returns
+
+`Record`\<`string`, `string`\>
 
 ***
 
@@ -986,6 +1310,32 @@ A binary STL of the mesh, with a face normal per triangle, in the mesh's own uni
 
 ***
 
+### toThreeMf()
+
+```ts
+function toThreeMf(
+   objects, 
+   filaments, 
+   o?
+): Uint8Array;
+```
+
+A multi colour 3MF file: objects of coloured parts, a filament per slot, the Orca and Bambu dialect, store only zip.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `objects` | readonly [`ThreeMfObject`](#threemfobject)[] |
+| `filaments` | readonly [`ThreeMfFilament`](#threemffilament)[] |
+| `o?` | [`ThreeMfOptions`](#threemfoptions) |
+
+#### Returns
+
+`Uint8Array`
+
+***
+
 ### trackGood()
 
 ```ts
@@ -1034,3 +1384,24 @@ Signed volume of a closed mesh (positive when faces wind outward).
 #### Returns
 
 `number`
+
+***
+
+### zipStore()
+
+```ts
+function zipStore(entries, date): Uint8Array;
+```
+
+A store only zip, names in sorted byte order, every entry at `date` (UTC fields).
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `entries` | `Record`\<`string`, `string` \| `Uint8Array`\> |
+| `date` | `Date` |
+
+#### Returns
+
+`Uint8Array`

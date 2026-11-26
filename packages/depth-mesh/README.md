@@ -12,6 +12,8 @@ Browser status: no model run of this package has been verified in a real browser
 - Turns a depth map into a point cloud and tracks frames against a voxel model with point to plane ICP.
 - Carves a hull from turntable silhouettes and meshes it with surface nets.
 - Exports binary STL, OBJ and binary PLY, and checks bounds, open edges and volume.
+- Writes multi colour 3MF in the Orca and Bambu dialect, with a colour per height band or per mask.
+- Renders a GLB's depth at a chosen pose into the same depth map the photo path takes.
 
 ## Install
 
@@ -112,6 +114,29 @@ const stl = toStl(fitToPrint(hull, 40));
 
 `toStl` writes binary STL, `toObj` OBJ text, `toPly` and `cloudToPly` binary PLY. `fitToPrint` centres a mesh and scales its longest side to a size in mm. `bounds`, `openEdges` (0 for a closed surface) and `volume` (positive when faces wind outward) are the checks a slicer cares about.
 
+### multi colour 3mf
+
+`toThreeMf(objects, filaments, options)` writes a 3MF that OrcaSlicer, Bambu Studio and Flash Studio open as one object of coloured parts: each part carries its own extruder in `Metadata/model_settings.config`, the object carries the first part's, and `Metadata/project_settings.config` holds one colour, type and preset name per slot. The dialect is ported from the hackbuild-3mf writer; the zip is store only with sorted names and a fixed date, so equal input gives equal bytes. `printer` and `process` name the slicer presets; left out, the slicer keeps its own.
+
+`reliefParts(dm, relief, split)` cuts a relief into closed bodies: `{ by: "height", breaks: [1.2, 1.8] }` makes three stacked bands (each from its floor up to the lower of the cell and the band top), `{ by: "mask", labels }` one body per label or per mask (a later mask paints over an earlier one).
+
+```ts
+const r = await photoRelief(dm, image, { source: "depth", depth: map });
+const parts = reliefParts(dm, r, { by: "height", breaks: [1.0, 1.8] });
+const file = toThreeMf([{ name: "relief", parts }], [{ color: "#FFFFFF" }, { color: "#888888" }, { color: "#FE0386" }], {
+  printer: "Flashforge Creator 5 Pro 0.4 nozzle",
+});
+```
+
+### depth from a posed 3d model
+
+`glbMesh(bytes)` reads the triangles of an uncompressed GLB with every node transform applied (Draco and meshopt are refused with a message). `modelDepth(mesh, { width, pose: { up: "z", yaw, pitch, roll } })` turns it to the pose and rasterises the nearest surface through an orthographic camera on the CPU: a depth map, 0 to 1 with larger nearer and 0 off the model, plus `cover`. `depthImage(depth)` gives the silhouette as an RGBA image. Pass both to `photoRelief`, the map as `depth` to `photoRelief` with `source: "depth"`, and the 3D model goes down the photo path.
+
+```ts
+const depth = modelDepth(glbMesh(await file.arrayBuffer()), { width: 256, pose: { up: "y", yaw: 30, roll: 0 } });
+const r = await photoRelief(dm, depthImage(depth), { source: "depth", depth }); // depthImage: the silhouette as the photo
+```
+
 ## API overview
 
 | export | what it does |
@@ -129,6 +154,10 @@ const stl = toStl(fitToPrint(hull, 40));
 | [`toStl`](../../docs/api/depth-mesh/README.md#tostl) | binary STL |
 | [`toObj`](../../docs/api/depth-mesh/README.md#toobj) | OBJ text |
 | [`toPly`](../../docs/api/depth-mesh/README.md#toply) | binary PLY of a mesh or points |
+| [`toThreeMf`](../../docs/api/depth-mesh/README.md#tothreemf) | multi colour 3MF, Orca and Bambu dialect, an extruder per part |
+| [`reliefParts`](../../docs/api/depth-mesh/README.md#reliefparts) | a relief cut into stacked height bands or mask bodies |
+| [`modelDepth`](../../docs/api/depth-mesh/README.md#modeldepth) | depth map of a posed mesh, the photo path's shape |
+| [`glbMesh`](../../docs/api/depth-mesh/README.md#glbmesh) | the triangles of a GLB with node transforms applied |
 | [`cloudToPly`](../../docs/api/depth-mesh/README.md#cloudtoply) | binary PLY of a point cloud |
 | [`fitToPrint`](../../docs/api/depth-mesh/README.md#fittoprint) | centre and scale so the longest side is a size in mm |
 | [`bounds`](../../docs/api/depth-mesh/README.md#bounds) | axis aligned bounds of positions |
@@ -188,7 +217,15 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 | 2026-11-22 | `npx vitest run packages/depth-mesh` under Node 22.18.0, including native and wasm parity: the wasm build (simd128 on) against the native build for the depth fixture, cloud, relief heights and mesh, surface nets, voxel model size, the ICP pose, inliers and error, carving masks and mesh, and Rodrigues | passes 4 tests; same bits from both builds; the carved hull and the relief solid have no open edges; volumes are positive and near the box's |
 | 2026-11-24 | `npx vitest run packages/depth-mesh`: the three named sources; brightness from a ramp; the inflate dome highest in the middle of a disc, and inverted; depth through a call, resampled, kept on the result, inverted; the fallback to brightness with its note; background cut, relief mask, erase and restore; keep largest; closed solids and an STL of the right length | passes 12 tests; 0 open edges (computed) |
 
+| 2026-11-25 | `test/threemf.test.ts`: the 3MF entries read back from the store only zip, an extruder per part and per object, one colour, type and preset per slot, the printer model and variant, equal bytes for equal input, refusals for a bad colour, a missing slot and an empty part; height bands stacking at the break with no open edges, mask labels and resampled masks; a hand built GLB with a node translation, compression refused, pose axes, and the nearest surface rasterised into the depth map | passes 7 tests |
+
 ### Not verified by anything
+
+- The 3MF: not opened in OrcaSlicer, Bambu Studio or Flash Studio from
+  this package. The dialect is the hackbuild-3mf writer's, which was
+  checked there; the store only zip and the default bed position
+  (128, 128) are untested in a slicer.
+- `modelDepth` on a real GLB, and its speed at 256 px and up.
 
 - `photoRelief` on a real photo with a real Depth Anything map, and its
   speed; the inflate blur (a gaussian of half the smoothing radius

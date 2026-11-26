@@ -6,6 +6,8 @@ const how: HowDoc = {
   how: [
     `\`cloud\`: z = near + (1 - d)(far - near), camera down -z; normals from the grid neighbours facing the camera; depth edge fliers dropped.`,
     `\`relief\`: normalized over the region (or a mask), background cut, gamma, floor 0.12 mm (as earlier builds did); \`heightfieldMesh\` splits each top quad on its shorter diagonal and closes the walls and the bottom.`,
+    `\`toThreeMf\`: the orca and bambu dialect of the hackbuild-3mf writer, an extruder per part in model_settings.config and a colour per slot in project_settings.config; \`reliefParts\` cuts a relief into stacked height bands or one body per mask.`,
+    `\`modelDepth\`: a glb from \`glbMesh\` turned to a pose (up axis, yaw, pitch, roll) and rasterised on the cpu through an orthographic camera into the photo path's depth map, larger nearer, 0 off the model.`,
     `\`model(voxel).icp\`: two stages (2 maxdist then maxdist), 27 voxel nearest neighbour, normal agreement, 6 by 6 solve, rodrigues update; \`trackGood\` is the earlier scan bench's accept test.`,
   ],
   install: "npm install @hackbuild/depth-mesh",
