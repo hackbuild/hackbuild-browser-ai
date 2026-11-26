@@ -369,6 +369,12 @@ interface RgbaImage {
 RGBA pixels, as ImageData has them.
 
 ```ts
+function surfaceIndices(z: ArrayLike<number>, cols: number, rows: number, maxJump?: number): Uint32Array
+```
+
+Triangle indices for a cols by rows surface (vertex j * cols + i), with every triangle whose heights span more than `maxJump` left out.
+
+```ts
 function threeMfEntries(objects: readonly ThreeMfObject[], filaments: readonly ThreeMfFilament[], o?: ThreeMfOptions): Record<string, string>
 ```
 

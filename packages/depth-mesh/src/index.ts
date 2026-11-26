@@ -18,6 +18,7 @@ export {
   brightnessHeight,
   inflateHeight,
   depthHeight,
+  surfaceIndices,
   HEIGHT_SOURCES,
   RELIEF_DEFAULTS,
   type HeightSource,

@@ -303,6 +303,25 @@ export function depthHeight(d: DepthGrid, cols: number, rows: number): Float32Ar
 }
 
 /**
+ * Triangle indices for a cols by rows surface (vertex j * cols + i), with
+ * every triangle whose heights span more than `maxJump` left out. A depth
+ * map lifted as one sheet stretches into walls where a near edge meets a
+ * far one (a branch against the sky); tearing there shows the gap instead.
+ * Heights in the same unit as `maxJump`, usually depth 0 to 1.
+ */
+export function surfaceIndices(z: ArrayLike<number>, cols: number, rows: number, maxJump = 0.08): Uint32Array {
+  const out: number[] = [];
+  const keep = (a: number, b: number, c: number) => Math.max(z[a]!, z[b]!, z[c]!) - Math.min(z[a]!, z[b]!, z[c]!) <= maxJump;
+  for (let j = 0; j < rows - 1; j++)
+    for (let i = 0; i < cols - 1; i++) {
+      const a = j * cols + i, b = a + 1, c = a + cols, d = c + 1;
+      if (keep(a, c, b)) out.push(a, c, b);
+      if (keep(b, c, d)) out.push(b, c, d);
+    }
+  return new Uint32Array(out);
+}
+
+/**
  * Photo to relief in one call: a height source, the relief parameters,
  * the relief mask and the erase and restore brushes, then the closed
  * solid. Export it with `toStl`.

@@ -1219,6 +1219,38 @@ y like `photoRelief`, image up is +y.
 
 ***
 
+### surfaceIndices()
+
+```ts
+function surfaceIndices(
+   z, 
+   cols, 
+   rows, 
+   maxJump?
+): Uint32Array;
+```
+
+Triangle indices for a cols by rows surface (vertex j * cols + i), with
+every triangle whose heights span more than `maxJump` left out. A depth
+map lifted as one sheet stretches into walls where a near edge meets a
+far one (a branch against the sky); tearing there shows the gap instead.
+Heights in the same unit as `maxJump`, usually depth 0 to 1.
+
+#### Parameters
+
+| Parameter | Type | Default value |
+| ------ | ------ | ------ |
+| `z` | `ArrayLike`\<`number`\> | `undefined` |
+| `cols` | `number` | `undefined` |
+| `rows` | `number` | `undefined` |
+| `maxJump?` | `number` | `0.08` |
+
+#### Returns
+
+`Uint32Array`
+
+***
+
 ### threeMfEntries()
 
 ```ts
