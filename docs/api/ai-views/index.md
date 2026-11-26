@@ -1362,6 +1362,7 @@ Options of `speaker`.
 | ------ | ------ | ------ |
 | <a id="property-config"></a> `config?` | () => `VoiceConfig` | The voice config each line uses; a clone sets its own. |
 | <a id="property-halt"></a> `halt?` | () => `void` | Stops what `play` is playing. |
+| <a id="property-onerror"></a> `onError?` | (`err`, `text`) => `void` | A line that failed to render or play, with the reason; the chain goes on with the next line. |
 | <a id="property-online"></a> `onLine?` | (`text`) => `void` | Each line as it starts, for a caption. |
 | <a id="property-play"></a> `play?` | (`line`) => `Promise`\<`void`\> | Plays one line; resolves when it is over. A character stage's `say` fits. With none, the line is dropped after `onLine`. |
 

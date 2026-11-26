@@ -27,6 +27,8 @@ export interface SpeakerOptions {
   halt?: () => void;
   /** Each line as it starts, for a caption. */
   onLine?: (text: string) => void;
+  /** A line that failed to render or play, with the reason; the chain goes on with the next line. */
+  onError?: (err: unknown, text: string) => void;
   /** The voice config each line uses; a clone sets its own. */
   config?: () => VoiceConfig;
 }
@@ -101,7 +103,7 @@ export function speaker(engine: () => Engine | null, o: SpeakerOptions = {}): Sp
     },
     say(text) {
       const signal = ctl.signal;
-      chain = chain.then(() => speak(text, signal)).catch(() => undefined);
+      chain = chain.then(() => speak(text, signal)).catch((err: unknown) => o.onError?.(err, text));
       return chain;
     },
     stop() {

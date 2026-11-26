@@ -19,4 +19,13 @@ describe("speaker", () => {
     expect(canClone({ kind: "native" })).toBe(false);
     expect(canClone(null)).toBe(false);
   });
+  it("reports a line that fails and goes on with the next", async () => {
+    const errs: string[] = [];
+    const said: string[] = [];
+    const sp = speaker(() => null, { play: async (l) => { if (l.text === "bad") throw new Error("no audio"); said.push(l.text); }, onError: (e, t) => errs.push(`${t}: ${(e as Error).message}`) });
+    await sp.say("bad");
+    await sp.say("good");
+    expect(errs).toEqual(["bad: no audio"]);
+    expect(said).toEqual(["good"]);
+  });
 });

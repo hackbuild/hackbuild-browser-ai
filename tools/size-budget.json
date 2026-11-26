@@ -13,7 +13,7 @@
     },
     "@hackbuild/ai-elements": {
       "main: dist/index.js bundled": 582,
-      "dist/single/index.iife.js": 92980
+      "dist/single/index.iife.js": 93023
     },
     "@hackbuild/ai-env": {
       "main: dist/index.js bundled": 6442,
@@ -105,7 +105,7 @@
       "dist/single/index.iife.js": 5978
     },
     "@hackbuild/ai-views": {
-      "main: dist/index.js bundled": 21595,
+      "main: dist/index.js bundled": 21606,
       "dist/single/elements.iife.js": 100083
     }
   }

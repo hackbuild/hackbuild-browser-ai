@@ -254,7 +254,7 @@ Changes are in the repository [CHANGELOG](../../CHANGELOG.md). Code is MIT ([LIC
 
 | file | gzip (measured) | ceiling |
 |---|---|---|
-| `dist/index.js` (main entry, imports external) | 21,595 bytes | 22,674 bytes |
+| `dist/index.js` (main entry, imports external) | 21,606 bytes | 22,686 bytes |
 | `dist/single/elements.iife.js` (single file build) | 100,083 bytes | 105,087 bytes |
 
 Measured 2026-11-26 by `node tools/lint-packages.mjs` (gzip level 9) from the packed

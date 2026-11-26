@@ -1202,6 +1202,7 @@ Spoken lines in order, and the clone.
 interface SpeakerOptions {
   config?: () => VoiceConfig;
   halt?: () => void;
+  onError?: (err: unknown, text: string) => void;
   onLine?: (text: string) => void;
   play?: (line: SpokenLine) => Promise<void>;
 }

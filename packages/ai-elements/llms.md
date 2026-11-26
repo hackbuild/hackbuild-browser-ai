@@ -31,74 +31,10 @@ function define(prefix?: string, registry?: DefineTarget, Base?: new () => HTMLE
 Registers the ai-views elements under the prefix (default hb) and notes the deprecation once.
 
 ```ts
-interface DefineTarget {
-  define(name: string, ctor: CustomElementConstructor): void;
-  get(name: string): unknown;
-}
-```
-
-The part of a custom element registry `define` uses; `customElements` satisfies it.
-
-```ts
 const DEPRECATION: "@hackbuild/ai-elements is deprecated. use @hackbuild/ai-views: <model-select>, <chat-pane>, <chat-composer>, <memory-inspector> and the other views."
 ```
 
 Written once to the console by define().
-
-```ts
-const ELEMENT_NAMES: readonly ["model-select", "model-jobs", "chat-pane", "chat-composer", "chat-list", "chat-context", "transcribe-drop", "transcript-view", "transcribe-queue", "transcript-exports", "mask-studio", "mask-tools", "mask-verbs", "mask-rack", "frame-view", "camera-feed", "memory-inspector"]
-```
-
-The tag names define() registers, before any prefix.
-
-```ts
-function inspectorHtml(rec: RecallLike | null): string
-```
-
-The HTML of a recall trace table, or an empty note before any recall.
-
-```ts
-interface MemoryInspector extends Mounted {
-  dispose(): void;
-  set(rec: RecallLike | null): void;
-}
-```
-
-A mounted memory inspector whose `set` shows a new recall.
-
-```ts
-function mountMemoryInspector(host: HTMLElement, rec?: RecallLike | null): MemoryInspector
-```
-
-Shows a recall trace as a table on a host.
-
-```ts
-type RecallLike = Pick<Recall, "trace" | "hits" | "query" | "mode">
-```
-
-The parts of a memory recall the inspector shows: trace, hits, query and mode.
-
-```ts
-interface TraceRow {
-  bm25: string;
-  cos: string;
-  id: number;
-  kind: string;
-  rank: number;
-  rrf: string;
-  score: string;
-  text: string;
-  used: boolean;
-}
-```
-
-One row of a recall trace as text: rank, id, kind, text, BM25, cosine, RRF, score, and whether it went to the model.
-
-```ts
-function traceRows(r: Pick<Recall, "trace" | "hits">, maxText?: number): TraceRow[]
-```
-
-The rows of a recall trace as text, marking the hits handed to the model.
 
 ## Mistakes to avoid
 
